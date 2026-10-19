@@ -50,6 +50,35 @@ node dist/index.cjs --http --bridge
 
 Then open a document in any of the three apps, click the add-in button in the Home ribbon, and connect your MCP client to `http://127.0.0.1:3001/mcp`.
 
+## Windows installation
+
+Verified on Windows 11 (ARM64, Office Insider 16.0.20430) in a Parallels VM. Recent Windows Office builds reject the old sideload shortcuts (Developer-registry manifests only load under a debugger, the new "Apps" storefront never queries custom catalogs), so the supported route is the classic add-in dialog with a **shared folder catalog**:
+
+1. Copy `dist/index.cjs` and `addin/` to the Windows machine (e.g. `C:\o365-bridge`), then start the bridge there:
+
+   ```bat
+   node C:\o365-bridge\dist\index.cjs --http --bridge
+   ```
+
+   This serves the taskpane on `http://localhost:8080` and MCP on `http://localhost:3001/mcp`.
+
+2. Publish the `addin/` folder as a network share (UNC path) that the Windows user can list — a native SMB share, or on a VM the host's shared folder (e.g. `\\Mac\Home\powerpoint-mcp\addin` under Parallels).
+
+3. Trust that folder as an add-in catalog (per user, one-time):
+
+   ```bat
+   reg add HKCU\Software\Microsoft\Office\16.0\Wef\TrustedCatalogs\{7E3F2A11-93C4-4B5D-8E6F-1A2B3C4D5E6F} /v Id   /t REG_SZ   /d {7E3F2A11-93C4-4B5D-8E6F-1A2B3C4D5E6F} /f
+   reg add HKCU\Software\Microsoft\Office\16.0\Wef\TrustedCatalogs\{7E3F2A11-93C4-4B5D-8E6F-1A2B3C4D5E6F} /v Url  /t REG_SZ   /d \\host\share\addin /f
+   reg add HKCU\Software\Microsoft\Office\16.0\Wef\TrustedCatalogs\{7E3F2A11-93C4-4B5D-8E6F-1A2B3C4D5E6F} /v Flags /t REG_DWORD /d 1 /f
+   ```
+
+4. Restart the Office app, then: **Home → Add-ins → Advanced...** → **SHARED FOLDER** tab → select *o365 MCP* → **Add**. The taskpane opens and connects to the bridge over `ws://localhost:8080`; point your MCP client at `http://localhost:3001/mcp`.
+
+Notes:
+
+- Use `manifest.xml` for PowerPoint, `manifest.word.xml` for Word, `manifest.excel.xml` for Excel. All point the taskpane at `http://localhost:8080`.
+- If a build refuses plain-HTTP catalogs, the bridge can also emulate a SharePoint-style HTTPS catalog (`server/sharepoint-catalog.ts`, enabled with `BRIDGE_TLS=1`): Office enumerates `https://<host>:8443` as a corporate catalog and the same manifests are served from there.
+
 ## How it is tested
 
 Two layers, because they catch different bugs.

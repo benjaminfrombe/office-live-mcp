@@ -31,3 +31,4 @@ test-results/
 .check-runner.mjs
 # Personal, untracked planning notes; not part of the docs/ convention (see CLAUDE.md Work Tracking).
 docs/superpowers/
+.vmtmp/
