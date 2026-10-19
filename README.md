@@ -1,4 +1,10 @@
-# PowerPoint MCP
+<div align="center">
+
+<img src="icon.png" width="96" alt="o365 MCP logo"/>
+
+# o365 MCP (PowerPoint MCP fork, `o365` branch)
+
+</div>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D24.0.0-brightgreen)](https://nodejs.org)
