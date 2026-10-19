@@ -7,9 +7,9 @@
 
   <Id>AE89909C-2813-4B08-9E1B-49E7379BD0E6</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>o365 MCP</ProviderName>
+  <ProviderName>Office Live MCP</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="o365 MCP"/>
+  <DisplayName DefaultValue="Office Live MCP"/>
   <Description DefaultValue="Bridge for Claude Code to manipulate live PowerPoint presentations"/>
   <IconUrl DefaultValue="https://localhost:8443/assets/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://localhost:8443/assets/icon-80.png"/>
@@ -79,10 +79,10 @@
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="Bridge"/>
-        <bt:String id="ButtonLabel" DefaultValue="o365 MCP"/>
+        <bt:String id="ButtonLabel" DefaultValue="Office Live MCP"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="ButtonTooltip" DefaultValue="Open the o365 MCP taskpane"/>
+        <bt:String id="ButtonTooltip" DefaultValue="Open the Office Live MCP taskpane"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>

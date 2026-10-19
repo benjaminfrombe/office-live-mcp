@@ -1,6 +1,6 @@
 {
   "manifest_version": "0.3",
-  "name": "powerpoint-mcp",
+  "name": "office-live-mcp",
   "display_name": "PowerPoint MCP",
   "version": "0.6.0",
   "description": "Manipulate live, open PowerPoint presentations via Office.js — add shapes, text, images, and more to open presentations in real time.",

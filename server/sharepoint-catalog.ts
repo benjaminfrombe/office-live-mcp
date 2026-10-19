@@ -66,17 +66,17 @@ const CATALOG_APPS: CatalogApp[] = [
     // VM minimal variant: no VersionOverrides, to isolate catalog acceptance
     // from manifest schema strictness on Windows Office builds.
     serverRelativeUrl: '/manifest.vm-minimal.xml',
-    title: 'o365 MCP Word',
+    title: 'Office Live MCP Word',
     id: '6B03BAEA-D5F8-43A1-B136-791D9D1AB231',
   },
   {
     serverRelativeUrl: '/manifest.vm-excel.xml',
-    title: 'o365 MCP Excel',
+    title: 'Office Live MCP Excel',
     id: 'B116267F-F3C1-46D4-9A06-1FE8D7F13A69',
   },
   {
     serverRelativeUrl: '/manifest.vm-powerpoint.xml',
-    title: 'o365 MCP PowerPoint',
+    title: 'Office Live MCP PowerPoint',
     id: 'AE89909C-2813-4B08-9E1B-49E7379BD0E6',
   },
 ]
@@ -176,7 +176,7 @@ function sendAtom(res: ServerResponse, req: IncomingMessage, entries: Array<Reco
         parentListLink +
         `<title type="text">${title}</title>` +
         `<updated>${now}</updated>` +
-        `<author><name>o365 MCP Bridge</name></author>` +
+        `<author><name>Office Live MCP Bridge</name></author>` +
         `<content type="application/xml"><m:properties>${props}</m:properties></content>` +
         `</entry>`
       )
@@ -218,7 +218,7 @@ function listItem(app: CatalogApp, index: number): Record<string, unknown> {
     ContentTypeId: '0x01010C009A2929A6E2164D40AC668301D8D91CE5',
     AppProductID: app.id,
     AppVersion: '1.0.0.0',
-    AppPublisher: 'o365 MCP Bridge',
+    AppPublisher: 'Office Live MCP Bridge',
     AppDescription: 'Live Office.js bridge add-in',
     AppShortDescription: 'Live Office.js bridge add-in',
     AppThumbnailURL: { Description: '', Url: '' },

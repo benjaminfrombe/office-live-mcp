@@ -175,7 +175,7 @@ const mcpHttpTransports = new Map<string, StreamableHTTPServerTransport>()
 
 function createMcpServer(getSessionId: () => string | undefined, getActiveSessionCount: () => number): McpServer {
   const mcpServer = new McpServer({
-    name: 'o365-mcp',
+    name: 'office-live-mcp',
     version: PKG_VERSION,
   })
   registerTools(mcpServer, pool, getSessionId, getActiveSessionCount)
@@ -624,7 +624,7 @@ const activeInterfaces = [
   .filter(Boolean)
   .join(' + ')
 
-console.error(`o365-mcp started [${activeInterfaces}]`)
+console.error(`office-live-mcp started [${activeInterfaces}]`)
 if (!bridgeActive) {
   console.error('  Note: Bridge not active. Tools requiring the add-in will return errors.')
 }

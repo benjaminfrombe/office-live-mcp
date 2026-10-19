@@ -1,4 +1,4 @@
-/* o365 MCP — WebSocket client */
+/* Office Live MCP — WebSocket client */
 
 var ws = null
 var reconnectTimer = null

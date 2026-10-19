@@ -52706,17 +52706,17 @@ var CATALOG_APPS = [
     // VM minimal variant: no VersionOverrides, to isolate catalog acceptance
     // from manifest schema strictness on Windows Office builds.
     serverRelativeUrl: "/manifest.vm-minimal.xml",
-    title: "o365 MCP Word",
+    title: "Office Live MCP Word",
     id: "6B03BAEA-D5F8-43A1-B136-791D9D1AB231"
   },
   {
     serverRelativeUrl: "/manifest.vm-excel.xml",
-    title: "o365 MCP Excel",
+    title: "Office Live MCP Excel",
     id: "B116267F-F3C1-46D4-9A06-1FE8D7F13A69"
   },
   {
     serverRelativeUrl: "/manifest.vm-powerpoint.xml",
-    title: "o365 MCP PowerPoint",
+    title: "Office Live MCP PowerPoint",
     id: "AE89909C-2813-4B08-9E1B-49E7379BD0E6"
   }
 ];
@@ -52770,7 +52770,7 @@ function sendAtom(res, req, entries) {
     const fileUrl = typeof entry.FileRef === "string" ? entry.FileRef : null;
     const fileLink = isListItem && fileUrl ? `<link rel="http://schemas.microsoft.com/ado/2007/08/dataservices/related/File" type="application/atom+xml;type=entry" title="File" href="${editPath}/File" />` : "";
     const parentListLink = isListItem ? `<link rel="http://schemas.microsoft.com/ado/2007/08/dataservices/related/ParentList" type="application/atom+xml;type=entry" title="ParentList" href="Web/Lists(guid'${CATALOG_LIST_ID}')" />` : "";
-    return `<entry><id>${base}/_api/${editPath}</id><category term="${term}" scheme="http://schemas.microsoft.com/ado/2007/08/dataservices/scheme" /><link rel="edit" href="${editPath}" />` + fileLink + parentListLink + `<title type="text">${title}</title><updated>${now}</updated><author><name>o365 MCP Bridge</name></author><content type="application/xml"><m:properties>${props}</m:properties></content></entry>`;
+    return `<entry><id>${base}/_api/${editPath}</id><category term="${term}" scheme="http://schemas.microsoft.com/ado/2007/08/dataservices/scheme" /><link rel="edit" href="${editPath}" />` + fileLink + parentListLink + `<title type="text">${title}</title><updated>${now}</updated><author><name>Office Live MCP Bridge</name></author><content type="application/xml"><m:properties>${props}</m:properties></content></entry>`;
   }).join("");
   const itemsFeed = entries.length > 0 && "GUID" in entries[0];
   const feedPath = itemsFeed ? `Web/Lists(guid'${CATALOG_LIST_ID}')/Items` : "Web/Lists";
@@ -52797,7 +52797,7 @@ function listItem(app, index) {
     ContentTypeId: "0x01010C009A2929A6E2164D40AC668301D8D91CE5",
     AppProductID: app.id,
     AppVersion: "1.0.0.0",
-    AppPublisher: "o365 MCP Bridge",
+    AppPublisher: "Office Live MCP Bridge",
     AppDescription: "Live Office.js bridge add-in",
     AppShortDescription: "Live Office.js bridge add-in",
     AppThumbnailURL: { Description: "", Url: "" },
@@ -57244,7 +57244,7 @@ function registerTools(server, pool2, getSessionId, getActiveSessionCount) {
 async function checkForUpdate(options) {
   const {
     currentVersion,
-    packageName = "powerpoint-mcp",
+    packageName = "office-live-mcp",
     registryUrl = "https://registry.npmjs.org",
     timeoutMs = 3e3
   } = options;
@@ -57285,7 +57285,7 @@ function runVersionCheck(currentVersion) {
       console.error(
         `
   Update available: v${result.current} \u2192 v${result.latest}
-  Run "npm update -g powerpoint-mcp" to upgrade
+  Run "npm update -g office-live-mcp" to upgrade
 `
       );
     }
@@ -57395,7 +57395,7 @@ var pool = new ConnectionPool();
 var mcpHttpTransports = /* @__PURE__ */ new Map();
 function createMcpServer(getSessionId, getActiveSessionCount) {
   const mcpServer = new McpServer({
-    name: "o365-mcp",
+    name: "office-live-mcp",
     version: PKG_VERSION
   });
   registerTools(mcpServer, pool, getSessionId, getActiveSessionCount);
@@ -57713,7 +57713,7 @@ var activeInterfaces = [
   httpActive && `HTTP(:${MCP_HTTP_PORT})`,
   bridgeActive && `Bridge(:${BRIDGE_PORT})`
 ].filter(Boolean).join(" + ");
-console.error(`o365-mcp started [${activeInterfaces}]`);
+console.error(`office-live-mcp started [${activeInterfaces}]`);
 if (!bridgeActive) {
   console.error("  Note: Bridge not active. Tools requiring the add-in will return errors.");
 }

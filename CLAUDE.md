@@ -35,7 +35,7 @@ Three components in one repo:
 
 ## Usage Documentation
 
-For tool reference, code patterns, and usage — see the **powerpoint-mcp** skill at `skills/powerpoint-mcp/`.
+For tool reference, code patterns, and usage — see the **powerpoint-mcp** skill at `skills/office-live-mcp/`.
 
 ## Technical Constraints
 

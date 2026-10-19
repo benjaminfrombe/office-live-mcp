@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="icon.png" width="96" alt="o365 MCP logo"/>
+<img src="icon.png" width="96" alt="Office Live MCP logo"/>
 
-# o365 MCP
+# Office Live MCP
 
 One MCP server that drives **live, open** Word, Excel and PowerPoint documents on macOS through Office.js.
 
@@ -72,7 +72,7 @@ Verified on Windows 11 (ARM64, Office Insider 16.0.20430) in a Parallels VM. Rec
    reg add HKCU\Software\Microsoft\Office\16.0\Wef\TrustedCatalogs\{7E3F2A11-93C4-4B5D-8E6F-1A2B3C4D5E6F} /v Flags /t REG_DWORD /d 1 /f
    ```
 
-4. Restart the Office app, then: **Home → Add-ins → Advanced...** → **SHARED FOLDER** tab → select *o365 MCP* → **Add**. The taskpane opens and connects to the bridge over `ws://localhost:8080`; point your MCP client at `http://localhost:3001/mcp`.
+4. Restart the Office app, then: **Home → Add-ins → Advanced...** → **SHARED FOLDER** tab → select *Office Live MCP* → **Add**. The taskpane opens and connects to the bridge over `ws://localhost:8080`; point your MCP client at `http://localhost:3001/mcp`.
 
 Notes:
 

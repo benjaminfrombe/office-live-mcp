@@ -1,11 +1,11 @@
 {
-  "name": "powerpoint-mcp",
+  "name": "office-live-mcp",
   "version": "0.6.0",
   "description": "MCP server that lets AI assistants manipulate live PowerPoint presentations via Office.js",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "powerpoint-mcp": "./dist/index.js"
+    "office-live-mcp": "./dist/index.js"
   },
   "files": [
     "dist/",
