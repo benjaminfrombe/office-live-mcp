@@ -29,6 +29,8 @@ That is 70 tools on one server. Anything the typed tools do not cover, the execu
 
 File-based tools (openpyxl, python-docx, python-pptx) read and write bytes on disk. They cannot refresh a PivotTable, they silently drop charts and macros, and you only see the result after reopening the file. This server works inside the running app instead: formulas are calculated by Excel itself, edits appear on screen while the agent works, and nothing that Excel owns gets lost.
 
+There is a second advantage that matters just as much. Everything here runs locally on your machine, next to your agent, not inside some hosted sandbox. Cloud Office agents lock you into their environment: your files go up, the tools they offer are the tools you get, and combining them with anything else is a fight against the platform. Here the Office tools are just one part of what the agent can reach. In the same session it can read your mail, query a database, drive a browser, call any other MCP server or plain script, and then put the results straight into the live document. The Office control is a capability, not a cage. That combination is where most of the real value showed up while building and testing this.
+
 ## Quick start
 
 ```bash
