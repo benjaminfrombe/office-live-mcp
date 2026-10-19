@@ -53677,6 +53677,16 @@ function registerChartTools(server, pool2, getSessionId, getActiveSessionCount) 
 }
 
 // server/tools/excel.ts
+async function execExcel(pool2, workbookId, args, body) {
+  const target = pool2.resolveTarget(workbookId);
+  const code = `var args = ${JSON.stringify(args)};
+${body}`;
+  return pool2.sendCommand("executeCode", { code }, target.ws);
+}
+var SHEET_LINE = `
+var wbSheets = context.workbook.worksheets;
+var sheet = args.sheetName ? wbSheets.getItem(args.sheetName) : wbSheets.getActiveWorksheet();
+`;
 function registerExcelTools(server, pool2, _getSessionId, _getActiveSessionCount) {
   server.tool(
     "list_workbooks",
@@ -53716,6 +53726,738 @@ function registerExcelTools(server, pool2, _getSessionId, _getActiveSessionCount
         content: [{ type: "text", text: JSON.stringify(result ?? { success: true }, null, 2) }]
       };
     })
+  );
+  server.tool(
+    "inspect_workbook",
+    "Overview of the live workbook: all worksheets (name, position, visibility, used-range address), all Excel tables (name, sheet, range), all named ranges, and all PivotTables (name, sheet). Use this first to orient yourself in an unfamiliar workbook.",
+    {
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async ({ workbookId }) => execExcel(
+        pool2,
+        workbookId,
+        {},
+        `
+var wb = context.workbook;
+var sheets = wb.worksheets.load("name,position,visibility");
+var tables = wb.tables.load("name,worksheet");
+var names = wb.names.load("name,value,scope");
+var pivots = wb.pivotTables.load("name,worksheet");
+await context.sync();
+var usedRanges = [];
+for (var i = 0; i < sheets.items.length; i++) {
+  var u = sheets.items[i].getUsedRangeOrNullObject(true);
+  u.load("address,isNullObject");
+  usedRanges.push(u);
+}
+var tableRanges = [];
+for (var j = 0; j < tables.items.length; j++) {
+  var r = tables.items[j].getRange();
+  r.load("address");
+  tableRanges.push(r);
+}
+await context.sync();
+var sheetData = [];
+for (var i = 0; i < sheets.items.length; i++) {
+  sheetData.push({
+    name: sheets.items[i].name,
+    position: sheets.items[i].position,
+    visibility: sheets.items[i].visibility,
+    usedRange: usedRanges[i].isNullObject ? null : usedRanges[i].address,
+  });
+}
+var tableData = [];
+for (var j = 0; j < tables.items.length; j++) {
+  tableData.push({ name: tables.items[j].name, worksheet: tables.items[j].worksheet.name, range: tableRanges[j].address });
+}
+return {
+  sheets: sheetData,
+  tables: tableData,
+  names: names.items.map(function (n) { return { name: n.name, value: n.value, scope: n.scope }; }),
+  pivotTables: pivots.items.map(function (p) { return { name: p.name, worksheet: p.worksheet.name }; }),
+};
+`
+      )
+    )
+  );
+  server.tool(
+    "read_range",
+    'Read values, formulas and number formats from a range of the live workbook. Returns a 2D array (rows x columns) plus the range address and dimensions. Use "usedRange": true to read the whole used range of the sheet.',
+    {
+      range: external_exports3.string().optional().describe('A1 range address, e.g. "A1:C10" or "MyTable". Omit when usedRange is true.'),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      usedRange: external_exports3.boolean().optional().describe("Read the entire used range of the worksheet instead of a specific address."),
+      includeFormulas: external_exports3.boolean().optional().describe("Include the formulas grid (default true)."),
+      includeNumberFormat: external_exports3.boolean().optional().describe("Include the number-format grid (default false)."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var range = args.usedRange ? sheet.getUsedRange() : sheet.getRange(args.range);
+range.load("address,rowCount,columnCount,values");
+if (args.includeFormulas !== false) range.load("formulas");
+if (args.includeNumberFormat) range.load("numberFormat");
+await context.sync();
+var out = { address: range.address, rowCount: range.rowCount, columnCount: range.columnCount, values: range.values };
+if (args.includeFormulas !== false) out.formulas = range.formulas;
+if (args.includeNumberFormat) out.numberFormat = range.numberFormat;
+return out;
+`
+      )
+    )
+  );
+  server.tool(
+    "write_range",
+    "Write values and/or formulas into a range of the live workbook. Accepts a 2D array (rows x columns) or a single scalar that fills the whole range. Formulas are set separately from values. Also supports setting the number format. Content in the target range is overwritten.",
+    {
+      range: external_exports3.string().describe('A1 range address, e.g. "A1:C10".'),
+      values: external_exports3.union([
+        external_exports3.array(external_exports3.array(external_exports3.union([external_exports3.string(), external_exports3.number(), external_exports3.boolean(), external_exports3.null()]))),
+        external_exports3.string(),
+        external_exports3.number(),
+        external_exports3.boolean(),
+        external_exports3.null()
+      ]).optional().describe("2D array of values, or a single scalar broadcast across the range."),
+      formulas: external_exports3.union([external_exports3.array(external_exports3.array(external_exports3.string())), external_exports3.string()]).optional().describe('2D array of formula strings (e.g. "=SUM(A1:A10)"), or a single formula broadcast across the range.'),
+      numberFormat: external_exports3.union([external_exports3.array(external_exports3.array(external_exports3.string())), external_exports3.string()]).optional().describe('Number format string (e.g. "0.00", "#,##0", "dd/mm/yyyy"), 2D array or single broadcast.'),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(async (p) => {
+      if (p.values === void 0 && p.formulas === void 0 && p.numberFormat === void 0) {
+        throw new Error("Provide at least one of: values, formulas, numberFormat.");
+      }
+      return execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var range = sheet.getRange(args.range);
+if (args.numberFormat !== undefined) range.numberFormat = args.numberFormat;
+if (args.values !== undefined) range.values = args.values;
+if (args.formulas !== undefined) range.formulas = args.formulas;
+range.load("address,rowCount,columnCount");
+await context.sync();
+return { written: range.address, rowCount: range.rowCount, columnCount: range.columnCount };
+`
+      );
+    })
+  );
+  server.tool(
+    "format_range",
+    "Format a range: font (name, size, bold, italic, underline, color), fill color, borders (all/outline with style, weight, color), alignment, wrap, and number format. Only the provided properties are changed.",
+    {
+      range: external_exports3.string().describe('A1 range address, e.g. "A1:C10".'),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      fontName: external_exports3.string().optional().describe('Font family, e.g. "Calibri".'),
+      fontSize: external_exports3.number().positive().optional().describe("Font size in points."),
+      bold: external_exports3.boolean().optional().describe("Bold text."),
+      italic: external_exports3.boolean().optional().describe("Italic text."),
+      underline: external_exports3.enum(["None", "Single", "Double"]).optional().describe("Underline style."),
+      fontColor: external_exports3.string().optional().describe('Font color as #RRGGBB, e.g. "#FF0000".'),
+      fillColor: external_exports3.string().optional().describe('Cell fill color as #RRGGBB, e.g. "#FFFF00".'),
+      horizontalAlignment: external_exports3.enum(["Left", "Center", "Right", "General", "Justify", "Fill", "Distributed"]).optional(),
+      verticalAlignment: external_exports3.enum(["Top", "Center", "Bottom", "Justify", "Distributed"]).optional(),
+      wrapText: external_exports3.boolean().optional().describe("Wrap text within cells."),
+      numberFormat: external_exports3.string().optional().describe('Number format string, e.g. "0.00%".'),
+      borders: external_exports3.enum(["all", "outline", "none"]).optional().describe('Which borders to apply. "none" clears borders.'),
+      borderStyle: external_exports3.enum(["Continuous", "Dash", "DashDot", "DashDotDot", "Dot", "Double", "SlantDashDot"]).optional().describe('Border line style. Default "Continuous".'),
+      borderColor: external_exports3.string().optional().describe('Border color as #RRGGBB. Default "#000000".'),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var range = sheet.getRange(args.range);
+var f = range.format;
+if (args.fontName !== undefined) f.font.name = args.fontName;
+if (args.fontSize !== undefined) f.font.size = args.fontSize;
+if (args.bold !== undefined) f.font.bold = args.bold;
+if (args.italic !== undefined) f.font.italic = args.italic;
+if (args.underline !== undefined) f.font.underline = args.underline;
+if (args.fontColor !== undefined) f.font.color = args.fontColor;
+if (args.fillColor !== undefined) f.fill.color = args.fillColor;
+if (args.horizontalAlignment !== undefined) f.horizontalAlignment = args.horizontalAlignment;
+if (args.verticalAlignment !== undefined) f.verticalAlignment = args.verticalAlignment;
+if (args.wrapText !== undefined) f.wrapText = args.wrapText;
+if (args.numberFormat !== undefined) range.numberFormat = args.numberFormat;
+if (args.borders !== undefined) {
+  var style = args.borderStyle || "Continuous";
+  var color = args.borderColor || "#000000";
+  var edges = args.borders === "all"
+    ? ["EdgeTop", "EdgeBottom", "EdgeLeft", "EdgeRight", "InsideHorizontal", "InsideVertical"]
+    : ["EdgeTop", "EdgeBottom", "EdgeLeft", "EdgeRight"];
+  if (args.borders === "none") style = "None";
+  for (var i = 0; i < edges.length; i++) {
+    var b = f.borders.getItem(edges[i]);
+    b.style = style;
+    if (args.borders !== "none") b.color = color;
+  }
+}
+await context.sync();
+return { formatted: args.range };
+`
+      )
+    )
+  );
+  server.tool(
+    "set_dimensions",
+    "Set column widths and/or row heights for a range, in points. Optionally autofit columns or rows to their content.",
+    {
+      range: external_exports3.string().describe('A1 range address, e.g. "A:A" or "1:10" or "A1:C10".'),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      columnWidth: external_exports3.number().optional().describe("Column width in points."),
+      rowHeight: external_exports3.number().optional().describe("Row height in points."),
+      autofitColumns: external_exports3.boolean().optional().describe("Autofit column widths to content."),
+      autofitRows: external_exports3.boolean().optional().describe("Autofit row heights to content."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var range = sheet.getRange(args.range);
+if (args.columnWidth !== undefined) range.format.columnWidth = args.columnWidth;
+if (args.rowHeight !== undefined) range.format.rowHeight = args.rowHeight;
+if (args.autofitColumns) range.format.autofitColumns();
+if (args.autofitRows) range.format.autofitRows();
+await context.sync();
+return { resized: args.range };
+`
+      )
+    )
+  );
+  server.tool(
+    "add_worksheet",
+    "Add a new worksheet to the workbook, optionally at a specific position, and activate it. Returns the new sheet name and position.",
+    {
+      name: external_exports3.string().optional().describe("Name for the new worksheet. Auto-generated when omitted."),
+      position: external_exports3.number().int().min(0).optional().describe("Zero-based position to insert at. Default: append at end."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+var sheet = args.name !== undefined
+  ? context.workbook.worksheets.add(args.name)
+  : context.workbook.worksheets.add();
+if (args.position !== undefined) sheet.position = args.position;
+sheet.activate();
+sheet.load("name,position");
+await context.sync();
+return { name: sheet.name, position: sheet.position };
+`
+      )
+    )
+  );
+  server.tool(
+    "update_worksheet",
+    "Update an existing worksheet: rename it, move it to a position, change visibility, set the tab color, or activate it. Only provided properties are changed.",
+    {
+      sheetName: external_exports3.string().describe("Current name of the worksheet to update."),
+      newName: external_exports3.string().optional().describe("New name for the worksheet."),
+      position: external_exports3.number().int().min(0).optional().describe("Zero-based position to move the sheet to."),
+      visibility: external_exports3.enum(["Visible", "Hidden", "VeryHidden"]).optional().describe("Sheet visibility."),
+      tabColor: external_exports3.string().optional().describe('Tab color as #RRGGBB. Use "" to clear.'),
+      activate: external_exports3.boolean().optional().describe("Make this the active worksheet."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+var sheet = context.workbook.worksheets.getItem(args.sheetName);
+if (args.newName !== undefined) sheet.name = args.newName;
+if (args.position !== undefined) sheet.position = args.position;
+if (args.visibility !== undefined) sheet.visibility = args.visibility;
+if (args.tabColor !== undefined) sheet.tabColor = args.tabColor === "" ? null : args.tabColor;
+if (args.activate) sheet.activate();
+sheet.load("name,position,visibility");
+await context.sync();
+return { name: sheet.name, position: sheet.position, visibility: sheet.visibility };
+`
+      )
+    )
+  );
+  server.tool(
+    "delete_worksheet",
+    "Delete a worksheet from the workbook. This removes its contents permanently and can break formulas referencing it.",
+    {
+      sheetName: external_exports3.string().describe("Name of the worksheet to delete."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+context.workbook.worksheets.getItem(args.sheetName).delete();
+await context.sync();
+return { deleted: args.sheetName };
+`
+      )
+    )
+  );
+  server.tool(
+    "sort_range",
+    "Sort a range by one or more columns. Fields are given as zero-based column offsets within the range.",
+    {
+      range: external_exports3.string().describe('A1 range address to sort, e.g. "A2:D100" (include or exclude headers as needed).'),
+      fields: external_exports3.array(
+        external_exports3.object({
+          column: external_exports3.number().int().min(0).describe("Zero-based column offset within the range."),
+          ascending: external_exports3.boolean().optional().describe("Sort direction. Default true.")
+        })
+      ).min(1).describe("Sort fields, applied in order."),
+      hasHeaders: external_exports3.boolean().optional().describe("True if the first row is a header row that should not be sorted. Default false."),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var range = sheet.getRange(args.range);
+var fields = args.fields.map(function (f) { return { key: f.column, ascending: f.ascending !== false }; });
+range.sort.apply(fields, args.hasHeaders === true);
+await context.sync();
+return { sorted: args.range, fields: fields.length };
+`
+      )
+    )
+  );
+  server.tool(
+    "find_in_range",
+    "Find text in a range or the whole used range. Returns the address of the first match, or all matches as a (possibly multi-area) address string.",
+    {
+      text: external_exports3.string().describe("Text to find."),
+      range: external_exports3.string().optional().describe("A1 range address to search. Defaults to the used range."),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      completeMatch: external_exports3.boolean().optional().describe("Match the entire cell contents. Default false."),
+      matchCase: external_exports3.boolean().optional().describe("Case-sensitive search. Default false."),
+      all: external_exports3.boolean().optional().describe("Return all matches instead of only the first. Default true."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var range = args.range ? sheet.getRange(args.range) : sheet.getUsedRange();
+var criteria = { completeMatch: args.completeMatch === true, matchCase: args.matchCase === true };
+var found = args.all === false ? range.find(args.text, criteria) : range.findAllOrNullObject(args.text, criteria);
+found.load("address");
+await context.sync();
+if (args.all !== false && found.isNullObject) return { found: false };
+return { found: true, address: found.address };
+`
+      )
+    )
+  );
+  server.tool(
+    "add_table",
+    "Create an Excel table (ListObject) over a range. Returns the table name and range.",
+    {
+      range: external_exports3.string().describe('A1 range address including headers, e.g. "A1:D20".'),
+      name: external_exports3.string().optional().describe("Table name. Auto-generated when omitted."),
+      hasHeaders: external_exports3.boolean().optional().describe("True if the first row contains headers. Default true."),
+      style: external_exports3.string().optional().describe('Built-in table style name, e.g. "TableStyleMedium2".'),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var table = sheet.tables.add(args.range, args.hasHeaders !== false);
+if (args.name !== undefined) table.name = args.name;
+if (args.style !== undefined) table.style = args.style;
+table.load("name,style");
+var tableRange = table.getRange();
+tableRange.load("address");
+await context.sync();
+return { name: table.name, style: table.style, range: tableRange.address };
+`
+      )
+    )
+  );
+  server.tool(
+    "add_chart",
+    "Create a chart from a range. Chart types: ColumnClustered, ColumnStacked, BarClustered, BarStacked, Line, LineMarkers, Pie, Doughnut, Area, XYScatterLines. Returns the chart name and title.",
+    {
+      range: external_exports3.string().describe("A1 range address with the data (and labels) to plot."),
+      chartType: external_exports3.enum([
+        "ColumnClustered",
+        "ColumnStacked",
+        "ColumnStacked100",
+        "BarClustered",
+        "BarStacked",
+        "BarStacked100",
+        "Line",
+        "LineMarkers",
+        "Pie",
+        "PieStacked",
+        "Doughnut",
+        "Area",
+        "AreaStacked",
+        "XYScatterLines"
+      ]).optional().describe("Chart type. Default ColumnClustered."),
+      title: external_exports3.string().optional().describe("Chart title. Empty string removes the title."),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var dataRange = sheet.getRange(args.range);
+var chart = sheet.charts.add(args.chartType || "ColumnClustered", dataRange, "Auto");
+if (args.title !== undefined) chart.title.text = args.title;
+chart.load("name");
+if (args.title !== undefined) chart.title.load("text");
+await context.sync();
+var out = { name: chart.name, chartType: args.chartType || "ColumnClustered" };
+if (args.title !== undefined) out.title = chart.title.text;
+return out;
+`
+      )
+    )
+  );
+  server.tool(
+    "add_conditional_format",
+    "Add a conditional formatting rule to a range. Supports cellValue (compare with a formula and fill on match), colorScale (min/max gradient), dataBar, and iconSet rules.",
+    {
+      range: external_exports3.string().describe("A1 range address."),
+      ruleType: external_exports3.enum(["cellValue", "colorScale", "dataBar", "iconSet"]).describe("Type of rule."),
+      operator: external_exports3.enum([
+        "GreaterThan",
+        "GreaterThanOrEqual",
+        "LessThan",
+        "LessThanOrEqual",
+        "Between",
+        "NotBetween",
+        "EqualTo",
+        "NotEqualTo"
+      ]).optional().describe("cellValue: comparison operator."),
+      formula1: external_exports3.string().optional().describe('cellValue: comparison value/formula, e.g. "0" or "=TODAY()".'),
+      formula2: external_exports3.string().optional().describe("cellValue: second bound for Between/NotBetween."),
+      fillColor: external_exports3.string().optional().describe('cellValue: fill color on match, as #RRGGBB. Default "#FFC7CE".'),
+      minColor: external_exports3.string().optional().describe('colorScale: minimum color. Default "#F8696B".'),
+      maxColor: external_exports3.string().optional().describe('colorScale: maximum color. Default "#63BE7B".'),
+      iconSetStyle: external_exports3.enum(["ThreeTrafficLights1", "ThreeSymbols", "ThreeArrows", "FourArrows", "FiveArrows", "ThreeStars"]).optional().describe("iconSet: icon set style. Default ThreeTrafficLights1."),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(async (p) => {
+      if (p.ruleType === "cellValue" && !p.operator) {
+        throw new Error("cellValue rules require an operator.");
+      }
+      return execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var range = sheet.getRange(args.range);
+var rule;
+if (args.ruleType === "cellValue") {
+  rule = {
+    cellValue: { operator: args.operator, formula1: args.formula1, formula2: args.formula2 },
+    format: { fill: { color: args.fillColor || "#FFC7CE" } },
+  };
+} else if (args.ruleType === "colorScale") {
+  rule = {
+    colorScale: {
+      criteria: {
+        min: { type: "Minimum", color: args.minColor || "#F8696B" },
+        max: { type: "Maximum", color: args.maxColor || "#63BE7B" },
+      },
+    },
+  };
+} else if (args.ruleType === "dataBar") {
+  rule = { dataBar: { showValue: true } };
+} else {
+  rule = { iconSet: { style: args.iconSetStyle || "ThreeTrafficLights1", reverseOrder: false, showValue: true } };
+}
+var cf = range.conditionalFormats.add(args.ruleType, rule);
+cf.load("type,priority");
+await context.sync();
+return { added: cf.type, priority: cf.priority, range: args.range };
+`
+      );
+    })
+  );
+  server.tool(
+    "add_name",
+    'Define a named range (named formula) in the workbook, e.g. name "TaxRate" for "=Sheet1!$B$1".',
+    {
+      name: external_exports3.string().describe('Name to define, e.g. "TaxRate".'),
+      ref: external_exports3.string().describe('Reference formula, e.g. "=Sheet1!$A$1:$D$10".'),
+      comment: external_exports3.string().optional().describe("Optional description."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+var named = context.workbook.names.add(args.name, args.ref, args.comment);
+named.load("name,value");
+await context.sync();
+return { name: named.name, value: named.value };
+`
+      )
+    )
+  );
+  server.tool(
+    "set_data_validation",
+    "Set a data validation rule on a range. Supports list, wholeNumber, decimal, textLength, and date rules.",
+    {
+      range: external_exports3.string().describe("A1 range address."),
+      type: external_exports3.enum(["List", "WholeNumber", "Decimal", "TextLength", "Date"]).describe("Validation type."),
+      list: external_exports3.string().optional().describe('List type: comma-separated values, e.g. "Low,Medium,High".'),
+      operator: external_exports3.enum([
+        "GreaterThan",
+        "GreaterThanOrEqual",
+        "LessThan",
+        "LessThanOrEqual",
+        "Between",
+        "NotBetween",
+        "EqualTo",
+        "NotEqualTo"
+      ]).optional().describe("Numeric/date/textLength: comparison operator."),
+      formula1: external_exports3.string().optional().describe("Numeric/date/textLength: bound value or formula."),
+      formula2: external_exports3.string().optional().describe("Second bound for Between/NotBetween."),
+      allowBlank: external_exports3.boolean().optional().describe("Allow blank cells. Default true."),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(async (p) => {
+      if (p.type !== "List" && !p.operator) {
+        throw new Error(`type "${p.type}" requires an operator.`);
+      }
+      return execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var range = sheet.getRange(args.range);
+var rule;
+if (args.type === "List") {
+  rule = { type: "List", list: args.list, allowBlank: args.allowBlank !== false };
+} else {
+  rule = { type: args.type, operator: args.operator, formula1: args.formula1, formula2: args.formula2, allowBlank: args.allowBlank !== false };
+}
+range.dataValidation.rule = rule;
+await context.sync();
+return { validated: args.range, type: args.type };
+`
+      );
+    })
+  );
+  server.tool(
+    "calculate_workbook",
+    "Force Excel to recalculate the workbook. Use after writes when you need formula results to be current before reading them back.",
+    {
+      type: external_exports3.enum(["Full", "FullRebuild", "Recalculate"]).optional().describe('Recalculation type. Default "Recalculate".'),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+context.workbook.calculate(args.type || "Recalculate");
+await context.sync();
+return { calculated: args.type || "Recalculate" };
+`
+      )
+    )
+  );
+  server.tool(
+    "insert_or_delete_range",
+    "Insert or delete a range, shifting existing cells. For insert, shift is Down or Right; for delete, Up or Left.",
+    {
+      range: external_exports3.string().describe("A1 range address to insert at or delete."),
+      action: external_exports3.enum(["insert", "delete"]).describe("Whether to insert or delete."),
+      shift: external_exports3.enum(["Down", "Right", "Up", "Left"]).optional().describe("Shift direction. Defaults: insert=Down, delete=Up."),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var range = sheet.getRange(args.range);
+if (args.action === "insert") {
+  range.insert(args.shift || "Down");
+} else {
+  range.delete(args.shift || "Up");
+}
+await context.sync();
+return { action: args.action, range: args.range, shift: args.shift || (args.action === "insert" ? "Down" : "Up") };
+`
+      )
+    )
+  );
+  server.tool(
+    "set_merge",
+    "Merge or unmerge cells in a range.",
+    {
+      range: external_exports3.string().describe("A1 range address."),
+      action: external_exports3.enum(["merge", "unmerge"]).describe("Whether to merge or unmerge."),
+      across: external_exports3.boolean().optional().describe("merge: merge each row separately instead of one area. Default false."),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var range = sheet.getRange(args.range);
+if (args.action === "merge") {
+  range.merge(args.across === true);
+} else {
+  range.unmerge();
+}
+await context.sync();
+return { action: args.action, range: args.range };
+`
+      )
+    )
+  );
+  server.tool(
+    "autofit_range",
+    "Autofit column widths and/or row heights of a range to their content.",
+    {
+      range: external_exports3.string().describe('A1 range address, e.g. "A:F".'),
+      columns: external_exports3.boolean().optional().describe("Autofit column widths. Default true."),
+      rows: external_exports3.boolean().optional().describe("Autofit row heights. Default true."),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var range = sheet.getRange(args.range);
+if (args.columns !== false) range.format.autofitColumns();
+if (args.rows !== false) range.format.autofitRows();
+await context.sync();
+return { autofit: args.range, columns: args.columns !== false, rows: args.rows !== false };
+`
+      )
+    )
+  );
+  server.tool(
+    "add_comment",
+    "Add a threaded comment to a cell.",
+    {
+      cellAddress: external_exports3.string().describe('Cell reference including sheet, e.g. "Sheet1!A1".'),
+      text: external_exports3.string().describe("Comment text."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+context.workbook.comments.add(args.cellAddress, args.text);
+await context.sync();
+return { commented: args.cellAddress };
+`
+      )
+    )
+  );
+  server.tool(
+    "refresh_pivottables",
+    "Refresh all PivotTables in the workbook. Use after data changes when pivot summaries must be current.",
+    {
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+context.workbook.pivotTables.refreshAll();
+await context.sync();
+return { refreshed: true };
+`
+      )
+    )
+  );
+  server.tool(
+    "set_worksheet_protection",
+    "Protect or unprotect a worksheet. Protection restricts user edits; cells formatted as locked are affected.",
+    {
+      sheetName: external_exports3.string().describe("Worksheet name."),
+      protect: external_exports3.boolean().describe("True to protect, false to unprotect."),
+      password: external_exports3.string().optional().describe("Optional password for the protection."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+var sheet = context.workbook.worksheets.getItem(args.sheetName);
+if (args.protect) {
+  sheet.protection.protect(args.password);
+} else {
+  sheet.protection.unprotect(args.password);
+}
+await context.sync();
+return { sheet: args.sheetName, protected: args.protect };
+`
+      )
+    )
   );
 }
 

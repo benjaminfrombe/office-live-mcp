@@ -100,13 +100,22 @@ describe('MCP Tools', () => {
     pool = new ConnectionPool(100)
   })
 
-  it('lists all 29 tools', async () => {
+  it('lists all 53 tools', async () => {
     const { client } = await setupMcpClient(pool)
     const result = await client.listTools()
     const names = result.tools.map((t) => t.name).sort()
     expect(names).toEqual([
+      'add_chart',
+      'add_comment',
+      'add_conditional_format',
+      'add_name',
       'add_slide',
+      'add_table',
+      'add_worksheet',
+      'autofit_range',
+      'calculate_workbook',
       'copy_slides',
+      'delete_worksheet',
       'duplicate_slide',
       'edit_shape_paragraphs',
       'edit_slide_chart',
@@ -116,26 +125,39 @@ describe('MCP Tools', () => {
       'execute_exceljs',
       'execute_officejs',
       'execute_wordjs',
+      'find_in_range',
+      'format_range',
       'format_shapes',
       'get_local_copy',
       'insert_image',
+      'insert_or_delete_range',
       'inspect_deck',
       'inspect_layouts',
       'inspect_slide',
+      'inspect_workbook',
       'list_documents',
       'list_presentations',
       'list_workbooks',
       'preview_deck',
       'read_deck_text',
+      'read_range',
       'read_shape_paragraphs',
       'read_slide_xml',
       'read_slide_zip',
       'read_speaker_notes',
+      'refresh_pivottables',
       'scan_slide',
       'screenshot_slide',
       'search_fluent_icons',
       'search_text',
+      'set_data_validation',
+      'set_dimensions',
+      'set_merge',
+      'set_worksheet_protection',
+      'sort_range',
+      'update_worksheet',
       'verify_slides',
+      'write_range',
     ])
   })
 
