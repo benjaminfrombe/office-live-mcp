@@ -501,11 +501,25 @@ return { sorted: args.range, fields: fields.length };
 ${SHEET_LINE}
 var range = args.range ? sheet.getRange(args.range) : sheet.getUsedRange();
 var criteria = { completeMatch: args.completeMatch === true, matchCase: args.matchCase === true };
-var found = args.all === false ? range.find(args.text, criteria) : range.findAllOrNullObject(args.text, criteria);
-found.load("address");
-await context.sync();
-if (args.all !== false && found.isNullObject) return { found: false };
-return { found: true, address: found.address };
+var matches = [];
+try {
+  var current = range.find(args.text, criteria);
+  while (matches.length < 500) {
+    current.load("address");
+    await context.sync();
+    if (matches.indexOf(current.address) !== -1) break;
+    matches.push(current.address);
+    current = range.findNext(current, criteria);
+  }
+} catch (_e) {
+  // find throws when there is no match at all
+}
+if (args.all === false) {
+  return matches.length === 0 ? { found: false } : { found: true, address: matches[0] };
+}
+return matches.length === 0
+  ? { found: false }
+  : { found: true, address: matches.join(","), count: matches.length };
 `,
       ),
     ),
@@ -740,11 +754,15 @@ ${SHEET_LINE}
 var range = sheet.getRange(args.range);
 var rule;
 if (args.type === "List") {
-  rule = { type: "List", list: args.list, allowBlank: args.allowBlank !== false };
+  rule = { list: { inCellDropDown: true, source: args.list } };
 } else {
-  rule = { type: args.type, operator: args.operator, formula1: args.formula1, formula2: args.formula2, allowBlank: args.allowBlank !== false };
+  var key = args.type === "WholeNumber" ? "wholeNumber" : args.type === "Decimal" ? "decimal" : args.type === "Date" ? "date" : "textLength";
+  var inner = {};
+  inner[key] = { operator: args.operator, formula1: args.formula1, formula2: args.formula2 };
+  rule = inner;
 }
 range.dataValidation.rule = rule;
+range.dataValidation.ignoreBlanks = args.allowBlank !== false;
 await context.sync();
 return { validated: args.range, type: args.type };
 `,
@@ -771,7 +789,7 @@ return { validated: args.range, type: args.type };
         p.workbookId,
         p,
         `
-context.workbook.calculate(args.type || "Recalculate");
+context.workbook.application.calculate(args.type || "Recalculate");
 await context.sync();
 return { calculated: args.type || "Recalculate" };
 `,

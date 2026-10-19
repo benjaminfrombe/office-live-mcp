@@ -24,7 +24,12 @@ async function waitForSend(ws: WebSocket, index: number) {
 
 async function setupMcpClient(pool: ConnectionPool) {
   const server = new McpServer({ name: 'test', version: '0.0.1' })
-  registerTools(server, pool, () => 'test-session', () => 1)
+  registerTools(
+    server,
+    pool,
+    () => 'test-session',
+    () => 1,
+  )
 
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   await server.connect(serverTransport)
@@ -53,7 +58,11 @@ describe('Excel tools', () => {
   })
 
   /** Call a tool, capture the generated Office.js code, and answer it with `responseData`. */
-  async function callTool(name: string, args: Record<string, unknown>, responseData?: unknown): Promise<{
+  async function callTool(
+    name: string,
+    args: Record<string, unknown>,
+    responseData?: unknown,
+  ): Promise<{
     code: string
     result: CallResult
   }> {
@@ -151,7 +160,18 @@ describe('Excel tools', () => {
     it('writes values and formulas and returns the written address', async () => {
       const { code, result } = await callTool(
         'write_range',
-        { range: 'A1:B2', values: [[1, 2], [3, 4]], formulas: [['=A1', '=B1'], ['=A2', '=B2']], workbookId: 'book.xlsx' },
+        {
+          range: 'A1:B2',
+          values: [
+            [1, 2],
+            [3, 4],
+          ],
+          formulas: [
+            ['=A1', '=B1'],
+            ['=A2', '=B2'],
+          ],
+          workbookId: 'book.xlsx',
+        },
         { written: 'Sheet1!A1:B2', rowCount: 2, columnCount: 2 },
       )
       expect(code).toContain('range.values = args.values')
@@ -250,15 +270,16 @@ describe('Excel tools', () => {
   })
 
   describe('find_in_range', () => {
-    it('searches the used range by default with findAll', async () => {
+    it('searches the used range by default and collects all matches', async () => {
       const { code } = await callTool('find_in_range', { text: 'needle' }, { found: true, address: 'Sheet1!B4' })
       expect(code).toContain('sheet.getUsedRange()')
-      expect(code).toContain('findAllOrNullObject')
+      expect(code).toContain('range.find(args.text, criteria)')
+      expect(code).toContain('range.findNext(current, criteria)')
     })
 
-    it('uses find when all=false', async () => {
+    it('returns only the first match when all=false', async () => {
       const { code } = await callTool('find_in_range', { text: 'needle', all: false }, { found: true, address: 'B4' })
-      expect(code).toContain('range.find(args.text, criteria)')
+      expect(code).toContain('args.all === false')
     })
   })
 
@@ -332,7 +353,17 @@ describe('Excel tools', () => {
         { range: 'E4:E7', type: 'List', list: 'Low,Medium,High' },
         { validated: 'E4:E7', type: 'List' },
       )
-      expect(code).toContain('{ type: "List", list: args.list')
+      expect(code).toContain('list: { inCellDropDown: true, source: args.list }')
+    })
+
+    it('builds a wholeNumber rule', async () => {
+      const { code } = await callTool(
+        'set_data_validation',
+        { range: 'E4:E7', type: 'WholeNumber', operator: 'GreaterThan', formula1: '0' },
+        { validated: 'E4:E7', type: 'WholeNumber' },
+      )
+      expect(code).toContain('inner[key] = { operator: args.operator')
+      expect(code).toContain('ignoreBlanks')
     })
 
     it('rejects numeric rules without operator', async () => {
@@ -345,7 +376,7 @@ describe('Excel tools', () => {
   describe('calculate_workbook', () => {
     it('forces a recalculation', async () => {
       const { code } = await callTool('calculate_workbook', { type: 'Full' }, { calculated: 'Full' })
-      expect(code).toContain('workbook.calculate(args.type || "Recalculate")')
+      expect(code).toContain('workbook.application.calculate(args.type || "Recalculate")')
     })
   })
 
