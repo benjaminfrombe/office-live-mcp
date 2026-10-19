@@ -2,256 +2,75 @@
 
 <img src="icon.png" width="96" alt="o365 MCP logo"/>
 
-# o365 MCP (PowerPoint MCP fork, `o365` branch)
+# o365 MCP
+
+One MCP server that drives **live, open** Word, Excel and PowerPoint documents on macOS through Office.js.
 
 </div>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D24.0.0-brightgreen)](https://nodejs.org)
 
-An MCP server that lets AI assistants manipulate **live, open** PowerPoint presentations on macOS and PowerPoint Web via Office.js APIs.
+This started as a fork of [kzarzycki/powerpoint-mcp](https://github.com/kzarzycki/powerpoint-mcp) and grew into something bigger. The original idea is brilliant: instead of parsing files on disk, an Office.js add-in inside the running Office app talks to a local bridge server over WebSocket. Your AI assistant edits the document you have open right now, and you watch it happen.
 
-Unlike file-based tools (python-pptx), PowerPoint MCP works with presentations that are already open — changes appear instantly, and you keep full access to PowerPoint's UI, animations, and formatting.
+I asked the original author whether he planned to extend this to Word and Excel ([issue #173](https://github.com/kzarzycki/powerpoint-mcp/issues/173)). While waiting for an answer I built it myself, on this branch. Same architecture, two more apps.
 
-## Installation
+## What it does
 
-### Codex Plugin
+One bridge server, one add-in taskpane, three Office apps. The add-in detects which host it runs in (PowerPoint, Word or Excel) and every tool call executes inside the live document.
 
-This repository includes Codex plugin metadata in `.codex-plugin/` and Codex repo instructions in `AGENTS.md`.
+- **PowerPoint**: 27 tools from the upstream project. Inspect decks, edit shapes and text, raw OOXML access, charts, screenshots, speaker notes, and an `execute_officejs` escape hatch.
+- **Excel**: 24 new tools. Read and write ranges with values, formulas and number formats, inspect workbooks, format cells, manage worksheets, sort and find, tables, charts, conditional formatting, named ranges, data validation, comments, pivot refresh, sheet protection, plus `execute_exceljs`.
+- **Word**: 19 new tools. Read and edit paragraphs, styles and formatting, search and replace, tables, comments, page breaks, tracked changes (read), selection, save, plus `execute_wordjs`.
 
-For local development:
+That is 70 tools on one server. Anything the typed tools do not cover, the execute escape hatch handles with raw Office.js in the right host.
+
+## Why live matters
+
+File-based tools (openpyxl, python-docx, python-pptx) read and write bytes on disk. They cannot refresh a PivotTable, they silently drop charts and macros, and you only see the result after reopening the file. This server works inside the running app instead: formulas are calculated by Excel itself, edits appear on screen while the agent works, and nothing that Excel owns gets lost.
+
+## Quick start
 
 ```bash
-git clone https://github.com/kzarzycki/powerpoint-mcp.git
+git clone -b o365 https://github.com/benjaminfrombe/powerpoint-mcp.git
 cd powerpoint-mcp
 npm install
 npm run build
+
+# install the add-in into the Office apps (needs Full Disk Access for the terminal)
+node --experimental-strip-types scripts/sideload.ts                # PowerPoint
+node --experimental-strip-types scripts/sideload.ts --app word     # Word
+node --experimental-strip-types scripts/sideload.ts --app excel    # Excel
+
+# start the bridge
+node dist/index.cjs --http --bridge
 ```
 
-The Codex plugin MCP config in `.mcp.json` uses the shared HTTP MCP endpoint:
+Then open a document in any of the three apps, click the add-in button in the Home ribbon, and connect your MCP client to `http://127.0.0.1:3001/mcp`.
 
-```json
-{
-  "mcpServers": {
-    "powerpoint-mcp": {
-      "type": "http",
-      "url": "http://localhost:3001/mcp"
-    }
-  }
-}
-```
+## How it is tested
 
-The Codex plugin ships a `SessionStart` hook in `hooks/hooks.json`. On session start it runs `scripts/start-http-bridge.sh`, which starts the built bridge with `node ./dist/index.cjs --http --bridge` if the HTTP MCP server or add-in bridge is not already healthy.
+Two layers, because they catch different bugs.
 
-Then restart PowerPoint, open a presentation, and click the bridge add-in in the ribbon. For manual local development, start the TypeScript source directly with `node --experimental-strip-types ./server/index.ts --http --bridge`.
+The mock suite (375 tests) verifies tool registration, argument handling and the generated Office.js code. It is fast and runs on every change.
 
-### Claude Code Plugin (recommended)
+The live suite runs every tool against a real open document. This is where the mock tests turned out to be insufficient: live testing caught three real API bugs the mocks could never find. `Range.findAllOrNullObject` does not exist on this host, `DataValidationRule` takes a type-keyed object rather than a `{ type, ... }` envelope, and calculation lives on `workbook.application`, not `workbook`. All fixed and now covered by both layers.
 
-Zero-config install from the marketplace. MCP auto-starts, add-in auto-sideloads, skill included.
+## Credits
 
-```
-/plugin marketplace add kzarzycki/powerpoint-mcp
-/plugin install powerpoint-mcp@powerpoint-mcp
-```
+This project stands on the work of others.
 
-Then restart PowerPoint, open a presentation, and click the bridge add-in in the ribbon.
+- [kzarzycki/powerpoint-mcp](https://github.com/kzarzycki/powerpoint-mcp) (MIT): the bridge architecture, the PowerPoint tool modules and the add-in are his. This fork exists because of it.
+- [mindstone/mcp-servers](https://github.com/mindstone/mcp-servers) (FSL-1.1-MIT): studied as a reference for Word and Excel add-in design. No code from it is included, its license does not allow that, so the Word and Excel tools here are an independent implementation.
+- The live Word MCP projects ([kennypeh85/word-mcp](https://github.com/kennypeh85/word-mcp), [HelloWorld-Open/word-mcp-server](https://github.com/HelloWorld-Open/word-mcp-server), [Han-ops-dev/word-mcp-server](https://github.com/Han-ops-dev/word-mcp-server), all MIT) and [sbroenne/mcp-server-excel](https://github.com/sbroenne/mcp-server-excel) (MIT) shaped which tools were worth building. Design references only, no code.
+- The icon uses the [Tabler Icons](https://github.com/tabler/tabler-icons) bridge glyph as a starting point for the ring mark (MIT).
 
-### Claude Desktop Extension
+Full attribution in [NOTICE](NOTICE).
 
-Build and install as a one-click `.mcpb` extension (from source):
+## Status
 
-```bash
-git clone https://github.com/kzarzycki/powerpoint-mcp.git
-cd powerpoint-mcp
-npm install && npm run build:mcpb
-open powerpoint-mcp-*.mcpb   # opens Claude Desktop installer
-```
-
-The extension auto-starts the bridge and auto-sideloads the add-in. Restart PowerPoint after first install.
-
-**Known limitations:**
-- **Chat mode only** — Cowork and Code tabs don't load desktop extensions ([upstream bug](https://github.com/anthropics/claude-code/issues/20377))
-- **Single instance** — only one bridge can run on port 8080
-
-### From source (development)
-
-```bash
-git clone https://github.com/kzarzycki/powerpoint-mcp.git
-cd powerpoint-mcp
-npm install
-npm run sideload              # copies manifest to PowerPoint's add-in folder
-npm start -- --http --bridge  # starts the MCP HTTP transport (:3001/mcp) + add-in bridge (:8080)
-```
-
-Then point your MCP client at the HTTP transport. Create or merge into the project's `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "powerpoint-mcp": {
-      "type": "http",
-      "url": "http://localhost:3001/mcp"
-    }
-  }
-}
-```
-
-Restart PowerPoint, open a presentation, and click the bridge add-in in the ribbon. For STDIO mode and other standalone options, see [`skills/powerpoint-mcp/references/setup.md`](skills/powerpoint-mcp/references/setup.md).
-
-## Motivation
-
-This project was inspired by the [Claude in PowerPoint](https://support.anthropic.com/en/articles/11360939-using-claude-in-powerpoint) add-in. The first time I tried it, I was amazed — it edits live, open decks via Office.js, and the results are far better than file-based pptx tools. But it only works inside the add-in, which means no access to CLAUDE.md, skills, or any other Claude Code features. PowerPoint MCP brings those same Office.js capabilities to Claude Code (and any MCP client) so you get live editing with the full power of your coding environment.
-
-> The project was originally named **powerpoint-bridge** and renamed to **powerpoint-mcp** in v0.5.0. The "bridge server" component keeps its name — it bridges MCP and the Office.js add-in over WebSocket.
-
-## Architecture
-
-```
-AI Assistant  <--MCP STDIO/HTTP-->  Bridge Server (Node.js)  <--WS/WSS-->  PowerPoint Add-in (Office.js)
-                                           |                                       |
-                                     STDIO (default)                      Desktop: WKWebView sandbox
-                                     or HTTP (:3001/mcp)                  Web: browser iframe
-                                     localhost:8080 (HTTP)                Office.js API 1.1-1.8
-                                     or :8443 (HTTPS)                    executes commands on
-                                     serves add-in files + WS             live presentation
-```
-
-Two MCP transports are supported:
-- **STDIO** (default) — used by plugin installs and `--stdio` flag; the MCP client spawns the server process directly
-- **HTTP** — `127.0.0.1:3001/mcp`; enabled by the `--http` flag (e.g. `node server/index.ts --http --bridge` for development with `.mcp.json`)
-
-Three components in one repo:
-
-- **`addin/`** — Office.js taskpane add-in that loads inside PowerPoint and connects as a WebSocket client
-- **`server/`** — Node.js bridge server: HTTP + WS + MCP transport (HTTPS/WSS opt-in via `BRIDGE_TLS=1`)
-- **`skills/powerpoint-mcp/`** — Claude Code skill with tool docs, code patterns, and setup guide (auto-installed with plugin)
-- **`certs/`** — Optional local TLS certificates for HTTPS mode (generated, gitignored)
-
-## Prerequisites
-
-- **macOS** (primary platform) or **PowerPoint Web** in Chrome/Brave (requires HTTPS mode)
-- **Node.js >= 24** (uses native TypeScript execution)
-- **Microsoft PowerPoint for Mac** or a **Microsoft 365** account for PowerPoint Web
-
-```bash
-brew install node
-```
-
-## Available Tools
-
-| Tool | Description |
-|------|-------------|
-| `list_presentations` | Lists all connected presentations with their IDs and status |
-| `inspect_deck` | Deck overview: slide dimensions, theme (colors + fonts), and all slides with layout and shape count |
-| `inspect_layouts` | Slide layouts with names, types, placeholders, and positions. Supports field selection |
-| `inspect_slide` | Returns detailed shape info for a slide (text, positions, sizes, fills) |
-| `scan_slide` | Lightweight shape scanner: IDs, types, and positions |
-| `screenshot_slide` | Captures a visual screenshot of a slide as PNG (requires PowerPoint 16.96+) |
-| `preview_deck` | Returns thumbnails + text for all/selected slides in one call (efficient full-deck review) |
-| `copy_slides` | Copies slides between two open presentations (data stays server-side, never in Claude context) |
-| `insert_image` | Inserts an image from a file path, URL, or base64 data onto a slide |
-| `get_local_copy` | Returns a local file path for the presentation (passthrough for local, exports cloud files to temp .pptx) |
-| `search_fluent_icons` | Search Microsoft Fluent UI icons by keyword and insert as SVG |
-| `execute_officejs` | Runs arbitrary Office.js code inside the live presentation |
-| `add_slide` | Add a new slide from a named layout at a specific position, with placeholder text pre-filled |
-| `duplicate_slide` | Duplicate a slide within the same presentation; data stays server-side |
-| `read_deck_text` | Lightweight text extractor: slide titles and body text as plain strings (~20x smaller than inspect_slide) |
-| `read_shape_paragraphs` | Read raw OOXML `<a:p>` paragraphs from a shape's text body, preserving all formatting |
-| `edit_shape_paragraphs` | Replace paragraph content of a shape with raw OOXML `<a:p>` XML |
-| `read_slide_xml` | Read the full raw OOXML of a slide, or filter to a specific shape |
-| `edit_slide_xml` | Edit slide XML and reimport (xml mode or JS code mode for DOM manipulation) |
-| `read_slide_zip` | Read multiple files from the exported slide zip (slide XML, rels, chart XMLs, Content_Types) |
-| `edit_slide_zip` | Update multiple files in the slide zip and reimport in a single operation |
-| `edit_slide_chart` | Create a chart on a slide from structured data (column, bar, line, pie, doughnut, area) via OOXML |
-| `read_speaker_notes` | Read speaker notes from slides as plain text |
-| `edit_speaker_notes` | Set speaker notes on one or more slides; accepts markdown text |
-| `format_shapes` | Apply fill color and font formatting to multiple shapes on a slide in one call |
-| `search_text` | Search for text across all slides — like grep for slides; supports regex |
-| `verify_slides` | Run programmatic checks on a slide (overlaps, out-of-bounds, empty text, unused placeholders) |
-
-When multiple presentations are open, pass `presentationId` (from `list_presentations`) to target a specific one.
-
-## Limitations
-
-- **Limited image control** — Images inserted via Common API (`insert_image` tool), not shape API; positioning works but no shape-level manipulation after insertion
-- **Charts via OOXML** — Charts created by injecting OOXML (`edit_slide_chart`), not via Office.js chart API
-- **No animations** — Not exposed in stable APIs
-- **Solid fills only** — No gradients, effects, or shadows
-- **Points for positioning** — All position/size values are in points (1 point = 1/72 inch)
-
-## Security
-
-PowerPoint MCP assumes a single-user, locally-trusted machine. Both network servers bind to the loopback interface only:
-
-- The bridge server (HTTP + WebSocket) binds to `127.0.0.1:8080` (or `127.0.0.1:8443` with `BRIDGE_TLS=1`)
-- The MCP HTTP transport binds to `127.0.0.1:3001`; the default STDIO transport opens no network port
-- The MCP HTTP transport enables DNS-rebinding protection (rejects requests whose `Host` header is not `127.0.0.1:3001` / `localhost:3001`)
-- The MCP HTTP transport bounds `/mcp` request bodies to 16 MiB (16,777,216 bytes), enforced while the body streams in rather than after it is fully buffered. The ceiling covers the largest supported request — a base64-encoded image via `insert_image` — with headroom: base64 inflates raw bytes by ~4/3, so 16 MiB admits a ~12 MB source image plus the surrounding JSON-RPC envelope. An oversized or over-length chunked upload gets a `413` response (`Request body too large`) instead of being buffered into memory; the connection remains usable for the next request.
-- On startup the server makes one outbound `GET https://registry.npmjs.org/powerpoint-mcp/latest` to check for a newer version. Nothing is sent beyond the request itself; no presentation data, telemetry, or identifiers. Disable it with `BRIDGE_NO_UPDATE_CHECK=1` or the `--no-update-check` flag.
-
-**Local file and URL access.** The `insert_image` tool reads arbitrary local file paths (`sourceType: 'file'`) and fetches arbitrary URLs (`sourceType: 'url'`) with the full privileges of the server process. A URL fetch can reach internal/loopback addresses (SSRF), and a file read can pull in any file the user can read. Only run the bridge on a trusted, single-user machine.
-
-**Local-trust posture.** The add-in executes whatever JavaScript the bridge sends it over the local WebSocket. The bridge WebSocket enforces an Origin allowlist: it only accepts the upgrade when the request's `Origin` header exactly matches the bridge's own currently-serving origin (`http://localhost:PORT`, or `https://localhost:PORT` with `BRIDGE_TLS=1`) — the origin the add-in's own served page always connects from, on both PowerPoint for Mac and PowerPoint Web (the WAC host frame at `officeapps.live.com` never opens this socket itself; the taskpane iframe it hosts navigates directly to the bridge origin first). A missing, malformed, or foreign Origin is rejected before the socket can register or answer any pending request — a real browser/webview always sends `Origin` on a WebSocket handshake, so no legitimate client is excluded. **This is an origin policy, not authentication**: it stops a foreign page's script from driving the bridge, but any local process that can reach the loopback port and mimic that Origin header still can. Do not run PowerPoint MCP on a shared or multi-user host.
-
-**`execute_officejs` runs arbitrary code** inside PowerPoint's Office.js runtime. This is by design — it gives the AI full access to the Office.js API. Only use this with MCP clients you trust.
-
-**Planned hardening.** Before binding to any non-loopback interface or shipping a remote-MCP deployment, the bridge needs a per-session handshake token and an authenticated transport.
-
-## Troubleshooting
-
-**Add-in not appearing in PowerPoint**
-1. Run `npm run sideload` and restart PowerPoint
-2. Check that the file exists: `~/Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef/manifest.xml`
-
-**Add-in shows "Disconnected"**
-Make sure the bridge server is running. In plugin mode the server auto-starts with Claude Code — call any tool to verify. For standalone installs, run `npm start -- --bridge` and verify with `curl http://127.0.0.1:8080/health`. The add-in auto-reconnects with exponential backoff.
-
-**Using HTTPS mode (required for PowerPoint Web)**
-HTTPS is required for PowerPoint Web and optional for desktop. To enable:
-1. `brew install mkcert && mkcert -install` (one-time, trusts the CA in browsers)
-2. `npm run setup-certs` to generate localhost certificates
-3. For **desktop**: `npm run sideload:https` and restart PowerPoint
-4. For **PowerPoint Web**: open a presentation at office.com, go to Home → Add-ins → Upload My Add-in, and upload `addin/manifest-https.xml`
-5. Start the server: `BRIDGE_TLS=1 npm start -- --bridge`
-
-## Platform Support
-
-| Platform | Status |
-|----------|--------|
-| macOS | Supported (primary) |
-| PowerPoint Web | Supported — requires HTTPS mode, sideload via browser (all tools work) |
-| Windows | Untested — different sideloading path |
-| Linux | Not supported (no PowerPoint for Linux) |
-
-## Auto-Activation
-
-The add-in uses `Office.AutoShowTaskpaneWithDocument` to minimize manual activation:
-
-| Platform | Behavior |
-|----------|----------|
-| **macOS desktop** | Taskpane auto-opens when the add-in is sideloaded. Closing the pane keeps the WebSocket connection alive (shared runtime with `lifetime="long"`). |
-| **PowerPoint Web** | One ribbon click per document per browser session to activate. After activation, the pane auto-reopens on page reload. Closing the pane keeps the connection alive within the session. |
-| **New file from template** | OOXML template embedding can pre-activate the add-in (see below) |
-
-Requires SharedRuntime 1.1 (PowerPoint 16.46+ on Mac, 2102+ on Windows). Centralized Deployment via Microsoft 365 admin center can eliminate the manual click for organizational use.
-
-### Preparing Templates for Auto-Open
-
-External tools can embed the add-in reference directly into `.pptx` templates so the add-in activates on first open without prior installation. This requires injecting two OOXML parts into the `.pptx` zip:
-
-1. **`ppt/webextensions/webextension1.xml`** — add-in reference with `Office.AutoShowTaskpaneWithDocument` property
-2. **`ppt/webextensions/taskpane.xml`** — taskpane configuration (dock state, visibility, width)
-
-Plus the corresponding entries in `[Content_Types].xml` and relationship files.
-
-Set `visibility="0"` if the add-in must already be sideloaded; set `visibility="1"` to prompt users to install it on first open.
-
-For a complete working example, see [Office-OOXML-EmbedAddin](https://github.com/OfficeDev/Office-OOXML-EmbedAddin). The add-in ID to reference is `AE89909C-2813-4B08-9E1B-49E7379BD0E6` with `storeType="Registry"` and `store="developer"` for sideloaded installations.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+Working on macOS with desktop Word, Excel and PowerPoint. PowerPoint Web works for the upstream tool set. The Word and Excel tool surfaces are young: they cover what I actually needed, and the escape hatch covers the rest. Expect rough edges and please open issues on the fork.
 
 ## License
 
-[MIT](LICENSE)
+MIT, like the upstream project. See [LICENSE](LICENSE).
