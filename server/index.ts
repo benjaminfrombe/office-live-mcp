@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createServer as createHttpServer } from 'node:http'
 import { createServer as createHttpsServer } from 'node:https'
-import { homedir } from 'node:os'
+import { homedir, networkInterfaces as osNetworkInterfaces } from 'node:os'
 import { dirname, extname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
@@ -12,9 +12,9 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import type { WebSocket } from 'ws'
 import { WebSocketServer } from 'ws'
-
 import { ConnectionPool } from './bridge.ts'
 import { substituteManifestPort } from './manifest.ts'
+import { handleSharePointCatalog, setManifestDir } from './sharepoint-catalog.ts'
 import { clearSessionWarnings, registerTools } from './tools.ts'
 import { runVersionCheck } from './version-check.ts'
 
@@ -28,9 +28,10 @@ const MCP_HTTP_PORT = Number(process.env.MCP_PORT) || 3001
 const MAX_HTTP_BODY_BYTES = 16 * 1024 * 1024 // 16 MiB — see README "HTTP body limit" for the sizing rationale
 const SCRIPT_DIR = typeof __dirname !== 'undefined' ? __dirname : dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = resolve(SCRIPT_DIR, '..')
-const BRIDGE_CERT_PATH = resolve(PROJECT_ROOT, 'certs', 'localhost.pem')
-const BRIDGE_KEY_PATH = resolve(PROJECT_ROOT, 'certs', 'localhost-key.pem')
+const BRIDGE_CERT_PATH = process.env.BRIDGE_CERT_PATH || resolve(PROJECT_ROOT, 'certs', 'localhost.pem')
+const BRIDGE_KEY_PATH = process.env.BRIDGE_KEY_PATH || resolve(PROJECT_ROOT, 'certs', 'localhost-key.pem')
 const ADDIN_STATIC_DIR = resolve(PROJECT_ROOT, 'addin')
+setManifestDir(ADDIN_STATIC_DIR)
 
 // Single source of truth for the running version (package.json), reused by the
 // MCP server handshake and the update check.
@@ -174,7 +175,7 @@ const mcpHttpTransports = new Map<string, StreamableHTTPServerTransport>()
 
 function createMcpServer(getSessionId: () => string | undefined, getActiveSessionCount: () => number): McpServer {
   const mcpServer = new McpServer({
-    name: 'powerpoint-mcp',
+    name: 'o365-mcp',
     version: PKG_VERSION,
   })
   registerTools(mcpServer, pool, getSessionId, getActiveSessionCount)
@@ -348,6 +349,14 @@ async function handleMcpDelete(req: IncomingMessage, res: ServerResponse): Promi
 function serveStatic(req: IncomingMessage, res: ServerResponse): void {
   const rawUrl = (req.url ?? '/').split('?')[0]
 
+  // SharePoint app-catalog emulation: recent Office builds query trusted URL
+  // catalogs via the SharePoint REST API instead of fetching a plain
+  // manifest. Handled before static serving so `_api` paths never fall
+  // through to the addin directory.
+  if (handleSharePointCatalog(req, res, rawUrl)) {
+    return
+  }
+
   // /health is polled by the e2e harness via Node fetch (CORS does not apply there).
   // It must NOT carry Access-Control-Allow-Origin / Access-Control-Allow-Private-Network,
   // so a page on a public origin cannot read its body (which leaks the live connection count).
@@ -429,19 +438,32 @@ if (bridgeActive) {
   // from it directly, and PowerPoint Web's taskpane iframe also navigates to
   // it (the WAC host frame at officeapps.live.com never runs this script, it
   // only fetches static assets cross-origin, which is a separate CORS path
-  // above). So the one legitimate Origin is this bridge's own origin at
-  // whatever scheme/port it is actually serving. A missing or malformed
-  // Origin means the client isn't a browser/webview add-in host at all — a
-  // real one always sends Origin per RFC 6455 §4.1 — so both are rejected
-  // the same way as a foreign origin, before the socket can ever send
-  // `ready` and register in the pool. This is an origin policy, not
-  // authentication (see README "Security" — MCP auth remains deferred).
-  const allowedBridgeOrigin = `${bridgeTls ? 'https' : 'http'}://localhost:${BRIDGE_PORT}`
+  // So the one legitimate Origin is this bridge's own origin at whatever
+  // scheme/port it is actually serving. When the bridge binds to all
+  // interfaces (BRIDGE_HOST=0.0.0.0, e.g. for an Office VM on the local
+  // network), the taskpane can also be served via any of this host's own
+  // IPv4 addresses, so those origins are allowed too. A missing or
+  // malformed Origin means the client isn't a browser/webview add-in host
+  // at all — a real one always sends Origin per RFC 6455 §4.1 — so both
+  // are rejected the same way as a foreign origin, before the socket can
+  // ever send `ready` and register in the pool. This is an origin policy,
+  // not authentication (see README "Security" — MCP auth remains deferred).
+  const allowedOrigins = new Set<string>()
+  for (const host of ['localhost', '127.0.0.1']) {
+    allowedOrigins.add(`${bridgeTls ? 'https' : 'http'}://${host}:${BRIDGE_PORT}`)
+  }
+  for (const ifaces of Object.values(osNetworkInterfaces())) {
+    for (const iface of ifaces ?? []) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        allowedOrigins.add(`${bridgeTls ? 'https' : 'http'}://${iface.address}:${BRIDGE_PORT}`)
+      }
+    }
+  }
 
   const wss = new WebSocketServer({
     server: bridgeServer,
     verifyClient: (info, callback) => {
-      if (info.origin === allowedBridgeOrigin) {
+      if (info.origin && allowedOrigins.has(info.origin)) {
         callback(true)
         return
       }
@@ -510,7 +532,7 @@ if (bridgeActive) {
     throw err
   })
 
-  bridgeServer.listen(BRIDGE_PORT, '127.0.0.1', () => {
+  bridgeServer.listen(BRIDGE_PORT, process.env.BRIDGE_HOST || '127.0.0.1', () => {
     console.error('Bridge server running')
     console.error(`  ${bridgeScheme.toUpperCase()}: ${bridgeScheme}://localhost:${BRIDGE_PORT}`)
     console.error(`  ${bridgeWsScheme.toUpperCase()}:  ${bridgeWsScheme}://localhost:${BRIDGE_PORT}`)
@@ -602,7 +624,7 @@ const activeInterfaces = [
   .filter(Boolean)
   .join(' + ')
 
-console.error(`powerpoint-mcp started [${activeInterfaces}]`)
+console.error(`o365-mcp started [${activeInterfaces}]`)
 if (!bridgeActive) {
   console.error('  Note: Bridge not active. Tools requiring the add-in will return errors.')
 }

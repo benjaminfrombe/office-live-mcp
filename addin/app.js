@@ -1,4 +1,4 @@
-/* PowerPoint MCP — WebSocket client */
+/* o365 MCP — WebSocket client */
 
 var ws = null
 var reconnectTimer = null

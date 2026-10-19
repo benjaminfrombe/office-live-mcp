@@ -2980,7 +2980,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve2.call(this, root, ref);
+      let _sch = resolve3.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a2 = root.localRefs) === null || _a2 === void 0 ? void 0 : _a2[ref];
         const { schemaId } = this.opts;
@@ -3007,7 +3007,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve2(root, ref) {
+    function resolve3(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3837,7 +3837,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve2(baseURI, relativeURI, options) {
+    function resolve3(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const {
         parsed: baseParsed,
@@ -4205,7 +4205,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve2,
+      resolve: resolve3,
       resolveComponent,
       equal,
       serialize,
@@ -17737,7 +17737,7 @@ var require_BufferList = __commonJS({
         this.head = this.tail = null;
         this.length = 0;
       };
-      BufferList.prototype.join = function join4(s) {
+      BufferList.prototype.join = function join5(s) {
         if (this.length === 0) return "";
         var p = this.head;
         var ret = "" + p.data;
@@ -19712,8 +19712,8 @@ var require_lib3 = __commonJS({
         return this;
       }
       var p = this.constructor;
-      return this.then(resolve3, reject2);
-      function resolve3(value) {
+      return this.then(resolve4, reject2);
+      function resolve4(value) {
         function yes() {
           return value;
         }
@@ -19866,8 +19866,8 @@ var require_lib3 = __commonJS({
       }
       return out;
     }
-    Promise2.resolve = resolve2;
-    function resolve2(value) {
+    Promise2.resolve = resolve3;
+    function resolve3(value) {
       if (value instanceof this) {
         return value;
       }
@@ -20398,10 +20398,10 @@ var require_utils2 = __commonJS({
       var promise2 = external.Promise.resolve(inputData).then(function(data) {
         var isBlob = support.blob && (data instanceof Blob || ["[object File]", "[object Blob]"].indexOf(Object.prototype.toString.call(data)) !== -1);
         if (isBlob && typeof FileReader !== "undefined") {
-          return new external.Promise(function(resolve2, reject) {
+          return new external.Promise(function(resolve3, reject) {
             var reader = new FileReader();
             reader.onload = function(e) {
-              resolve2(e.target.result);
+              resolve3(e.target.result);
             };
             reader.onerror = function(e) {
               reject(e.target.error);
@@ -20956,7 +20956,7 @@ var require_StreamHelper = __commonJS({
       }
     }
     function accumulate(helper, updateCallback) {
-      return new external.Promise(function(resolve2, reject) {
+      return new external.Promise(function(resolve3, reject) {
         var dataArray = [];
         var chunkType = helper._internalType, resultType = helper._outputType, mimeType = helper._mimeType;
         helper.on("data", function(data, meta3) {
@@ -20970,7 +20970,7 @@ var require_StreamHelper = __commonJS({
         }).on("end", function() {
           try {
             var result = transformZipOutput(resultType, concat(chunkType, dataArray), mimeType);
-            resolve2(result);
+            resolve3(result);
           } catch (e) {
             reject(e);
           }
@@ -27083,7 +27083,7 @@ var require_load = __commonJS({
     var Crc32Probe = require_Crc32Probe();
     var nodejsUtils = require_nodejsUtils();
     function checkEntryCRC32(zipEntry) {
-      return new external.Promise(function(resolve2, reject) {
+      return new external.Promise(function(resolve3, reject) {
         var worker = zipEntry.decompressed.getContentWorker().pipe(new Crc32Probe());
         worker.on("error", function(e) {
           reject(e);
@@ -27091,7 +27091,7 @@ var require_load = __commonJS({
           if (worker.streamInfo.crc32 !== zipEntry.decompressed.crc32) {
             reject(new Error("Corrupted zip : CRC32 mismatch"));
           } else {
-            resolve2();
+            resolve3();
           }
         }).resume();
       });
@@ -27190,11 +27190,11 @@ var require_lib4 = __commonJS({
 
 // server/index.ts
 var import_node_crypto2 = require("node:crypto");
-var import_node_fs8 = require("node:fs");
+var import_node_fs9 = require("node:fs");
 var import_node_http = require("node:http");
 var import_node_https = require("node:https");
 var import_node_os2 = require("node:os");
-var import_node_path3 = require("node:path");
+var import_node_path4 = require("node:path");
 var import_node_url3 = require("node:url");
 
 // node_modules/zod/v3/helpers/util.js
@@ -48409,7 +48409,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
+        await new Promise((resolve3) => setTimeout(resolve3, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error48) {
@@ -48426,7 +48426,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve2, reject) => {
+    return new Promise((resolve3, reject) => {
       const earlyReject = (error48) => {
         reject(error48);
       };
@@ -48504,7 +48504,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve2(parseResult.data);
+            resolve3(parseResult.data);
           }
         } catch (error48) {
           reject(error48);
@@ -48765,12 +48765,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve2, reject) => {
+    return new Promise((resolve3, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve2, interval);
+      const timeoutId = setTimeout(resolve3, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -49861,7 +49861,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
+      await new Promise((resolve3) => setTimeout(resolve3, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -50525,12 +50525,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve2) => {
+    return new Promise((resolve3) => {
       const json3 = serializeMessage(message);
       if (this._stdout.write(json3)) {
-        resolve2();
+        resolve3();
       } else {
-        this._stdout.once("drain", resolve2);
+        this._stdout.once("drain", resolve3);
       }
     });
   }
@@ -50819,7 +50819,7 @@ var readBodyDirect = (request) => {
     request[bodyBufferKey] = buffered;
     return Promise.resolve(buffered);
   }
-  const promise2 = new Promise((resolve2, reject) => {
+  const promise2 = new Promise((resolve3, reject) => {
     const chunks = [];
     let settled = false;
     const finish = (callback) => {
@@ -50837,7 +50837,7 @@ var readBodyDirect = (request) => {
         else if (recovered === void 0) reject(error48 ?? normalizeAbortError(request, incoming));
         else {
           request[bodyBufferKey] = recovered;
-          resolve2(recovered);
+          resolve3(recovered);
         }
       });
       return true;
@@ -50849,7 +50849,7 @@ var readBodyDirect = (request) => {
       finish(() => {
         const buffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
         request[bodyBufferKey] = buffer;
-        resolve2(buffer);
+        resolve3(buffer);
       });
     };
     const onError = (error48) => {
@@ -51371,7 +51371,7 @@ var responseViaResponseObject = async (res, outgoing, options = {}) => {
         });
         if (!chunk) {
           if (i === 1) {
-            await new Promise((resolve2) => setTimeout(resolve2));
+            await new Promise((resolve3) => setTimeout(resolve3));
             maxReadCount = 3;
             continue;
           }
@@ -52051,9 +52051,9 @@ data:
       const initRequest = messages.find((m) => isInitializeRequest(m));
       const clientProtocolVersion = initRequest ? initRequest.params.protocolVersion : req.headers.get("mcp-protocol-version") ?? DEFAULT_NEGOTIATED_PROTOCOL_VERSION;
       if (this._enableJsonResponse) {
-        return new Promise((resolve2) => {
+        return new Promise((resolve3) => {
           this._streamMapping.set(streamId, {
-            resolveJson: resolve2,
+            resolveJson: resolve3,
             cleanup: () => {
               this._streamMapping.delete(streamId);
             }
@@ -52616,8 +52616,8 @@ var ConnectionPool = class {
   sendCommand(action, params, targetWs, timeoutMs) {
     const id = (0, import_node_crypto.randomUUID)();
     const timeout = timeoutMs ?? this.commandTimeout;
-    const { promise: promise2, resolve: resolve2, reject } = Promise.withResolvers();
-    const queued = { id, action, params, ws: targetWs, timeoutMs: timeout, resolve: resolve2, reject };
+    const { promise: promise2, resolve: resolve3, reject } = Promise.withResolvers();
+    const queued = { id, action, params, ws: targetWs, timeoutMs: timeout, resolve: resolve3, reject };
     const queue = this.queues.get(targetWs) ?? { current: null, waiting: [] };
     this.queues.set(targetWs, queue);
     if (queue.current === null) {
@@ -52676,6 +52676,253 @@ var ConnectionPool = class {
 function substituteManifestPort(content, defaultPort, targetPort) {
   if (defaultPort === targetPort) return content;
   return content.replaceAll(`localhost:${defaultPort}`, `localhost:${targetPort}`);
+}
+
+// server/sharepoint-catalog.ts
+var import_node_fs = require("node:fs");
+var import_node_path = require("node:path");
+var manifestDir = "";
+function setManifestDir(dir) {
+  manifestDir = dir;
+}
+function readManifest(req, serverRelativeUrl) {
+  const name = serverRelativeUrl.split("/").pop() ?? "";
+  if (!manifestDir) return null;
+  try {
+    const raw = (0, import_node_fs.readFileSync)((0, import_node_path.join)((0, import_node_path.resolve)(manifestDir), name), "utf-8");
+    const host = String(req.headers.host ?? "");
+    const portMatch = /:(\d+)$/.exec(host);
+    const targetPort = portMatch ? Number.parseInt(portMatch[1], 10) : 8443;
+    return substituteManifestPort(raw, 8080, targetPort);
+  } catch {
+    return null;
+  }
+}
+var CATALOG_LIST_TITLE = "Apps for Office";
+var CATALOG_LIST_ID = "9a1c5e52-6d42-4b0a-9f47-3d2f1c8b7a01";
+var NAVIGATION_KEYS = /* @__PURE__ */ new Set(["ParentList", "FirstUniqueAncestorSecurableObject", "RootFolder"]);
+var CATALOG_APPS = [
+  {
+    // VM minimal variant: no VersionOverrides, to isolate catalog acceptance
+    // from manifest schema strictness on Windows Office builds.
+    serverRelativeUrl: "/manifest.vm-minimal.xml",
+    title: "o365 MCP Word",
+    id: "6B03BAEA-D5F8-43A1-B136-791D9D1AB231"
+  },
+  {
+    serverRelativeUrl: "/manifest.vm-excel.xml",
+    title: "o365 MCP Excel",
+    id: "B116267F-F3C1-46D4-9A06-1FE8D7F13A69"
+  },
+  {
+    serverRelativeUrl: "/manifest.vm-powerpoint.xml",
+    title: "o365 MCP PowerPoint",
+    id: "AE89909C-2813-4B08-9E1B-49E7379BD0E6"
+  }
+];
+function wantsAtom(req) {
+  const accept = String(req.headers.accept ?? "");
+  return !accept.includes("json");
+}
+function sendJson(res, body) {
+  res.writeHead(200, { "Content-Type": "application/json;odata=nometadata;charset=utf-8" });
+  res.end(JSON.stringify(body));
+}
+function atomEscape(value) {
+  return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
+function atomProperty(key, value) {
+  if (value === null || value === void 0) {
+    return `<d:${key} m:null="true" />`;
+  }
+  if (typeof value === "boolean") {
+    return `<d:${key} m:type="Edm.Boolean">${value}</d:${key}>`;
+  }
+  if (typeof value === "number" && Number.isInteger(value)) {
+    return `<d:${key} m:type="Edm.Int32">${value}</d:${key}>`;
+  }
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    const record2 = value;
+    if ("Description" in record2 && "Url" in record2) {
+      const desc = atomEscape(record2.Description ?? "");
+      const url2 = atomEscape(record2.Url ?? "");
+      return `<d:${key} m:type="SP.FieldUrlValue"><d:Description>${desc}</d:Description><d:Url>${url2}</d:Url></d:${key}>`;
+    }
+    const inner = Object.entries(record2).map(([k, v]) => atomProperty(k, v)).join("");
+    return `<d:${key}><m:properties>${inner}</m:properties></d:${key}>`;
+  }
+  const strValue = atomEscape(value);
+  const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(strValue);
+  if (isGuid) {
+    return `<d:${key} m:type="Edm.Guid">${strValue}</d:${key}>`;
+  }
+  return `<d:${key}>${strValue}</d:${key}>`;
+}
+function sendAtom(res, req, entries) {
+  const base = `https://${req.headers.host ?? "localhost:8443"}`;
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const entriesXml = entries.map((entry, i) => {
+    const props = Object.entries(entry).filter(([k]) => !NAVIGATION_KEYS.has(k)).map(([k, v]) => atomProperty(k, v)).join("");
+    const title = atomEscape(entry.Title ?? `item-${i}`);
+    const isListItem = "GUID" in entry;
+    const editPath = isListItem ? `Web/Lists(guid'${CATALOG_LIST_ID}')/Items(${atomEscape(entry.Id ?? i)})` : `Web/Lists(guid'${atomEscape(entry.Id ?? i)}')`;
+    const term = isListItem ? "SP.Data.Apps_x0020_for_x0020_OfficeListItem" : "SP.List";
+    const fileUrl = typeof entry.FileRef === "string" ? entry.FileRef : null;
+    const fileLink = isListItem && fileUrl ? `<link rel="http://schemas.microsoft.com/ado/2007/08/dataservices/related/File" type="application/atom+xml;type=entry" title="File" href="${editPath}/File" />` : "";
+    const parentListLink = isListItem ? `<link rel="http://schemas.microsoft.com/ado/2007/08/dataservices/related/ParentList" type="application/atom+xml;type=entry" title="ParentList" href="Web/Lists(guid'${CATALOG_LIST_ID}')" />` : "";
+    return `<entry><id>${base}/_api/${editPath}</id><category term="${term}" scheme="http://schemas.microsoft.com/ado/2007/08/dataservices/scheme" /><link rel="edit" href="${editPath}" />` + fileLink + parentListLink + `<title type="text">${title}</title><updated>${now}</updated><author><name>o365 MCP Bridge</name></author><content type="application/xml"><m:properties>${props}</m:properties></content></entry>`;
+  }).join("");
+  const itemsFeed = entries.length > 0 && "GUID" in entries[0];
+  const feedPath = itemsFeed ? `Web/Lists(guid'${CATALOG_LIST_ID}')/Items` : "Web/Lists";
+  res.writeHead(200, { "Content-Type": "application/atom+xml;charset=utf-8" });
+  res.end(
+    `<?xml version="1.0" encoding="utf-8"?><feed xml:base="${base}/_api/" xmlns="http://www.w3.org/2005/Atom" xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata"><id>${base}/_api/${feedPath}</id><title type="text">${itemsFeed ? "Items" : "Lists"}</title><updated>${now}</updated><link rel="self" href="${feedPath}" />` + entriesXml + `</feed>`
+  );
+}
+function sendCollection(res, req, value) {
+  if (wantsAtom(req)) {
+    sendAtom(res, req, value);
+    return;
+  }
+  sendJson(res, { value });
+}
+function listItem(app, index) {
+  return {
+    FileSystemObjectType: 0,
+    Id: index + 1,
+    GUID: app.id,
+    Title: app.title,
+    FileLeafRef: app.serverRelativeUrl.split("/").pop(),
+    FileRef: app.serverRelativeUrl,
+    ContentTypeId: "0x01010C009A2929A6E2164D40AC668301D8D91CE5",
+    AppProductID: app.id,
+    AppVersion: "1.0.0.0",
+    AppPublisher: "o365 MCP Bridge",
+    AppDescription: "Live Office.js bridge add-in",
+    AppShortDescription: "Live Office.js bridge add-in",
+    AppThumbnailURL: { Description: "", Url: "" },
+    AppSupportURL: null,
+    AppVideoURL: null,
+    IsAppPackageEnabled: true,
+    IsValidAppPackage: true,
+    AppPackageErrorMessage: "No errors.",
+    SharePointAppCategory: null,
+    IsFeaturedApp: false,
+    AppMetadataLocale: "1033",
+    IsDefaultAppMetadataLocale: true,
+    ServerRedirectedEmbedUri: null,
+    ServerRedirectedEmbedUrl: "",
+    File: {
+      ServerRelativeUrl: app.serverRelativeUrl,
+      Name: app.serverRelativeUrl.split("/").pop(),
+      Title: app.title,
+      Length: "4096",
+      TimeLastModified: "2026-10-19T18:00:00Z"
+    },
+    FirstUniqueAncestorSecurableObject: 1,
+    ParentList: { Id: CATALOG_LIST_ID, Title: CATALOG_LIST_TITLE }
+  };
+}
+function handleSharePointCatalog(req, res, rawUrl) {
+  const method = (req.method ?? "GET").toUpperCase();
+  const qIndex = rawUrl.indexOf("?");
+  const path = qIndex === -1 ? rawUrl : rawUrl.slice(0, qIndex);
+  const query = qIndex === -1 ? "" : rawUrl.slice(qIndex);
+  const apiIndex = path.indexOf("/_api/");
+  if (apiIndex === -1) return false;
+  const apiPath = path.slice(apiIndex + "/_api/".length);
+  console.error(`[catalog] ${method} ${path}${query} accept=${req.headers.accept ?? "(none)"}`);
+  const normalized = apiPath.replace(/\/+$/, "");
+  const lower = normalized.toLowerCase();
+  if (lower === "web" || lower === "web/lists" || lower === "web/alllists") {
+    if (lower === "web") {
+      sendCollection(res, req, [{ Id: "11111111-2222-3333-4444-555555555555", Title: "o365 MCP Catalog", Url: "/" }]);
+      return true;
+    }
+    sendCollection(res, req, [
+      {
+        Id: CATALOG_LIST_ID,
+        Title: CATALOG_LIST_TITLE,
+        BaseTemplate: 101,
+        ItemCount: CATALOG_APPS.length,
+        Description: "o365 MCP self-hosted add-in catalog",
+        ParentWebUrl: "/",
+        Hidden: false,
+        EnableAttachments: false,
+        ListItemEntityTypeFullName: "SP.Data.Apps_x0020_for_x0020_OfficeListItem",
+        RootFolder: { ServerRelativeUrl: "/Apps for Office" }
+      }
+    ]);
+    return true;
+  }
+  const itemsMatch = /^web\/lists\/(?:getbytitle\('([^']+)'\)|guid'([^']+)')\/items$/.exec(normalized) ?? /^web\/lists\(guid'([^']+)'\)\/items$/.exec(normalized);
+  if (itemsMatch) {
+    const items = CATALOG_APPS.map((app, i) => listItem(app, i));
+    sendCollection(res, req, items);
+    return true;
+  }
+  const listMatch = /^web\/lists\/(?:getbytitle\('([^']+)'\)|guid'([^']+)'|bytitle\('([^']+)'\))$/.exec(normalized) ?? /^web\/lists\(guid'([^']+)'\)$/.exec(normalized);
+  if (listMatch) {
+    sendCollection(res, req, [
+      {
+        Id: CATALOG_LIST_ID,
+        Title: CATALOG_LIST_TITLE,
+        BaseTemplate: 101,
+        ItemCount: CATALOG_APPS.length,
+        Description: "o365 MCP self-hosted add-in catalog",
+        ParentWebUrl: "/",
+        Hidden: false,
+        EnableAttachments: false,
+        ListItemEntityTypeFullName: "SP.Data.Apps_x0020_for_x0020_OfficeListItem",
+        RootFolder: { ServerRelativeUrl: "/Apps for Office" }
+      }
+    ]);
+    return true;
+  }
+  const itemFileMatch = /^web\/lists\(guid'([^']+)'\)\/items\((\d+)\)\/file(?:\/\$value)?$/.exec(normalized);
+  if (itemFileMatch) {
+    const app = CATALOG_APPS[Number.parseInt(itemFileMatch[2], 10) - 1];
+    if (app && normalized.endsWith("/$value")) {
+      const content = readManifest(req, app.serverRelativeUrl);
+      if (content !== null) {
+        res.writeHead(200, { "Content-Type": "application/xml;charset=utf-8" });
+        res.end(content);
+        return true;
+      }
+    }
+    if (app) {
+      sendCollection(res, req, [
+        listItem(app, Number.parseInt(itemFileMatch[2], 10) - 1).File
+      ]);
+      return true;
+    }
+  }
+  const getFileMatch = /^web\/getfilebyserverrelativeurl\((.+)\)(?:\/\$value)?$/.exec(normalized);
+  if (getFileMatch) {
+    let url2 = getFileMatch[1].replace(/^['"]|['"]$/g, "");
+    try {
+      url2 = decodeURIComponent(url2);
+    } catch {
+    }
+    const app = CATALOG_APPS.find((a) => a.serverRelativeUrl === url2);
+    const content = app ? readManifest(req, app.serverRelativeUrl) : null;
+    if (content !== null) {
+      res.writeHead(200, { "Content-Type": "application/xml;charset=utf-8" });
+      res.end(content);
+      return true;
+    }
+    console.error(`[catalog] getfilebyserverrelativeurl: unknown path ${url2}`);
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("404 Not Found");
+    return true;
+  }
+  console.error(`[catalog] UNHANDLED ${method} ${normalized}${query} \u2014 returning empty 200`);
+  if (wantsAtom(req)) {
+    sendAtom(res, req, []);
+  } else {
+    sendJson(res, { value: [] });
+  }
+  return true;
 }
 
 // server/chart-builder.ts
@@ -53414,9 +53661,9 @@ async function extractDeckText(zipBuffer, slideIndices, includeNotes) {
 }
 
 // server/tools/shared.ts
-var import_node_fs = require("node:fs");
+var import_node_fs2 = require("node:fs");
 var import_node_os = require("node:os");
-var import_node_path = require("node:path");
+var import_node_path2 = require("node:path");
 var import_node_url = require("node:url");
 var localCopyCache = /* @__PURE__ */ new Map();
 var themeCache = /* @__PURE__ */ new Map();
@@ -53499,7 +53746,7 @@ async function getLocalCopyPath(connPool, target) {
   const filePath = target.filePath;
   if (filePath && !filePath.startsWith("http")) {
     const localPath = toLocalFilePath(filePath);
-    if (!(0, import_node_fs.existsSync)(localPath)) throw new Error(`Local file not found: ${localPath}`);
+    if (!(0, import_node_fs2.existsSync)(localPath)) throw new Error(`Local file not found: ${localPath}`);
     return localPath;
   }
   const revCode = `
@@ -53510,7 +53757,7 @@ async function getLocalCopyPath(connPool, target) {
   `;
   const currentRevision = await connPool.sendCommand("executeCode", { code: revCode }, target.ws);
   const cached2 = localCopyCache.get(target.presentationId);
-  if (cached2 && cached2.revision === currentRevision && (0, import_node_fs.existsSync)(cached2.localPath)) {
+  if (cached2 && cached2.revision === currentRevision && (0, import_node_fs2.existsSync)(cached2.localPath)) {
     return cached2.localPath;
   }
   const exportCode = `
@@ -53559,8 +53806,8 @@ async function getLocalCopyPath(connPool, target) {
   `;
   const base643 = await connPool.sendCommand("executeCode", { code: exportCode }, target.ws, 12e4);
   const filename = filePath ? decodeURIComponent(filePath.split("/").pop() || "presentation.pptx") : "presentation.pptx";
-  const dest = (0, import_node_path.join)((0, import_node_os.tmpdir)(), `pptbridge-${Date.now()}-${filename}`);
-  (0, import_node_fs.writeFileSync)(dest, Buffer.from(base643, "base64"));
+  const dest = (0, import_node_path2.join)((0, import_node_os.tmpdir)(), `pptbridge-${Date.now()}-${filename}`);
+  (0, import_node_fs2.writeFileSync)(dest, Buffer.from(base643, "base64"));
   localCopyCache.set(target.presentationId, { localPath: dest, revision: currentRevision });
   return dest;
 }
@@ -54733,7 +54980,7 @@ function registerExecTools(server, pool2, getSessionId, getActiveSessionCount) {
 }
 
 // server/tools/inspect.ts
-var import_node_fs2 = require("node:fs");
+var import_node_fs3 = require("node:fs");
 var import_jszip2 = __toESM(require_lib4(), 1);
 function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
@@ -54846,7 +55093,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
         return { content: [{ type: "text", text: JSON.stringify({ layouts: layouts2, usedOnly: true }) }] };
       }
       const localPath = await getLocalCopyPath(pool2, target);
-      const fileData = (0, import_node_fs2.readFileSync)(localPath);
+      const fileData = (0, import_node_fs3.readFileSync)(localPath);
       const zip = await import_jszip2.default.loadAsync(fileData);
       const layouts = await extractLayoutsFromZip(zip);
       try {
@@ -55143,11 +55390,11 @@ ${textParts.join("\n")}` : "\n(no text content)";
 }
 
 // server/tools/media.ts
-var import_node_fs4 = require("node:fs");
+var import_node_fs5 = require("node:fs");
 
 // server/icons.ts
-var import_node_fs3 = require("node:fs");
-var import_node_path2 = require("node:path");
+var import_node_fs4 = require("node:fs");
+var import_node_path3 = require("node:path");
 var import_node_url2 = require("node:url");
 var import_meta = {};
 var MANIFEST_URL = "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/fonts/FluentSystemIcons-Regular.json";
@@ -55184,8 +55431,8 @@ function buildIndexFromManifest(manifest) {
 }
 function loadStaticIndex() {
   try {
-    const dir = (0, import_node_path2.dirname)((0, import_node_url2.fileURLToPath)(import_meta.url));
-    const raw = (0, import_node_fs3.readFileSync)((0, import_node_path2.join)(dir, "icon-index.json"), "utf-8");
+    const dir = (0, import_node_path3.dirname)((0, import_node_url2.fileURLToPath)(import_meta.url));
+    const raw = (0, import_node_fs4.readFileSync)((0, import_node_path3.join)(dir, "icon-index.json"), "utf-8");
     const data = JSON.parse(raw);
     return data.map((e) => ({
       name: e.n,
@@ -55329,7 +55576,7 @@ function registerMediaTools(server, pool2, getSessionId, getActiveSessionCount) 
     withTool(async ({ source, sourceType, slideIndex, left, top, width, height, color, presentationId }) => {
       let base64Data;
       if (sourceType === "file") {
-        base64Data = (0, import_node_fs4.readFileSync)(source).toString("base64");
+        base64Data = (0, import_node_fs5.readFileSync)(source).toString("base64");
       } else if (sourceType === "url") {
         const resp = await fetch(source);
         if (!resp.ok) {
@@ -55418,7 +55665,7 @@ function registerMediaTools(server, pool2, getSessionId, getActiveSessionCount) 
 }
 
 // server/tools/notes.ts
-var import_node_fs5 = require("node:fs");
+var import_node_fs6 = require("node:fs");
 var import_jszip3 = __toESM(require_lib4(), 1);
 
 // server/notes-helpers.ts
@@ -55637,7 +55884,7 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
     withTool(async ({ slideRange, presentationId }) => {
       const target = pool2.resolveTarget(presentationId);
       const localPath = await getLocalCopyPath(pool2, target);
-      const data = (0, import_node_fs5.readFileSync)(localPath);
+      const data = (0, import_node_fs6.readFileSync)(localPath);
       const zip = await import_jszip3.default.loadAsync(data);
       const indices = parseSlideRange(slideRange);
       const notesMap = await readNotesFromDeck(zip, indices);
@@ -55650,7 +55897,7 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
 }
 
 // server/tools/slides.ts
-var import_node_fs6 = require("node:fs");
+var import_node_fs7 = require("node:fs");
 var import_jszip4 = __toESM(require_lib4(), 1);
 function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
@@ -55682,7 +55929,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
       }
       const target = pool2.resolveTarget(presentationId);
       const localPath = await getLocalCopyPath(pool2, target);
-      const fileData = (0, import_node_fs6.readFileSync)(localPath);
+      const fileData = (0, import_node_fs7.readFileSync)(localPath);
       const zip = await import_jszip4.default.loadAsync(fileData);
       const layouts = await extractLayoutsFromZip(zip);
       const targetLower = layoutName.toLowerCase();
@@ -55952,7 +56199,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
 }
 
 // server/tools/text.ts
-var import_node_fs7 = require("node:fs");
+var import_node_fs8 = require("node:fs");
 function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
     "edit_shape_paragraphs",
@@ -56012,7 +56259,7 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
     withTool(async ({ slideRange, includeNotes, presentationId }) => {
       const target = pool2.resolveTarget(presentationId);
       const localPath = await getLocalCopyPath(pool2, target);
-      const zipBuffer = (0, import_node_fs7.readFileSync)(localPath);
+      const zipBuffer = (0, import_node_fs8.readFileSync)(localPath);
       const indices = slideRange ? parseSlideRange(slideRange) : null;
       const result = await extractDeckText(zipBuffer, indices, includeNotes === true);
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount());
@@ -57051,14 +57298,15 @@ var BRIDGE_DEFAULT_HTTP_PORT = 8080;
 var BRIDGE_DEFAULT_HTTPS_PORT = 8443;
 var MCP_HTTP_PORT = Number(process.env.MCP_PORT) || 3001;
 var MAX_HTTP_BODY_BYTES = 16 * 1024 * 1024;
-var SCRIPT_DIR = typeof __dirname !== "undefined" ? __dirname : (0, import_node_path3.dirname)((0, import_node_url3.fileURLToPath)(import_meta2.url));
-var PROJECT_ROOT = (0, import_node_path3.resolve)(SCRIPT_DIR, "..");
-var BRIDGE_CERT_PATH = (0, import_node_path3.resolve)(PROJECT_ROOT, "certs", "localhost.pem");
-var BRIDGE_KEY_PATH = (0, import_node_path3.resolve)(PROJECT_ROOT, "certs", "localhost-key.pem");
-var ADDIN_STATIC_DIR = (0, import_node_path3.resolve)(PROJECT_ROOT, "addin");
+var SCRIPT_DIR = typeof __dirname !== "undefined" ? __dirname : (0, import_node_path4.dirname)((0, import_node_url3.fileURLToPath)(import_meta2.url));
+var PROJECT_ROOT = (0, import_node_path4.resolve)(SCRIPT_DIR, "..");
+var BRIDGE_CERT_PATH = process.env.BRIDGE_CERT_PATH || (0, import_node_path4.resolve)(PROJECT_ROOT, "certs", "localhost.pem");
+var BRIDGE_KEY_PATH = process.env.BRIDGE_KEY_PATH || (0, import_node_path4.resolve)(PROJECT_ROOT, "certs", "localhost-key.pem");
+var ADDIN_STATIC_DIR = (0, import_node_path4.resolve)(PROJECT_ROOT, "addin");
+setManifestDir(ADDIN_STATIC_DIR);
 var PKG_VERSION = (() => {
   try {
-    return JSON.parse((0, import_node_fs8.readFileSync)((0, import_node_path3.resolve)(PROJECT_ROOT, "package.json"), "utf8")).version;
+    return JSON.parse((0, import_node_fs9.readFileSync)((0, import_node_path4.resolve)(PROJECT_ROOT, "package.json"), "utf8")).version;
   } catch {
     return "0.0.0";
   }
@@ -57097,7 +57345,7 @@ Flags (composable):
   process.exit(1);
 }
 var bridgeTls = process.env.BRIDGE_TLS === "1";
-if (bridgeActive && bridgeTls && (!(0, import_node_fs8.existsSync)(BRIDGE_CERT_PATH) || !(0, import_node_fs8.existsSync)(BRIDGE_KEY_PATH))) {
+if (bridgeActive && bridgeTls && (!(0, import_node_fs9.existsSync)(BRIDGE_CERT_PATH) || !(0, import_node_fs9.existsSync)(BRIDGE_KEY_PATH))) {
   console.error(
     `Error: BRIDGE_TLS=1 but TLS certificate files not found.
   Expected: ${BRIDGE_CERT_PATH} and ${BRIDGE_KEY_PATH}
@@ -57107,17 +57355,17 @@ if (bridgeActive && bridgeTls && (!(0, import_node_fs8.existsSync)(BRIDGE_CERT_P
 }
 var BRIDGE_PORT = Number(process.env.BRIDGE_PORT) || (bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT);
 function autoSideloadManifest(tls, port) {
-  const markerFile = (0, import_node_path3.resolve)(PROJECT_ROOT, ".sideloaded");
-  const pkgPath = (0, import_node_path3.resolve)(PROJECT_ROOT, "package.json");
+  const markerFile = (0, import_node_path4.resolve)(PROJECT_ROOT, ".sideloaded");
+  const pkgPath = (0, import_node_path4.resolve)(PROJECT_ROOT, "package.json");
   let currentVersion = "unknown";
   try {
-    const pkg = JSON.parse((0, import_node_fs8.readFileSync)(pkgPath, "utf8"));
+    const pkg = JSON.parse((0, import_node_fs9.readFileSync)(pkgPath, "utf8"));
     currentVersion = pkg.version;
   } catch {
   }
   const markerValue = `${currentVersion}:${port}`;
   try {
-    const existing = (0, import_node_fs8.readFileSync)(markerFile, "utf8").trim();
+    const existing = (0, import_node_fs9.readFileSync)(markerFile, "utf8").trim();
     if (existing === markerValue) {
       console.error("[sideload] Add-in already installed (use `npm run sideload` to update)");
       return;
@@ -57126,17 +57374,17 @@ function autoSideloadManifest(tls, port) {
   } catch {
   }
   const defaultPort = tls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT;
-  const wefDir = (0, import_node_path3.join)((0, import_node_os2.homedir)(), "Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef");
+  const wefDir = (0, import_node_path4.join)((0, import_node_os2.homedir)(), "Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef");
   const manifestName = tls ? "manifest-https.xml" : "manifest.xml";
-  const src = (0, import_node_path3.resolve)(ADDIN_STATIC_DIR, manifestName);
-  const dest = (0, import_node_path3.join)(wefDir, "manifest.xml");
+  const src = (0, import_node_path4.resolve)(ADDIN_STATIC_DIR, manifestName);
+  const dest = (0, import_node_path4.join)(wefDir, "manifest.xml");
   try {
-    if (!(0, import_node_fs8.existsSync)(src)) return;
-    const template = (0, import_node_fs8.readFileSync)(src, "utf8");
+    if (!(0, import_node_fs9.existsSync)(src)) return;
+    const template = (0, import_node_fs9.readFileSync)(src, "utf8");
     const content = substituteManifestPort(template, defaultPort, port);
-    (0, import_node_fs8.mkdirSync)(wefDir, { recursive: true });
-    (0, import_node_fs8.writeFileSync)(dest, content);
-    (0, import_node_fs8.writeFileSync)(markerFile, markerValue);
+    (0, import_node_fs9.mkdirSync)(wefDir, { recursive: true });
+    (0, import_node_fs9.writeFileSync)(dest, content);
+    (0, import_node_fs9.writeFileSync)(markerFile, markerValue);
     console.error("[sideload] Add-in manifest installed for PowerPoint");
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -57147,7 +57395,7 @@ var pool = new ConnectionPool();
 var mcpHttpTransports = /* @__PURE__ */ new Map();
 function createMcpServer(getSessionId, getActiveSessionCount) {
   const mcpServer = new McpServer({
-    name: "powerpoint-mcp",
+    name: "o365-mcp",
     version: PKG_VERSION
   });
   registerTools(mcpServer, pool, getSessionId, getActiveSessionCount);
@@ -57163,7 +57411,7 @@ var MIME_TYPES = {
   ".xml": "application/xml; charset=UTF-8"
 };
 function getMimeType(filePath) {
-  const ext = (0, import_node_path3.extname)(filePath);
+  const ext = (0, import_node_path4.extname)(filePath);
   return MIME_TYPES[ext] ?? "application/octet-stream";
 }
 var RequestBodyTooLargeError = class extends Error {
@@ -57178,7 +57426,7 @@ function respondJson(res, statusCode, payload) {
   res.end(JSON.stringify(payload));
 }
 function parseJsonBody(req) {
-  const { promise: promise2, resolve: resolve2, reject } = Promise.withResolvers();
+  const { promise: promise2, resolve: resolve3, reject } = Promise.withResolvers();
   const chunks = [];
   let receivedBytes = 0;
   let tooLarge = false;
@@ -57197,7 +57445,7 @@ function parseJsonBody(req) {
       return;
     }
     try {
-      resolve2(JSON.parse(Buffer.concat(chunks).toString()));
+      resolve3(JSON.parse(Buffer.concat(chunks).toString()));
     } catch {
       reject(new Error("Invalid JSON body"));
     }
@@ -57282,6 +57530,9 @@ async function handleMcpDelete(req, res) {
 }
 function serveStatic(req, res) {
   const rawUrl = (req.url ?? "/").split("?")[0];
+  if (handleSharePointCatalog(req, res, rawUrl)) {
+    return;
+  }
   if (rawUrl === "/health" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ status: "ok", connections: pool.size }));
@@ -57299,21 +57550,21 @@ function serveStatic(req, res) {
   }
   const urlPath = rawUrl === "/" ? "/index.html" : rawUrl;
   console.error(`[bridge] GET ${rawUrl}`);
-  const filePath = (0, import_node_path3.resolve)((0, import_node_path3.join)(ADDIN_STATIC_DIR, urlPath));
-  const relToStaticDir = (0, import_node_path3.relative)(ADDIN_STATIC_DIR, filePath);
-  if (relToStaticDir.startsWith("..") || (0, import_node_path3.resolve)(ADDIN_STATIC_DIR, relToStaticDir) !== filePath) {
+  const filePath = (0, import_node_path4.resolve)((0, import_node_path4.join)(ADDIN_STATIC_DIR, urlPath));
+  const relToStaticDir = (0, import_node_path4.relative)(ADDIN_STATIC_DIR, filePath);
+  if (relToStaticDir.startsWith("..") || (0, import_node_path4.resolve)(ADDIN_STATIC_DIR, relToStaticDir) !== filePath) {
     res.writeHead(403, { "Content-Type": "text/plain" });
     res.end("403 Forbidden");
     return;
   }
-  if (!(0, import_node_fs8.existsSync)(filePath)) {
+  if (!(0, import_node_fs9.existsSync)(filePath)) {
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("404 Not Found");
     return;
   }
-  const raw = (0, import_node_fs8.readFileSync)(filePath);
+  const raw = (0, import_node_fs9.readFileSync)(filePath);
   const mimeType = getMimeType(filePath);
-  const content = (0, import_node_path3.extname)(filePath) === ".xml" ? substituteManifestPort(
+  const content = (0, import_node_path4.extname)(filePath) === ".xml" ? substituteManifestPort(
     raw.toString(),
     bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT,
     BRIDGE_PORT
@@ -57327,12 +57578,22 @@ function serveStatic(req, res) {
 }
 if (bridgeActive) {
   autoSideloadManifest(bridgeTls, BRIDGE_PORT);
-  const bridgeServer = bridgeTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs8.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs8.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http.createServer)(serveStatic);
-  const allowedBridgeOrigin = `${bridgeTls ? "https" : "http"}://localhost:${BRIDGE_PORT}`;
+  const bridgeServer = bridgeTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs9.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs9.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http.createServer)(serveStatic);
+  const allowedOrigins = /* @__PURE__ */ new Set();
+  for (const host of ["localhost", "127.0.0.1"]) {
+    allowedOrigins.add(`${bridgeTls ? "https" : "http"}://${host}:${BRIDGE_PORT}`);
+  }
+  for (const ifaces of Object.values((0, import_node_os2.networkInterfaces)())) {
+    for (const iface of ifaces ?? []) {
+      if (iface.family === "IPv4" && !iface.internal) {
+        allowedOrigins.add(`${bridgeTls ? "https" : "http"}://${iface.address}:${BRIDGE_PORT}`);
+      }
+    }
+  }
   const wss = new import_websocket_server.default({
     server: bridgeServer,
     verifyClient: (info, callback) => {
-      if (info.origin === allowedBridgeOrigin) {
+      if (info.origin && allowedOrigins.has(info.origin)) {
         callback(true);
         return;
       }
@@ -57385,7 +57646,7 @@ if (bridgeActive) {
     }
     throw err;
   });
-  bridgeServer.listen(BRIDGE_PORT, "127.0.0.1", () => {
+  bridgeServer.listen(BRIDGE_PORT, process.env.BRIDGE_HOST || "127.0.0.1", () => {
     console.error("Bridge server running");
     console.error(`  ${bridgeScheme.toUpperCase()}: ${bridgeScheme}://localhost:${BRIDGE_PORT}`);
     console.error(`  ${bridgeWsScheme.toUpperCase()}:  ${bridgeWsScheme}://localhost:${BRIDGE_PORT}`);
@@ -57452,7 +57713,7 @@ var activeInterfaces = [
   httpActive && `HTTP(:${MCP_HTTP_PORT})`,
   bridgeActive && `Bridge(:${BRIDGE_PORT})`
 ].filter(Boolean).join(" + ");
-console.error(`powerpoint-mcp started [${activeInterfaces}]`);
+console.error(`o365-mcp started [${activeInterfaces}]`);
 if (!bridgeActive) {
   console.error("  Note: Bridge not active. Tools requiring the add-in will return errors.");
 }
