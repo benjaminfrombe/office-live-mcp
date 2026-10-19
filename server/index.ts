@@ -454,7 +454,14 @@ if (bridgeActive) {
     console.error(`[${new Date().toISOString()}] Add-in WebSocket connected`)
 
     ws.on('message', (data: Buffer) => {
-      let msg: { type?: string; id?: string; data?: unknown; error?: { message?: string }; documentUrl?: string }
+      let msg: {
+        type?: string
+        id?: string
+        data?: unknown
+        error?: { message?: string }
+        documentUrl?: string
+        host?: string
+      }
       try {
         msg = JSON.parse(data.toString())
       } catch {
@@ -475,7 +482,7 @@ if (bridgeActive) {
           presentationId,
           filePath: documentUrl,
         })
-        console.error(`[${new Date().toISOString()}] Add-in ready: ${presentationId}`)
+        console.error(`[${new Date().toISOString()}] Add-in ready (${msg.host ?? 'unknown host'}): ${presentationId}`)
       }
     })
 

@@ -1,0 +1,23 @@
+o365-mcp (working title: powerpoint-mcp fork "o365" branch)
+Copyright (c) 2026 Benjamin Jacobs
+
+This project is a fork and extension of kzarzycki/powerpoint-mcp.
+
+Attribution
+===========
+
+1. kzarzycki/powerpoint-mcp — MIT License
+   Copyright (c) 2026 Krzysztof Zarzycki
+   https://github.com/kzarzycki/powerpoint-mcp
+   The bridge architecture (Node bridge server, WebSocket protocol,
+   Office.js taskpane add-in, execute_officejs escape hatch) and all
+   PowerPoint tool modules originate from this project. See LICENSE.
+
+2. mindstone/mcp-servers (connectors/office) — FSL-1.1-MIT
+   Copyright (c) 2026 mindstone
+   https://github.com/mindstone/mcp-servers
+   NO CODE from this project is included here. It was studied as a
+   reference for Word/Excel Office.js add-in manifests and tool design
+   only. Its Functional Source License does not permit reuse in a
+   competing product during the grant period, so this project contains
+   an independent implementation informed by that reference.

@@ -60,7 +60,9 @@ function connect() {
     } catch (_e) {
       // Not available in standalone/browser mode
     }
-    socket.send(JSON.stringify({ type: 'ready', documentUrl: documentUrl }))
+    var detected = detectHost()
+    var hostName = detected ? detected.name : null
+    socket.send(JSON.stringify({ type: 'ready', documentUrl: documentUrl, host: hostName }))
 
     // Enable auto-start on document open (shared runtime)
     try {
@@ -156,20 +158,35 @@ function handleCommand(message) {
   }
 }
 
-/* Execute a code string inside PowerPoint.run() via AsyncFunction */
+/* Host detection — the same taskpane is sideloaded into PowerPoint, Word and
+   Excel. Each host injects its own Office.js global (PowerPoint/Word/Excel). */
+var HOST_GLOBALS = ['PowerPoint', 'Word', 'Excel']
+
+function detectHost() {
+  var i, name
+  for (i = 0; i < HOST_GLOBALS.length; i++) {
+    name = HOST_GLOBALS[i]
+    if (typeof window[name] !== 'undefined') return { name: name, api: window[name] }
+  }
+  return null
+}
+
+/* Execute a code string inside Host.run() via AsyncFunction */
 function executeCode(code, requestId) {
-  if (typeof PowerPoint === 'undefined') {
+  var host = detectHost()
+  if (!host) {
     sendError(requestId, {
-      message: 'PowerPoint not available — running in standalone mode',
+      message: 'No Office host available — running in standalone mode',
       code: 'NotInOffice',
     })
     return Promise.resolve()
   }
 
-  return PowerPoint.run((context) => {
-    var fn = new AsyncFunction('context', 'PowerPoint', code)
-    return fn(context, PowerPoint)
-  })
+  return host.api
+    .run((context) => {
+      var fn = new AsyncFunction('context', host.name, code)
+      return fn(context, host.api)
+    })
     .then((result) => {
       sendResponse(requestId, result === undefined ? null : result)
     })

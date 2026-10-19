@@ -53676,6 +53676,49 @@ function registerChartTools(server, pool2, getSessionId, getActiveSessionCount) 
   );
 }
 
+// server/tools/excel.ts
+function registerExcelTools(server, pool2, _getSessionId, _getActiveSessionCount) {
+  server.tool(
+    "list_workbooks",
+    "Lists all Excel workbooks currently connected to the bridge server. Shows workbook IDs (file paths for saved files, generated IDs for unsaved) and connection status. Use this to find the workbookId to pass to other Excel tools when multiple workbooks are open.",
+    withTool(async () => {
+      const workbooks = [];
+      for (const [id, conn] of pool2.entries()) {
+        workbooks.push({
+          workbookId: id,
+          filePath: conn.filePath,
+          ready: conn.ready
+        });
+      }
+      return {
+        content: [
+          {
+            type: "text",
+            text: workbooks.length === 0 ? "No workbooks connected. Open a workbook in Excel and click the add-in button." : JSON.stringify(workbooks, null, 2)
+          }
+        ]
+      };
+    })
+  );
+  server.tool(
+    "execute_exceljs",
+    "Execute arbitrary Office.js code inside the live Excel workbook. The code runs inside Excel.run(async (context) => { ... }) with 'context' available as a variable. Use 'await context.sync()' after loading properties. Return a value to get it back as the tool result. Common operations: read/write ranges (workbook.worksheets), formulas, tables, charts. Cell references use A1 notation; values/formulas are returned as arrays matching the range shape.",
+    {
+      code: external_exports3.string().describe(
+        "Office.js code to execute. Runs inside Excel.run() with 'context' available. Use 'return' to send back a result."
+      ),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(async ({ code, workbookId }) => {
+      const target = pool2.resolveTarget(workbookId);
+      const result = await pool2.sendCommand("executeCode", { code }, target.ws);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result ?? { success: true }, null, 2) }]
+      };
+    })
+  );
+}
+
 // server/tools/exec.ts
 function registerExecTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
@@ -55476,6 +55519,49 @@ return { success: true, shapesFormatted: ${shapes.length} };`;
   );
 }
 
+// server/tools/word.ts
+function registerWordTools(server, pool2, _getSessionId, _getActiveSessionCount) {
+  server.tool(
+    "list_documents",
+    "Lists all Word documents currently connected to the bridge server. Shows document IDs (file paths for saved files, generated IDs for unsaved) and connection status. Use this to find the documentId to pass to other Word tools when multiple documents are open.",
+    withTool(async () => {
+      const documents = [];
+      for (const [id, conn] of pool2.entries()) {
+        documents.push({
+          documentId: id,
+          filePath: conn.filePath,
+          ready: conn.ready
+        });
+      }
+      return {
+        content: [
+          {
+            type: "text",
+            text: documents.length === 0 ? "No documents connected. Open a document in Word and click the add-in button." : JSON.stringify(documents, null, 2)
+          }
+        ]
+      };
+    })
+  );
+  server.tool(
+    "execute_wordjs",
+    "Execute arbitrary Office.js code inside the live Word document. The code runs inside Word.run(async (context) => { ... }) with 'context' available as a variable. Use 'await context.sync()' after loading properties. Return a value to get it back as the tool result. Common operations: read the body (context.document.body), insert paragraphs, search and replace, work with tables, read/set tracked changes. All units are points.",
+    {
+      code: external_exports3.string().describe(
+        "Office.js code to execute. Runs inside Word.run() with 'context' available. Use 'return' to send back a result."
+      ),
+      documentId: external_exports3.string().optional().describe("Target document ID from list_documents. Optional when only one document is connected.")
+    },
+    withTool(async ({ code, documentId }) => {
+      const target = pool2.resolveTarget(documentId);
+      const result = await pool2.sendCommand("executeCode", { code }, target.ws);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result ?? { success: true }, null, 2) }]
+      };
+    })
+  );
+}
+
 // server/tools/xml.ts
 var import_xmldom3 = __toESM(require_lib(), 1);
 function registerXmlTools(server, pool2, getSessionId, getActiveSessionCount) {
@@ -55621,6 +55707,8 @@ function registerTools(server, pool2, getSessionId, getActiveSessionCount) {
   registerChartTools(server, pool2, getSessionId, getActiveSessionCount);
   registerMediaTools(server, pool2, getSessionId, getActiveSessionCount);
   registerExecTools(server, pool2, getSessionId, getActiveSessionCount);
+  registerWordTools(server, pool2, getSessionId, getActiveSessionCount);
+  registerExcelTools(server, pool2, getSessionId, getActiveSessionCount);
 }
 
 // server/version-check.ts
@@ -55992,7 +56080,7 @@ if (bridgeActive) {
           presentationId,
           filePath: documentUrl
         });
-        console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] Add-in ready: ${presentationId}`);
+        console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] Add-in ready (${msg.host ?? "unknown host"}): ${presentationId}`);
       }
     });
     ws.on("close", () => {

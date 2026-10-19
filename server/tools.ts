@@ -1,12 +1,14 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ConnectionPool } from './bridge.ts'
 import { registerChartTools } from './tools/charts.ts'
+import { registerExcelTools } from './tools/excel.ts'
 import { registerExecTools } from './tools/exec.ts'
 import { registerInspectTools } from './tools/inspect.ts'
 import { registerMediaTools } from './tools/media.ts'
 import { registerNotesTools } from './tools/notes.ts'
 import { registerSlideTools } from './tools/slides.ts'
 import { registerTextTools } from './tools/text.ts'
+import { registerWordTools } from './tools/word.ts'
 import { registerXmlTools } from './tools/xml.ts'
 
 export type { FormatShapeSpec } from './tools/shared.ts'
@@ -41,4 +43,6 @@ export function registerTools(
   registerChartTools(server, pool, getSessionId, getActiveSessionCount)
   registerMediaTools(server, pool, getSessionId, getActiveSessionCount)
   registerExecTools(server, pool, getSessionId, getActiveSessionCount)
+  registerWordTools(server, pool, getSessionId, getActiveSessionCount)
+  registerExcelTools(server, pool, getSessionId, getActiveSessionCount)
 }

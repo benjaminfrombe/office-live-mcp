@@ -100,7 +100,7 @@ describe('MCP Tools', () => {
     pool = new ConnectionPool(100)
   })
 
-  it('lists all 25 tools', async () => {
+  it('lists all 29 tools', async () => {
     const { client } = await setupMcpClient(pool)
     const result = await client.listTools()
     const names = result.tools.map((t) => t.name).sort()
@@ -113,14 +113,18 @@ describe('MCP Tools', () => {
       'edit_slide_xml',
       'edit_slide_zip',
       'edit_speaker_notes',
+      'execute_exceljs',
       'execute_officejs',
+      'execute_wordjs',
       'format_shapes',
       'get_local_copy',
       'insert_image',
       'inspect_deck',
       'inspect_layouts',
       'inspect_slide',
+      'list_documents',
       'list_presentations',
+      'list_workbooks',
       'preview_deck',
       'read_deck_text',
       'read_shape_paragraphs',
