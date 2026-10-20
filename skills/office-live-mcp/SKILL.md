@@ -71,7 +71,7 @@ Key return formats to know:
 
 - **`scan_slide`** returns `{ slideWidth, slideHeight, slides: [{ slideIndex, slideId, shapes: [{ id, name, type, left, top, width, height }] }] }` — `id` is a stable numeric string (use this for read/edit tools); `name` is locale-dependent (never use as selector); `type` is one of "GeometricShape", "TextBox", "Table", "Chart", "Picture", "Group"
 - **`verify_slides`** returns `{ slideIndex, issues: [{ type, description, shapeIds }] }` — `type` is "overlap", "bounds", "empty_text", "tiny_shapes", "unused_placeholder", or "background_cover"; `shapeIds` are stable IDs
-- **`search_fluent_icons`** returns `[{ id, description, isMono, contentTier, searchScore, svgUrl }]` — `isMono: false` = filled/colorful, `isMono: true` = outline/mono; pick highest `searchScore` matching intent; use `svgUrl` with `insert_image` (sourceType: "url") to insert
+- **`search_fluent_icons`** returns `[{ id, description, isMono, contentTier, searchScore, svgUrl, svgBase64 }]` — `isMono: false` = filled/colorful, `isMono: true` = outline/mono; pick highest `searchScore` matching intent; insert with `insert_image` (sourceType: **"base64"**, source = `svgBase64`). Add `color: "#RRGGBB"` to recolor mono icons. The SVG content is fetched server-side, so the icon CDN can never break the insert.
 - **`read_shape_paragraphs`** returns raw OOXML `<a:p>` paragraph elements (does NOT include `<a:bodyPr>` or `<a:lstStyle>`)
 - **`read_slide_zip`** returns `{ zipContents: { path: content }, allPaths: [...] }`
 

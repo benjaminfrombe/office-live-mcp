@@ -61,6 +61,21 @@ export function registerMediaTools(
         base64Data = source
       }
 
+      // Step 1a: Reject payloads that are not actually images. A dead icon
+      // CDN returning "404: Not Found" HTML used to reach the host as
+      // base64 and rendered as a broken-image placeholder.
+      const decoded = Buffer.from(base64Data, 'base64').toString('utf-8').trimStart()
+      const head = decoded.slice(0, 300).toLowerCase()
+      const looksLikeHtmlPage =
+        decoded.startsWith('<') &&
+        !decoded.includes('<svg') &&
+        (head.includes('<!doctype') || head.includes('<html') || head.includes('not found'))
+      if (looksLikeHtmlPage) {
+        throw new Error(
+          'The image source contains an error page (HTML), not an image. The icon URL may be dead — check the source URL or pick a different icon.',
+        )
+      }
+
       // Step 1b: Recolor SVG if color is provided
       if (color) {
         const svg = Buffer.from(base64Data, 'base64').toString('utf-8')
@@ -162,7 +177,7 @@ return new Promise(function(resolve, reject) {
 
   server.tool(
     'search_fluent_icons',
-    'Search Microsoft Fluent UI icon library. Returns matching icons with SVG URLs for use with insert_image. Prefer mono (_M) variants for professional decks. Retry with synonyms if no good matches (e.g. "innovation" → "lightbulb", "security" → "shield").',
+    'Search Microsoft Fluent UI icon library. Returns matching icons with svgBase64 ready for insert_image (sourceType: "base64") — the SVG content is fetched server-side so dead icon URLs can never break the workflow. Prefer mono (_M) variants for professional decks. Retry with synonyms if no good matches (e.g. "innovation" → "lightbulb", "security" → "shield").',
     {
       query: z.string().describe('Search query (e.g. "warning", "arrow down", "lightbulb")'),
       top: z.number().int().min(1).max(50).optional().describe('Max results to return (default 10)'),
@@ -170,10 +185,40 @@ return new Promise(function(resolve, reject) {
         .enum(['regular', 'filled'])
         .optional()
         .describe('Filter by style: "regular" for mono/outline icons, "filled" for solid icons. Omit for both.'),
+      includeSvg: z
+        .boolean()
+        .optional()
+        .describe(
+          'Fetch the SVG content for each result (default true, capped at 6 fetches). Set false for a URL-only listing.',
+        ),
     },
-    withTool(async ({ query, top, style }) => {
+    withTool(async ({ query, top, style, includeSvg }) => {
       const results = await searchIcons(query, top ?? 10, style)
-      return { content: [{ type: 'text' as const, text: JSON.stringify(results, null, 2) }] }
+      if (includeSvg === false) {
+        return { content: [{ type: 'text' as const, text: JSON.stringify(results, null, 2) }] }
+      }
+      const enriched: Array<Record<string, unknown>> = []
+      let fetched = 0
+      for (const r of results) {
+        if (fetched < 6) {
+          try {
+            const resp = await fetch(r.svgUrl)
+            if (resp.ok) {
+              const svg = await resp.text()
+              enriched.push({ ...r, svgBase64: Buffer.from(svg).toString('base64') })
+              fetched++
+              continue
+            }
+            enriched.push({ ...r, svgError: `fetch failed: HTTP ${resp.status}` })
+            continue
+          } catch {
+            enriched.push({ ...r, svgError: 'fetch failed' })
+            continue
+          }
+        }
+        enriched.push(r)
+      }
+      return { content: [{ type: 'text' as const, text: JSON.stringify(enriched, null, 2) }] }
     }),
   )
 }

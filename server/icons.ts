@@ -38,7 +38,7 @@ const MANIFEST_URL =
 
 const CDN_BASE = 'https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/assets'
 
-const DEFAULT_SIZE = 24
+const DEFAULT_SIZE = 16
 
 // ---------------------------------------------------------------------------
 // Caches

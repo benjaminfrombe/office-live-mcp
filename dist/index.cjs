@@ -55843,7 +55843,7 @@ var import_node_url2 = require("node:url");
 var import_meta = {};
 var MANIFEST_URL = "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/fonts/FluentSystemIcons-Regular.json";
 var CDN_BASE = "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/assets";
-var DEFAULT_SIZE = 24;
+var DEFAULT_SIZE = 16;
 var cachedIndex = null;
 function snakeToTitle(s) {
   return s.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
@@ -56031,6 +56031,14 @@ function registerMediaTools(server, pool2, getSessionId, getActiveSessionCount) 
       } else {
         base64Data = source;
       }
+      const decoded = Buffer.from(base64Data, "base64").toString("utf-8").trimStart();
+      const head = decoded.slice(0, 300).toLowerCase();
+      const looksLikeHtmlPage = decoded.startsWith("<") && !decoded.includes("<svg") && (head.includes("<!doctype") || head.includes("<html") || head.includes("not found"));
+      if (looksLikeHtmlPage) {
+        throw new Error(
+          "The image source contains an error page (HTML), not an image. The icon URL may be dead \u2014 check the source URL or pick a different icon."
+        );
+      }
       if (color) {
         const svg = Buffer.from(base64Data, "base64").toString("utf-8");
         if (svg.trimStart().startsWith("<svg") || svg.trimStart().startsWith("<?xml")) {
@@ -56114,15 +56122,42 @@ return new Promise(function(resolve, reject) {
   );
   server.tool(
     "search_fluent_icons",
-    'Search Microsoft Fluent UI icon library. Returns matching icons with SVG URLs for use with insert_image. Prefer mono (_M) variants for professional decks. Retry with synonyms if no good matches (e.g. "innovation" \u2192 "lightbulb", "security" \u2192 "shield").',
+    'Search Microsoft Fluent UI icon library. Returns matching icons with svgBase64 ready for insert_image (sourceType: "base64") \u2014 the SVG content is fetched server-side so dead icon URLs can never break the workflow. Prefer mono (_M) variants for professional decks. Retry with synonyms if no good matches (e.g. "innovation" \u2192 "lightbulb", "security" \u2192 "shield").',
     {
       query: external_exports3.string().describe('Search query (e.g. "warning", "arrow down", "lightbulb")'),
       top: external_exports3.number().int().min(1).max(50).optional().describe("Max results to return (default 10)"),
-      style: external_exports3.enum(["regular", "filled"]).optional().describe('Filter by style: "regular" for mono/outline icons, "filled" for solid icons. Omit for both.')
+      style: external_exports3.enum(["regular", "filled"]).optional().describe('Filter by style: "regular" for mono/outline icons, "filled" for solid icons. Omit for both.'),
+      includeSvg: external_exports3.boolean().optional().describe(
+        "Fetch the SVG content for each result (default true, capped at 6 fetches). Set false for a URL-only listing."
+      )
     },
-    withTool(async ({ query, top, style }) => {
+    withTool(async ({ query, top, style, includeSvg }) => {
       const results = await searchIcons(query, top ?? 10, style);
-      return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
+      if (includeSvg === false) {
+        return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
+      }
+      const enriched = [];
+      let fetched = 0;
+      for (const r of results) {
+        if (fetched < 6) {
+          try {
+            const resp = await fetch(r.svgUrl);
+            if (resp.ok) {
+              const svg = await resp.text();
+              enriched.push({ ...r, svgBase64: Buffer.from(svg).toString("base64") });
+              fetched++;
+              continue;
+            }
+            enriched.push({ ...r, svgError: `fetch failed: HTTP ${resp.status}` });
+            continue;
+          } catch {
+            enriched.push({ ...r, svgError: "fetch failed" });
+            continue;
+          }
+        }
+        enriched.push(r);
+      }
+      return { content: [{ type: "text", text: JSON.stringify(enriched, null, 2) }] };
     })
   );
 }
@@ -58151,7 +58186,8 @@ function createMcpServer(getSessionId, getActiveSessionCount) {
     {
       instructions: [
         "This server drives LIVE Office documents (Word, Excel, PowerPoint) through an add-in taskpane; the user watches every change happen in real time.",
-        "View etiquette: the user wants to SEE edits as they happen. Before starting an edit burst on a slide, bring that slide into view first (PowerPoint: show_slide; Word/Excel: navigate to or select the target content), then make the changes \u2014 the view stays there so every change lands visibly.",
+        "View etiquette: the user wants to SEE edits as they happen. Before starting an edit burst on a slide, bring that slide into view first (PowerPoint: show_slide; Word/Excel: navigate to or select the target content), then make the changes.",
+        "Slide edits: prefer the OOXML route (edit_slide_xml, edit_shape_paragraphs, edit_slide_zip, edit_slide_chart) \u2014 full fidelity, and the view automatically returns to the edited slide after the reimport. Use execute_officejs only for quick in-place tweaks or APIs the OOXML route cannot reach.",
         "When multiple documents are connected, always pass the explicit documentId/workbookId/presentationId from list_documents/list_workbooks/list_presentations.",
         "Tools that need a saved file (get_local_copy, read_deck_text, read_speaker_notes, add_slide) fail on unsaved documents with a GeneralException; save first."
       ].join("\n")
