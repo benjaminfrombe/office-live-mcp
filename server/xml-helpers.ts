@@ -58,7 +58,7 @@ export async function reimportSlide(
 
   // The base64 is embedded directly in the code string — it stays server-side
   // and never enters Claude's context.
-  const code = `
+  let code = `
     var slides = context.presentation.slides;
     slides.load("items");
     await context.sync();

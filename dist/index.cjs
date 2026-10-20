@@ -53155,13 +53155,13 @@ async function exportSlide(pool2, slideIndex, targetWs, timeout) {
   `;
   return await pool2.sendCommand("executeCode", { code }, targetWs, timeout);
 }
-async function reimportSlide(pool2, modifiedBase64, slideId, prevSlideId, targetWs, timeout) {
+async function reimportSlide(pool2, modifiedBase64, slideId, prevSlideId, targetWs, timeout, restoredSlideIndex) {
   const optionsParts = ['formatting: "KeepSourceFormatting"'];
   if (prevSlideId) {
     optionsParts.push(`targetSlideId: "${prevSlideId}"`);
   }
   const optionsStr = `{ ${optionsParts.join(", ")} }`;
-  const code = `
+  let code = `
     var slides = context.presentation.slides;
     slides.load("items");
     await context.sync();
@@ -53189,6 +53189,15 @@ async function reimportSlide(pool2, modifiedBase64, slideId, prevSlideId, target
     }
     return { success: true };
   `;
+  if (restoredSlideIndex !== void 0) {
+    code += `
+    Office.context.document.goToByIdAsync(${restoredSlideIndex + 1}, Office.GoToType.Index, function(navResult) {
+      if (navResult.status !== Office.AsyncResultStatus.Succeeded) {
+        console.error("View restore failed: " + navResult.error.message);
+      }
+    });
+  `;
+  }
   await pool2.sendCommand("executeCode", { code }, targetWs, timeout);
 }
 var NS_P = "http://schemas.openxmlformats.org/presentationml/2006/main";
@@ -53331,9 +53340,9 @@ async function buildEditedZipBase64(exportedBase64, files) {
   }
   return { base64: modifiedBase64, newPaths };
 }
-async function applyZipEditAndReimport(pool2, exported, files, targetWs) {
+async function applyZipEditAndReimport(pool2, exported, files, targetWs, slideIndex) {
   const { base64: base643, newPaths } = await buildEditedZipBase64(exported.base64, files);
-  await reimportSlide(pool2, base643, exported.slideId, exported.prevSlideId, targetWs);
+  await reimportSlide(pool2, base643, exported.slideId, exported.prevSlideId, targetWs, void 0, slideIndex);
   return newPaths;
 }
 async function extractSlideXmlFromZip(base643) {
@@ -53904,7 +53913,7 @@ function registerChartTools(server, pool2, getSessionId, getActiveSessionCount) 
         [chartZipPath]: chartXml,
         [relsPath]: modifiedRels
       };
-      await applyZipEditAndReimport(pool2, exported, files, target.ws);
+      await applyZipEditAndReimport(pool2, exported, files, target.ws, slideIndex);
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount());
       const text = JSON.stringify(
         {
@@ -56524,7 +56533,15 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
       }
       replaceParagraphs(doc, shape, xml);
       const modifiedBase64 = await updateSlideXmlInZip(zip, serializeXml(doc));
-      await reimportSlide(pool2, modifiedBase64, exported.slideId, exported.prevSlideId, target.ws);
+      await reimportSlide(
+        pool2,
+        modifiedBase64,
+        exported.slideId,
+        exported.prevSlideId,
+        target.ws,
+        void 0,
+        slideIndex
+      );
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount());
       const text = JSON.stringify({ success: true }, null, 2) + (warning ?? "");
       return { content: [{ type: "text", text }] };
@@ -57706,7 +57723,15 @@ function registerXmlTools(server, pool2, getSessionId, getActiveSessionCount) {
         finalXml = xml;
       }
       const modifiedBase64 = await updateSlideXmlInZip(zip, finalXml);
-      await reimportSlide(pool2, modifiedBase64, exported.slideId, exported.prevSlideId, target.ws);
+      await reimportSlide(
+        pool2,
+        modifiedBase64,
+        exported.slideId,
+        exported.prevSlideId,
+        target.ws,
+        void 0,
+        slideIndex
+      );
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount());
       const text = JSON.stringify({ success: true }, null, 2) + (warning ?? "");
       return { content: [{ type: "text", text }] };
@@ -57725,7 +57750,7 @@ function registerXmlTools(server, pool2, getSessionId, getActiveSessionCount) {
     withTool(async ({ slideIndex, files, presentationId }) => {
       const target = pool2.resolveTarget(presentationId);
       const exported = await exportSlide(pool2, slideIndex, target.ws);
-      const newPaths = await applyZipEditAndReimport(pool2, exported, files, target.ws);
+      const newPaths = await applyZipEditAndReimport(pool2, exported, files, target.ws, slideIndex);
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount());
       const text = JSON.stringify({ success: true, filesUpdated: Object.keys(files).length, newFiles: newPaths }, null, 2) + (warning ?? "");
       return { content: [{ type: "text", text }] };
@@ -57952,6 +57977,7 @@ function createMcpServer(getSessionId, getActiveSessionCount) {
       instructions: [
         "This server drives LIVE Office documents (Word, Excel, PowerPoint) through an add-in taskpane; the user watches every change happen in real time.",
         "View etiquette: the user wants to SEE edits as they happen. Before starting an edit burst on a slide, bring that slide into view first (PowerPoint: show_slide; Word/Excel: navigate to or select the target content), then make the changes \u2014 the view stays there so every change lands visibly.",
+        "Prefer in-place edits over OOXML reimports: text and formatting via execute_officejs (textRange) or format_shapes keep the view position. The OOXML route (edit_shape_paragraphs, edit_slide_xml, edit_slide_zip, edit_slide_chart) deletes and reinserts the slide \u2014 PowerPoint resets the view to slide 1 and the tools restore it automatically, but prefer in-place for anything text-only.",
         "When multiple documents are connected, always pass the explicit documentId/workbookId/presentationId from list_documents/list_workbooks/list_presentations.",
         "Tools that need a saved file (get_local_copy, read_deck_text, read_speaker_notes, add_slide) fail on unsaved documents with a GeneralException; save first."
       ].join("\n")
