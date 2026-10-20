@@ -3333,6 +3333,37 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
+    function removeDotSegmentsRelative(path) {
+      if (path === "" || path[0] === "/") {
+        return removeDotSegments(path);
+      }
+      const segments = path.split("/");
+      const last = segments.length - 1;
+      const output = [];
+      let trailingDirectory = false;
+      for (let i = 0; i <= last; i++) {
+        const segment = segments[i];
+        if (segment === "." || segment === "..") {
+          if (segment === "..") {
+            if (output.length !== 0 && output[output.length - 1] !== "..") {
+              output.pop();
+            } else {
+              output.push("..");
+            }
+          }
+          trailingDirectory = i === last;
+        } else {
+          output.push(segment);
+        }
+      }
+      if (trailingDirectory && output[output.length - 1] !== "..") {
+        output.push("");
+      }
+      if (output.length === 0 || output[0] === "" || output[0].includes(":")) {
+        output.unshift(".");
+      }
+      return output.join("/");
+    }
     var HOST_DELIMS = { "@": "%40", "/": "%2F", "?": "%3F", "#": "%23", ":": "%3A" };
     var HOST_DELIM_RE = /[@/?#:]/g;
     var HOST_DELIM_NO_COLON_RE = /[@/?#]/g;
@@ -3593,6 +3624,7 @@ var require_utils = __commonJS({
       encodeFragment,
       escapePreservingEscapes,
       removeDotSegments,
+      removeDotSegmentsRelative,
       isIPv4,
       isUUID,
       normalizeIPv6,
@@ -3816,16 +3848,18 @@ var require_schemes = __commonJS({
 var require_fast_uri = __commonJS({
   "node_modules/fast-uri/index.js"(exports2, module2) {
     "use strict";
-    var { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, serializePathEncoding, normalizeQueryFragmentEncoding, encodeQuery, encodeFragment, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = require_utils();
+    var { normalizeIPv6, removeDotSegments, removeDotSegmentsRelative, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, serializePathEncoding, normalizeQueryFragmentEncoding, encodeQuery, encodeFragment, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = require_utils();
     var { SCHEMES, getSchemeHandler } = require_schemes();
     var VALID_SCHEME = /^[A-Za-z][A-Za-z0-9+.-]*$/u;
     var MALFORMED_SCHEME_ERROR = "URI scheme is malformed.";
-    function decodeValidScheme(scheme) {
-      const decodedScheme = unescape(String(scheme));
-      if (!VALID_SCHEME.test(decodedScheme)) {
+    var MALFORMED_HOST_ERROR = "URI host is malformed.";
+    var FORBIDDEN_DOMAIN_HOST_CHARACTER = /[\0-\x20"#/:<>?@[\\\]^`{|}\x7F]/u;
+    function validateScheme(scheme) {
+      const stringScheme = String(scheme);
+      if (!VALID_SCHEME.test(stringScheme)) {
         throw new TypeError(MALFORMED_SCHEME_ERROR);
       }
-      return decodedScheme;
+      return stringScheme;
     }
     function normalize(uri, options) {
       if (typeof uri === "string") {
@@ -3862,6 +3896,9 @@ var require_fast_uri = __commonJS({
       const resolvedSchemeHandler = getSchemeHandler(options && options.scheme || resolved.scheme);
       const resolvedHost = resolved.host;
       const resolvedHostIsIP = resolvedHost !== void 0 && resolvedHost !== "" && (isIPv4(resolvedHost) || normalizeIPv6(resolvedHost).isIPV6);
+      if (hasForbiddenDomainHost(resolved, options || {}, resolvedSchemeHandler, resolvedHostIsIP)) {
+        throw new Error(MALFORMED_HOST_ERROR);
+      }
       canonicalizeHost(resolved, options || {}, resolvedSchemeHandler, resolvedHostIsIP);
       const encodedASCIIHost = resolvedHost && resolvedHost.indexOf("%") !== -1 && !/\P{ASCII}/u.test(resolvedHost);
       if (resolved.error && !encodedASCIIHost) {
@@ -3903,14 +3940,15 @@ var require_fast_uri = __commonJS({
             if (relative2.path[0] === "/") {
               target.path = removeDotSegments(relative2.path);
             } else {
-              if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
+              const baseHasAuthority = base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0;
+              if (baseHasAuthority && !base.path) {
                 target.path = "/" + relative2.path;
               } else if (!base.path) {
                 target.path = relative2.path;
               } else {
                 target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative2.path;
               }
-              target.path = removeDotSegments(target.path);
+              target.path = base.scheme === void 0 && !baseHasAuthority && target.path[0] !== "/" ? removeDotSegmentsRelative(target.path) : removeDotSegments(target.path);
             }
             target.query = relative2.query;
           }
@@ -3948,12 +3986,13 @@ var require_fast_uri = __commonJS({
       const options = Object.assign({}, opts);
       const uriTokens = [];
       if (component.scheme) {
-        component.scheme = decodeValidScheme(component.scheme);
+        component.scheme = validateScheme(component.scheme);
       }
       const schemeHandler = getSchemeHandler(options.scheme || component.scheme);
       if (schemeHandler && schemeHandler.serialize) schemeHandler.serialize(component, options);
       const hasAuthority = component.userinfo !== void 0 || component.host !== void 0 || component.port !== void 0;
-      const pathNoScheme = !options.skipEscape && component.scheme === void 0 && !hasAuthority;
+      const schemelessReference = (component.scheme === void 0 || options.reference === "suffix") && !hasAuthority;
+      const pathNoScheme = !options.skipEscape && schemelessReference;
       if (component.path !== void 0) {
         if (!options.skipEscape) {
           component.path = serializePathEncoding(component.path, pathNoScheme);
@@ -3962,7 +4001,7 @@ var require_fast_uri = __commonJS({
         }
       }
       if (options.reference !== "suffix" && component.scheme) {
-        component.scheme = decodeValidScheme(component.scheme);
+        component.scheme = validateScheme(component.scheme);
         uriTokens.push(component.scheme, ":");
       }
       const authority = recomposeAuthority(component);
@@ -3978,9 +4017,9 @@ var require_fast_uri = __commonJS({
       if (component.path !== void 0) {
         let s = component.path;
         if (!options.absolutePath && (!schemeHandler || !schemeHandler.absolutePath)) {
-          s = removeDotSegments(s);
+          s = schemelessReference && s[0] !== "/" ? removeDotSegmentsRelative(s) : removeDotSegments(s);
         }
-        if (pathNoScheme) {
+        if (schemelessReference) {
           s = serializePathEncoding(s, true);
         }
         if (authority === void 0 && s[0] === "/" && s[1] === "/") {
@@ -4027,15 +4066,33 @@ var require_fast_uri = __commonJS({
       return hasMalformedPercentEncoding(matches[3]) || host !== void 0 && !isIPLiteral(host) && hasMalformedPercentEncoding(host) || hasMalformedPercentEncoding(matches[6]) || hasMalformedPercentEncoding(matches[7]) || hasMalformedPercentEncoding(matches[8]);
     }
     function canonicalizeHost(parsed, options, schemeHandler, isIP) {
+      if (hasForbiddenDomainHost(parsed, options, schemeHandler, isIP)) {
+        parsed.error = parsed.error || MALFORMED_HOST_ERROR;
+        return true;
+      }
       if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport) && parsed.host && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && isIP === false && nonSimpleDomain(parsed.host)) {
+        let url2;
         try {
-          parsed.host = new URL("http://" + parsed.host).hostname;
+          url2 = new URL("http://" + parsed.host);
         } catch (e) {
           parsed.error = parsed.error || "Host's domain name can not be converted to ASCII: " + e;
           return true;
         }
+        if (!isHostOnlyURL(url2)) {
+          parsed.error = parsed.error || MALFORMED_HOST_ERROR;
+          return true;
+        }
+        parsed.host = url2.hostname;
       }
       return false;
+    }
+    function hasForbiddenDomainHost(parsed, options, schemeHandler, isIP) {
+      return Boolean(
+        parsed.host && isIP === false && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && FORBIDDEN_DOMAIN_HOST_CHARACTER.test(parsed.host)
+      );
+    }
+    function isHostOnlyURL(url2) {
+      return url2.username === "" && url2.password === "" && url2.port === "" && url2.pathname === "/" && url2.search === "" && url2.hash === "" && url2.hostname !== "";
     }
     function parseWithStatus(uri, opts) {
       const options = Object.assign({}, opts);
@@ -4091,9 +4148,8 @@ var require_fast_uri = __commonJS({
         parsed.query = matches[7];
         parsed.fragment = matches[8];
         if (parsed.scheme !== void 0) {
-          const decodedScheme = unescape(parsed.scheme);
-          if (VALID_SCHEME.test(decodedScheme)) {
-            parsed.scheme = decodedScheme.toLowerCase();
+          if (VALID_SCHEME.test(parsed.scheme)) {
+            parsed.scheme = parsed.scheme.toLowerCase();
           } else {
             parsed.error = parsed.error || MALFORMED_SCHEME_ERROR;
             malformedScheme = true;
@@ -4121,7 +4177,7 @@ var require_fast_uri = __commonJS({
             malformedIPLiteral = hasIPLiteralBracket && (!bracketedIPLiteral || ipv6result.error === true);
             parsed.host = isIP ? ipv6result.host : ipv6result.host.toLowerCase();
             if (malformedIPLiteral) {
-              parsed.error = parsed.error || "URI host is malformed.";
+              parsed.error = parsed.error || MALFORMED_HOST_ERROR;
               malformedAuthorityOrPort = true;
             }
           } else {
@@ -4144,13 +4200,14 @@ var require_fast_uri = __commonJS({
         if (!malformedIPLiteral) {
           malformedHost = canonicalizeHost(parsed, options, schemeHandler, isIP);
         }
-        if (!schemeHandler || schemeHandler && !schemeHandler.skipNormalize) {
-          if (uri.indexOf("%") !== -1) {
-            if (parsed.host !== void 0 && !malformedIPLiteral) {
-              const host = isIP ? parsed.host : normalizePercentEncoding(parsed.host, true);
-              parsed.host = reescapeHostDelimiters(host, isIP);
-            }
+        if (uri.indexOf("%") !== -1 && parsed.host !== void 0 && !malformedIPLiteral) {
+          let host = isIP ? parsed.host : normalizePercentEncoding(parsed.host, true);
+          if (!isIP) {
+            host = normalizePercentEncoding(host.toLowerCase());
           }
+          parsed.host = isIP || options.scheme !== "null" ? reescapeHostDelimiters(host, isIP) : host;
+        }
+        if (!schemeHandler || schemeHandler && !schemeHandler.skipNormalize) {
           if (parsed.path) {
             parsed.path = normalizePathEncoding(parsed.path);
           }
@@ -47950,6 +48007,9 @@ var Protocol = class {
       this.setRequestHandler(GetTaskPayloadRequestSchema, async (request, extra) => {
         const handleTaskResult = async () => {
           const taskId = request.params.taskId;
+          if (!await this._taskStore.getTask(taskId, extra.sessionId)) {
+            throw new McpError(ErrorCode.InvalidParams, `Task not found: ${taskId}`);
+          }
           if (this._taskMessageQueue) {
             let queuedMessage;
             while (queuedMessage = await this._taskMessageQueue.dequeue(taskId, extra.sessionId)) {
@@ -47980,12 +48040,12 @@ var Protocol = class {
             throw new McpError(ErrorCode.InvalidParams, `Task not found: ${taskId}`);
           }
           if (!isTerminal(task.status)) {
-            await this._waitForTaskUpdate(taskId, extra.signal);
+            await this._waitForTaskUpdate(taskId, extra.signal, extra.sessionId);
             return await handleTaskResult();
           }
           if (isTerminal(task.status)) {
             const result = await this._taskStore.getTaskResult(taskId, extra.sessionId);
-            this._clearTaskQueue(taskId);
+            this._clearTaskQueue(taskId, extra.sessionId);
             return {
               ...result,
               _meta: {
@@ -48022,7 +48082,7 @@ var Protocol = class {
             throw new McpError(ErrorCode.InvalidParams, `Cannot cancel task in terminal status: ${task.status}`);
           }
           await this._taskStore.updateTaskStatus(request.params.taskId, "cancelled", "Client cancelled task execution.", extra.sessionId);
-          this._clearTaskQueue(request.params.taskId);
+          this._clearTaskQueue(request.params.taskId, extra.sessionId);
           const cancelledTask = await this._taskStore.getTask(request.params.taskId, extra.sessionId);
           if (!cancelledTask) {
             throw new McpError(ErrorCode.InvalidParams, `Task not found after cancellation: ${request.params.taskId}`);
@@ -48150,6 +48210,19 @@ var Protocol = class {
     const handler = this._requestHandlers.get(request.method) ?? this.fallbackRequestHandler;
     const capturedTransport = this._transport;
     const relatedTaskId = request.params?._meta?.[RELATED_TASK_META_KEY]?.taskId;
+    const sessionId = capturedTransport?.sessionId;
+    const store = this._taskStore;
+    let relatedTaskFound = true;
+    let relatedTaskLookup;
+    if (relatedTaskId && store && this._taskMessageQueue && sessionId !== void 0) {
+      relatedTaskFound = false;
+      relatedTaskLookup = (async () => {
+        if (!await store.getTask(relatedTaskId, sessionId)) {
+          throw new McpError(ErrorCode.InvalidParams, `Task not found: ${relatedTaskId}`);
+        }
+        relatedTaskFound = true;
+      })();
+    }
     if (handler === void 0) {
       const errorResponse = {
         jsonrpc: "2.0",
@@ -48159,7 +48232,10 @@ var Protocol = class {
           message: "Method not found"
         }
       };
-      if (relatedTaskId && this._taskMessageQueue) {
+      if (relatedTaskId && relatedTaskLookup) {
+        const queuedError = { type: "error", message: errorResponse, timestamp: Date.now() };
+        relatedTaskLookup.then(() => this._enqueueTaskMessage(relatedTaskId, queuedError, sessionId), () => capturedTransport?.send(errorResponse)).catch((error48) => this._onerror(new Error(`Failed to send an error response: ${error48}`)));
+      } else if (relatedTaskId && this._taskMessageQueue) {
         this._enqueueTaskMessage(relatedTaskId, {
           type: "error",
           message: errorResponse,
@@ -48210,7 +48286,10 @@ var Protocol = class {
       closeSSEStream: extra?.closeSSEStream,
       closeStandaloneSSEStream: extra?.closeStandaloneSSEStream
     };
-    Promise.resolve().then(() => {
+    (relatedTaskLookup ?? Promise.resolve()).then(() => {
+      if (relatedTaskLookup && abortController.signal.aborted) {
+        throw new McpError(ErrorCode.ConnectionClosed, "Request was cancelled");
+      }
       if (taskCreationParams) {
         this.assertTaskHandlerCapability(request.method);
       }
@@ -48245,7 +48324,7 @@ var Protocol = class {
           ...error48["data"] !== void 0 && { data: error48["data"] }
         }
       };
-      if (relatedTaskId && this._taskMessageQueue) {
+      if (relatedTaskId && this._taskMessageQueue && relatedTaskFound) {
         await this._enqueueTaskMessage(relatedTaskId, {
           type: "error",
           message: errorResponse,
@@ -48725,7 +48804,7 @@ var Protocol = class {
       throw new Error("Cannot enqueue task message: taskStore and taskMessageQueue are not configured");
     }
     const maxQueueSize = this._options?.maxTaskQueueSize;
-    await this._taskMessageQueue.enqueue(taskId, message, sessionId, maxQueueSize);
+    await this._taskMessageQueue.enqueue(taskId, message, sessionId ?? this._transport?.sessionId, maxQueueSize);
   }
   /**
    * Clears the message queue for a task and rejects any pending request resolvers.
@@ -48754,12 +48833,13 @@ var Protocol = class {
    * Uses polling to check for updates at the task's configured poll interval.
    * @param taskId The task ID to wait for
    * @param signal Abort signal to cancel the wait
+   * @param sessionId Session of the request that waits, passed to the task store
    * @returns Promise that resolves when an update occurs or rejects if aborted
    */
-  async _waitForTaskUpdate(taskId, signal) {
+  async _waitForTaskUpdate(taskId, signal, sessionId) {
     let interval = this._options?.defaultTaskPollInterval ?? 1e3;
     try {
-      const task = await this._taskStore?.getTask(taskId);
+      const task = await this._taskStore?.getTask(taskId, sessionId);
       if (task?.pollInterval) {
         interval = task.pollInterval;
       }
@@ -49638,6 +49718,42 @@ var ExperimentalMcpServerTasks = class {
 };
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js
+function toolInputElementCount(value, max) {
+  let count = 0;
+  const stack = [value];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (node === null || typeof node !== "object")
+      continue;
+    if (Array.isArray(node)) {
+      for (const child of node) {
+        if (++count > max)
+          return count;
+        if (child !== null && typeof child === "object")
+          stack.push(child);
+      }
+    } else {
+      for (const key in node) {
+        if (!Object.prototype.hasOwnProperty.call(node, key))
+          continue;
+        if (++count > max)
+          return count;
+        const child = node[key];
+        if (child !== null && typeof child === "object")
+          stack.push(child);
+      }
+    }
+  }
+  return count;
+}
+function resolveMaxToolInputElements(value) {
+  if (value === void 0 || value === Infinity)
+    return void 0;
+  if (typeof value !== "number" || Number.isNaN(value) || value < 1) {
+    throw new RangeError(`maxToolInputElements must be a number of at least 1, or Infinity, got ${String(value)}`);
+  }
+  return value;
+}
 var McpServer = class {
   constructor(serverInfo, options) {
     this._registeredResources = {};
@@ -49649,6 +49765,7 @@ var McpServer = class {
     this._resourceHandlersInitialized = false;
     this._promptHandlersInitialized = false;
     this.server = new Server(serverInfo, options);
+    this._maxToolInputElements = resolveMaxToolInputElements(options?.maxToolInputElements);
   }
   /**
    * Access experimental features.
@@ -49779,12 +49896,15 @@ var McpServer = class {
    * Validates tool input arguments against the tool's input schema.
    */
   async validateToolInput(tool, args, toolName) {
+    if (this._maxToolInputElements !== void 0 && toolInputElementCount(args, this._maxToolInputElements) > this._maxToolInputElements) {
+      throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for tool ${toolName}: arguments contain more than the maximum of ${this._maxToolInputElements} elements`);
+    }
     if (!tool.inputSchema) {
       return void 0;
     }
     const inputObj = normalizeObjectSchema(tool.inputSchema);
     const schemaToParse = inputObj ?? tool.inputSchema;
-    const parseResult = await safeParseAsync2(schemaToParse, args);
+    const parseResult = await safeParseAsync2(schemaToParse, args ?? {});
     if (!parseResult.success) {
       const error48 = "error" in parseResult ? parseResult.error : "Unknown error";
       const errorMessage2 = getParseErrorMessage(error48);
@@ -50022,7 +50142,7 @@ var McpServer = class {
       }
       if (prompt.argsSchema) {
         const argsObj = normalizeObjectSchema(prompt.argsSchema);
-        const parseResult = await safeParseAsync2(argsObj, request.params.arguments);
+        const parseResult = await safeParseAsync2(argsObj, request.params.arguments ?? {});
         if (!parseResult.success) {
           const error48 = "error" in parseResult ? parseResult.error : "Unknown error";
           const errorMessage2 = getParseErrorMessage(error48);
@@ -51595,6 +51715,50 @@ function isJsonContentType(header) {
   return mediaTypeEssence(header) === "application/json";
 }
 
+// node_modules/@modelcontextprotocol/sdk/dist/esm/server/requestBody.js
+var DEFAULT_MAX_REQUEST_BODY_SIZE = 4 * 1024 * 1024;
+var MAX_BATCH_SIZE = 100;
+function requestBodyTooLargeMessage(maxBytes) {
+  return `Payload Too Large: Request body must not exceed ${maxBytes} bytes`;
+}
+function resolveMaxRequestBodySize(value) {
+  if (value === void 0) {
+    return DEFAULT_MAX_REQUEST_BODY_SIZE;
+  }
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    throw new RangeError(`maxRequestBodySize must be a positive number of bytes, got ${String(value)}`);
+  }
+  return value;
+}
+async function readRequestBody(request, maxBytes = DEFAULT_MAX_REQUEST_BODY_SIZE) {
+  if (Number(request.headers.get("content-length")) > maxBytes) {
+    return { tooLarge: true };
+  }
+  if (request.body === null) {
+    return { tooLarge: false, text: "" };
+  }
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder();
+  let received = 0;
+  let text = "";
+  try {
+    for (; ; ) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      received += value.byteLength;
+      if (received > maxBytes) {
+        return { tooLarge: true };
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return { tooLarge: false, text: text + decoder.decode() };
+}
+
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/sseKeepAlive.js
 var DEFAULT_SSE_KEEP_ALIVE_MS = 15e3;
 var MAX_TIMER_DELAY_MS = 2 ** 31 - 1;
@@ -51630,6 +51794,7 @@ var WebStandardStreamableHTTPServerTransport = class {
     this._enableDnsRebindingProtection = options.enableDnsRebindingProtection ?? false;
     this._retryInterval = options.retryInterval;
     this._keepAliveMs = options.keepAliveMs ?? DEFAULT_SSE_KEEP_ALIVE_MS;
+    this._maxRequestBodySize = resolveMaxRequestBodySize(options.maxRequestBodySize);
   }
   /**
    * Arms a keep-alive interval for an SSE stream that periodically writes an SSE
@@ -51991,11 +52156,21 @@ data:
         rawMessage = options.parsedBody;
       } else {
         try {
-          rawMessage = await req.json();
+          const body = await readRequestBody(req, this._maxRequestBodySize);
+          if (body.tooLarge) {
+            const message = requestBodyTooLargeMessage(this._maxRequestBodySize);
+            this.onerror?.(new Error(message));
+            return this.createJsonErrorResponse(413, -32e3, message);
+          }
+          rawMessage = JSON.parse(body.text);
         } catch {
           this.onerror?.(new Error("Parse error: Invalid JSON"));
           return this.createJsonErrorResponse(400, -32700, "Parse error: Invalid JSON");
         }
+      }
+      if (Array.isArray(rawMessage) && rawMessage.length > MAX_BATCH_SIZE) {
+        this.onerror?.(new Error(`Invalid Request: Batch must not exceed ${MAX_BATCH_SIZE} messages`));
+        return this.createJsonErrorResponse(400, -32600, `Invalid Request: Batch must not exceed ${MAX_BATCH_SIZE} messages`);
       }
       let messages;
       try {
