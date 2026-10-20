@@ -54886,10 +54886,17 @@ return { sheet: args.sheetName, frozenAt: args.freezeAt };
         p,
         `
 ${SHEET_LINE}
-var found = sheet.findAll(args.find, { matchCase: args.matchCase === true, completeMatch: args.completeMatch === true });
-found.load("items/address,items/isNullObject,items/rowCount,items/columnCount,items/values");
-await context.sync();
-var live = found.items.filter(function (r) { return !r.isNullObject; });
+var live = [];
+try {
+  var found = sheet.findAll(args.find, { matchCase: args.matchCase === true, completeMatch: args.completeMatch === true });
+  found.load("address,areas");
+  await context.sync();
+  found.areas.load("items/address,items/isNullObject,items/rowCount,items/columnCount,items/values");
+  await context.sync();
+  live = found.areas.items.filter(function (r) { return !r.isNullObject; });
+} catch (e) {
+  live = [];
+}
 var changed = 0;
 for (var i = 0; i < live.length; i++) {
   var replaced = false;
@@ -57501,7 +57508,7 @@ return { updated: true };
   );
   server.tool(
     "edit_table_columns",
-    'Add or delete columns of a table. Add: position "Before" inserts left of the first column, "After" right of the last column; optionally pre-fill with values (2D array, one column per entry). Delete: remove count columns starting at columnIndex (0-based).',
+    'Add or delete columns of a table. Add: position "Before" inserts left of the first column, "After" right of the last column; optionally pre-fill with values (2D array, one column per entry). Delete: remove count columns starting at columnIndex (0-based). Note: some Word builds reject column operations with InvalidArgument.',
     {
       tableIndex: external_exports3.number().int().min(0).describe("Zero-based table index."),
       action: external_exports3.enum(["add", "delete"]).describe("Add or delete columns."),

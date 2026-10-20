@@ -1163,10 +1163,17 @@ return { sheet: args.sheetName, frozenAt: args.freezeAt };
         p,
         `
 ${SHEET_LINE}
-var found = sheet.findAll(args.find, { matchCase: args.matchCase === true, completeMatch: args.completeMatch === true });
-found.load("items/address,items/isNullObject,items/rowCount,items/columnCount,items/values");
-await context.sync();
-var live = found.items.filter(function (r) { return !r.isNullObject; });
+var live = [];
+try {
+  var found = sheet.findAll(args.find, { matchCase: args.matchCase === true, completeMatch: args.completeMatch === true });
+  found.load("address,areas");
+  await context.sync();
+  found.areas.load("items/address,items/isNullObject,items/rowCount,items/columnCount,items/values");
+  await context.sync();
+  live = found.areas.items.filter(function (r) { return !r.isNullObject; });
+} catch (e) {
+  live = [];
+}
 var changed = 0;
 for (var i = 0; i < live.length; i++) {
   var replaced = false;

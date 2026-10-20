@@ -869,7 +869,7 @@ return { updated: true };
 
   server.tool(
     'edit_table_columns',
-    'Add or delete columns of a table. Add: position "Before" inserts left of the first column, "After" right of the last column; optionally pre-fill with values (2D array, one column per entry). Delete: remove count columns starting at columnIndex (0-based).',
+    'Add or delete columns of a table. Add: position "Before" inserts left of the first column, "After" right of the last column; optionally pre-fill with values (2D array, one column per entry). Delete: remove count columns starting at columnIndex (0-based). Note: some Word builds reject column operations with InvalidArgument.',
     {
       tableIndex: z.number().int().min(0).describe('Zero-based table index.'),
       action: z.enum(['add', 'delete']).describe('Add or delete columns.'),

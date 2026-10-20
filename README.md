@@ -20,10 +20,10 @@ I asked the original author whether he planned to extend this to Word and Excel 
 One bridge server, one add-in taskpane, three Office apps. The add-in detects which host it runs in (PowerPoint, Word or Excel) and every tool call executes inside the live document.
 
 - **PowerPoint**: 27 tools from the upstream project. Inspect decks, edit shapes and text, raw OOXML access, charts, screenshots, speaker notes, and an `execute_officejs` escape hatch.
-- **Excel**: 24 new tools. Read and write ranges with values, formulas and number formats, inspect workbooks, format cells, manage worksheets, sort and find, tables, charts, conditional formatting, named ranges, data validation, comments, pivot refresh, sheet protection, plus `execute_exceljs`.
-- **Word**: 19 new tools. Read and edit paragraphs, styles and formatting, search and replace, tables, comments, page breaks, tracked changes (read), selection, save, plus `execute_wordjs`.
+- **Excel**: 32 new tools. Read and write ranges with values, formulas and number formats, inspect workbooks, format cells, manage worksheets, sort and find, tables, charts, conditional formatting, named ranges, data validation, comments, pivot refresh, sheet protection, plus `execute_exceljs`.
+- **Word**: 26 new tools. Read and edit paragraphs, styles and formatting, search and replace, tables, comments, page breaks, tracked changes (read), selection, save, plus `execute_wordjs`.
 
-That is 70 tools on one server. Anything the typed tools do not cover, the execute escape hatch handles with raw Office.js in the right host.
+That is 85 tools on one server. Anything the typed tools do not cover, the execute escape hatch handles with raw Office.js in the right host.
 
 ## Why live matters
 
