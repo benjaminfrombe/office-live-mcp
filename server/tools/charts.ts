@@ -113,7 +113,7 @@ export function registerChartTools(
         [relsPath]: modifiedRels,
       }
 
-      await applyZipEditAndReimport(pool, exported, files, target.ws)
+      await applyZipEditAndReimport(pool, exported, files, target.ws, slideIndex)
 
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount())
       const text =

@@ -48,6 +48,7 @@ export async function reimportSlide(
   prevSlideId: string | null,
   targetWs: WebSocket,
   timeout?: number,
+  restoredSlideIndex?: number,
 ): Promise<void> {
   const optionsParts = ['formatting: "KeepSourceFormatting"']
   if (prevSlideId) {
@@ -85,6 +86,18 @@ export async function reimportSlide(
     }
     return { success: true };
   `
+  if (restoredSlideIndex !== undefined) {
+    // The delete+insert resets PowerPoint's view to the first slide; navigate
+    // back to the reimported slide (fire-and-forget: the callback completes
+    // after the response is sent).
+    code += `
+    Office.context.document.goToByIdAsync(${restoredSlideIndex + 1}, Office.GoToType.Index, function(navResult) {
+      if (navResult.status !== Office.AsyncResultStatus.Succeeded) {
+        console.error("View restore failed: " + navResult.error.message);
+      }
+    });
+  `
+  }
   await pool.sendCommand('executeCode', { code }, targetWs, timeout)
 }
 
@@ -319,9 +332,10 @@ export async function applyZipEditAndReimport(
   exported: ExportedSlide,
   files: Record<string, string>,
   targetWs: WebSocket,
+  slideIndex?: number,
 ): Promise<string[]> {
   const { base64, newPaths } = await buildEditedZipBase64(exported.base64, files)
-  await reimportSlide(pool, base64, exported.slideId, exported.prevSlideId, targetWs)
+  await reimportSlide(pool, base64, exported.slideId, exported.prevSlideId, targetWs, undefined, slideIndex)
   return newPaths
 }
 

@@ -46,7 +46,15 @@ export function registerTextTools(
       }
       replaceParagraphs(doc, shape, xml)
       const modifiedBase64 = await updateSlideXmlInZip(zip, serializeXml(doc))
-      await reimportSlide(pool, modifiedBase64, exported.slideId, exported.prevSlideId, target.ws)
+      await reimportSlide(
+        pool,
+        modifiedBase64,
+        exported.slideId,
+        exported.prevSlideId,
+        target.ws,
+        undefined,
+        slideIndex,
+      )
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount())
       const text = JSON.stringify({ success: true }, null, 2) + (warning ?? '')
       return { content: [{ type: 'text' as const, text }] }

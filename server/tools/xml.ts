@@ -109,7 +109,15 @@ export function registerXmlTools(
       }
 
       const modifiedBase64 = await updateSlideXmlInZip(zip, finalXml)
-      await reimportSlide(pool, modifiedBase64, exported.slideId, exported.prevSlideId, target.ws)
+      await reimportSlide(
+        pool,
+        modifiedBase64,
+        exported.slideId,
+        exported.prevSlideId,
+        target.ws,
+        undefined,
+        slideIndex,
+      )
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount())
       const text = JSON.stringify({ success: true }, null, 2) + (warning ?? '')
       return { content: [{ type: 'text' as const, text }] }
@@ -134,7 +142,7 @@ export function registerXmlTools(
     withTool(async ({ slideIndex, files, presentationId }) => {
       const target = pool.resolveTarget(presentationId)
       const exported = await exportSlide(pool, slideIndex, target.ws)
-      const newPaths = await applyZipEditAndReimport(pool, exported, files, target.ws)
+      const newPaths = await applyZipEditAndReimport(pool, exported, files, target.ws, slideIndex)
 
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount())
       const text =
