@@ -34,7 +34,7 @@ There is a second advantage that matters just as much. Everything here runs loca
 ## Quick start
 
 ```bash
-git clone -b o365 https://github.com/benjaminfrombe/powerpoint-mcp.git
+git clone https://github.com/benjaminfrombe/office-live-mcp.git
 cd powerpoint-mcp
 npm install
 npm run build
