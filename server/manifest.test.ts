@@ -23,8 +23,8 @@ describe('substituteManifestPort', () => {
     expect(result).toContain('http://localhost:9090/index.html')
   })
 
-  it('replaces all 9 occurrences in manifest.xml', () => {
-    const manifestPath = resolve(__dirname, '..', 'addin', 'manifest.xml')
+  it('replaces all 9 occurrences in manifest.vm.xml', () => {
+    const manifestPath = resolve(__dirname, '..', 'addin', 'manifest.vm.xml')
     const content = readFileSync(manifestPath, 'utf8')
     const result = substituteManifestPort(content, 8080, 9090)
     expect(result).not.toContain('localhost:8080')
