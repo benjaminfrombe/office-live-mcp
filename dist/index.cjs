@@ -55815,7 +55815,7 @@ function recolorSvg(svg, color) {
 function registerMediaTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
     "insert_image",
-    "Inserts an image onto a slide using Office.js setSelectedDataAsync with CoercionType.Image. Accepts a file path, URL, or raw base64 data. Optionally target a specific slide (the view briefly navigates there and returns to the slide you were on) and control position/size in points.",
+    "Inserts an image onto a slide using Office.js setSelectedDataAsync with CoercionType.Image. Accepts a file path, URL, or raw base64 data. Optionally target a specific slide (the view stays there so the user sees the insert; call show_slide first per the view etiquette) and control position/size in points.",
     {
       source: external_exports3.string().describe("File path, URL, or base64 image data depending on sourceType"),
       sourceType: external_exports3.enum(["file", "url", "base64"]).describe(
@@ -55882,24 +55882,9 @@ if (targetId === null) {
   throw new Error("Slide index " + ${slideIndex} + " out of range (presentation has " + allSlides.items.length + " slides)");
 }
 var alreadyThere = originalId !== null && originalId === targetId;
-var originalIndex = null;
-if (!alreadyThere && originalId !== null) {
-  for (var i = 0; i < allSlides.items.length; i++) {
-    if (allSlides.items[i].id === originalId) { originalIndex = i + 1; break; }
-  }
-}
 return new Promise(function(resolve, reject) {
   function doInsert() {
     ${insertCall}
-  }
-  function finish() {
-    if (originalIndex !== null) {
-      Office.context.document.goToByIdAsync(originalIndex, Office.GoToType.Index, function(backResult) {
-        resolve({ success: true, restoredSlide: originalIndex });
-      });
-    } else {
-      resolve({ success: true });
-    }
   }
   if (alreadyThere) {
     doInsert();
@@ -56196,7 +56181,7 @@ var import_jszip4 = __toESM(require_lib4(), 1);
 function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
     "show_slide",
-    "Bring a slide into view in the live presentation (navigates the user to that slide). Call this after editing a slide so the user can see the result; also useful to walk the user through a deck slide by slide.",
+    "Bring a slide into view in the live presentation (navigates the user to that slide). Call this BEFORE editing a slide so the user can watch the changes happen; also useful to walk the user through a deck slide by slide.",
     {
       slideIndex: external_exports3.number().int().min(0).describe("Zero-based slide index to show."),
       presentationId: external_exports3.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
@@ -57966,7 +57951,7 @@ function createMcpServer(getSessionId, getActiveSessionCount) {
     {
       instructions: [
         "This server drives LIVE Office documents (Word, Excel, PowerPoint) through an add-in taskpane; the user watches every change happen in real time.",
-        "View etiquette: edits happen in place and do not move the user's view. After finishing an edit burst on a slide (PowerPoint: show_slide; Word/Excel: execute_*js selection changes), call show_slide (PowerPoint) or otherwise bring the edited content into view so the user can see the result.",
+        "View etiquette: the user wants to SEE edits as they happen. Before starting an edit burst on a slide, bring that slide into view first (PowerPoint: show_slide; Word/Excel: navigate to or select the target content), then make the changes \u2014 the view stays there so every change lands visibly.",
         "When multiple documents are connected, always pass the explicit documentId/workbookId/presentationId from list_documents/list_workbooks/list_presentations.",
         "Tools that need a saved file (get_local_copy, read_deck_text, read_speaker_notes, add_slide) fail on unsaved documents with a GeneralException; save first."
       ].join("\n")

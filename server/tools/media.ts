@@ -14,7 +14,7 @@ export function registerMediaTools(
 ): void {
   server.tool(
     'insert_image',
-    'Inserts an image onto a slide using Office.js setSelectedDataAsync with CoercionType.Image. Accepts a file path, URL, or raw base64 data. Optionally target a specific slide (the view briefly navigates there and returns to the slide you were on) and control position/size in points.',
+    'Inserts an image onto a slide using Office.js setSelectedDataAsync with CoercionType.Image. Accepts a file path, URL, or raw base64 data. Optionally target a specific slide (the view stays there so the user sees the insert; call show_slide first per the view etiquette) and control position/size in points.',
     {
       source: z.string().describe('File path, URL, or base64 image data depending on sourceType'),
       sourceType: z
@@ -90,9 +90,10 @@ export function registerMediaTools(
 
       // Step 4: Wrap with goToByIdAsync if slideIndex is provided. The
       // navigation is required because setSelectedDataAsync inserts into the
-      // currently selected slide. To avoid yanking the user's view, remember
-      // the selected slide first, skip navigation when the target is already
-      // selected, and restore the original slide afterwards.
+      // currently selected slide; the view stays on the target slide so the
+      // user sees the insert happen (agents call show_slide first per the
+      // view etiquette). Skip the navigation when the target is already
+      // selected.
       let code: string
       if (slideIndex !== undefined) {
         code = `var selected = context.presentation.getSelectedSlides();
@@ -107,24 +108,9 @@ if (targetId === null) {
   throw new Error("Slide index " + ${slideIndex} + " out of range (presentation has " + allSlides.items.length + " slides)");
 }
 var alreadyThere = originalId !== null && originalId === targetId;
-var originalIndex = null;
-if (!alreadyThere && originalId !== null) {
-  for (var i = 0; i < allSlides.items.length; i++) {
-    if (allSlides.items[i].id === originalId) { originalIndex = i + 1; break; }
-  }
-}
 return new Promise(function(resolve, reject) {
   function doInsert() {
     ${insertCall}
-  }
-  function finish() {
-    if (originalIndex !== null) {
-      Office.context.document.goToByIdAsync(originalIndex, Office.GoToType.Index, function(backResult) {
-        resolve({ success: true, restoredSlide: originalIndex });
-      });
-    } else {
-      resolve({ success: true });
-    }
   }
   if (alreadyThere) {
     doInsert();

@@ -15,7 +15,7 @@ export function registerSlideTools(
 ): void {
   server.tool(
     'show_slide',
-    'Bring a slide into view in the live presentation (navigates the user to that slide). Call this after editing a slide so the user can see the result; also useful to walk the user through a deck slide by slide.',
+    'Bring a slide into view in the live presentation (navigates the user to that slide). Call this BEFORE editing a slide so the user can watch the changes happen; also useful to walk the user through a deck slide by slide.',
     {
       slideIndex: z.number().int().min(0).describe('Zero-based slide index to show.'),
       presentationId: z

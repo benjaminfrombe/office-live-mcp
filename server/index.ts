@@ -182,7 +182,7 @@ function createMcpServer(getSessionId: () => string | undefined, getActiveSessio
     {
       instructions: [
         'This server drives LIVE Office documents (Word, Excel, PowerPoint) through an add-in taskpane; the user watches every change happen in real time.',
-        "View etiquette: edits happen in place and do not move the user's view. After finishing an edit burst on a slide (PowerPoint: show_slide; Word/Excel: execute_*js selection changes), call show_slide (PowerPoint) or otherwise bring the edited content into view so the user can see the result.",
+        'View etiquette: the user wants to SEE edits as they happen. Before starting an edit burst on a slide, bring that slide into view first (PowerPoint: show_slide; Word/Excel: navigate to or select the target content), then make the changes — the view stays there so every change lands visibly.',
         'When multiple documents are connected, always pass the explicit documentId/workbookId/presentationId from list_documents/list_workbooks/list_presentations.',
         'Tools that need a saved file (get_local_copy, read_deck_text, read_speaker_notes, add_slide) fail on unsaved documents with a GeneralException; save first.',
       ].join('\n'),
