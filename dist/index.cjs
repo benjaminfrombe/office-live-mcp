@@ -54724,6 +54724,259 @@ return { sheet: args.sheetName, protected: args.protect };
       )
     )
   );
+  server.tool(
+    "read_threaded_comments",
+    "Read all threaded comments in the workbook: content, author, creation date, resolved state, and replies. Use reply_to_comment or resolve_comment with a comment id from this output.",
+    {
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+var comments = context.workbook.comments;
+comments.load("id,content,authorName,creationDate,resolved,replies");
+await context.sync();
+var replyLoads = [];
+for (var i = 0; i < comments.items.length; i++) {
+  comments.items[i].replies.load("id,content,authorName,creationDate");
+  replyLoads.push(comments.items[i].replies);
+}
+await context.sync();
+return {
+  comments: comments.items.map(function (c) {
+    return {
+      id: c.id,
+      content: c.content,
+      author: c.authorName,
+      created: c.creationDate,
+      resolved: c.resolved,
+      replies: c.replies.items.map(function (r) {
+        return { id: r.id, content: r.content, author: r.authorName, created: r.creationDate };
+      }),
+    };
+  }),
+};
+`
+      )
+    )
+  );
+  server.tool(
+    "reply_to_comment",
+    "Add a reply to an existing threaded comment. Use the comment id from read_comments.",
+    {
+      commentId: external_exports3.string().describe("Comment id from read_comments."),
+      text: external_exports3.string().describe("Reply text."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+var comment = context.workbook.comments.getItem(args.commentId);
+comment.replies.add(args.text);
+await context.sync();
+return { replied: args.commentId };
+`
+      )
+    )
+  );
+  server.tool(
+    "resolve_comment",
+    "Resolve or reopen a threaded comment. Use the comment id from read_comments.",
+    {
+      commentId: external_exports3.string().describe("Comment id from read_comments."),
+      resolved: external_exports3.boolean().describe("True to resolve, false to reopen."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+var comment = context.workbook.comments.getItem(args.commentId);
+comment.resolved = args.resolved;
+await context.sync();
+comment.load("resolved");
+await context.sync();
+return { commentId: args.commentId, resolved: comment.resolved };
+`
+      )
+    )
+  );
+  server.tool(
+    "set_hyperlink",
+    "Set a hyperlink on a cell (address, display text, tooltip). The cell text is replaced by textToDisplay when provided. Pass address as null to remove the hyperlink.",
+    {
+      cellAddress: external_exports3.string().describe('Sheet-qualified cell reference, e.g. "Sheet1!B2".'),
+      address: external_exports3.string().nullable().describe('Target URL, e.g. "https://example.com". Pass null to remove the hyperlink.'),
+      textToDisplay: external_exports3.string().optional().describe("Cell text shown for the link. Defaults to the address."),
+      tooltip: external_exports3.string().optional().describe("Screen tip shown on hover."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+var range = context.workbook.worksheets.getItem(args.cellAddress.split("!")[0]).getRange(args.cellAddress.split("!").slice(1).join("!"));
+if (args.address === null) {
+  range.hyperlink = null;
+} else {
+  var link = { address: args.address };
+  if (args.textToDisplay !== undefined) link.textToDisplay = args.textToDisplay;
+  if (args.tooltip !== undefined) link.screenTip = args.tooltip;
+  range.hyperlink = link;
+}
+await context.sync();
+range.load("hyperlink");
+await context.sync();
+return { cell: args.cellAddress, hyperlink: range.hyperlink === null ? null : { address: range.hyperlink.address, text: range.hyperlink.textToDisplay } };
+`
+      )
+    )
+  );
+  server.tool(
+    "freeze_panes",
+    'Freeze rows and columns of a worksheet at a cell (everything above and left of the cell stays visible), or unfreeze. E.g. freezeAt "A2" freezes the first row, "B2" freezes row 1 and column A.',
+    {
+      sheetName: external_exports3.string().describe("Worksheet name."),
+      freezeAt: external_exports3.string().nullable().describe('Cell reference to freeze at, e.g. "A2". Pass null to unfreeze.'),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+var sheet = context.workbook.worksheets.getItem(args.sheetName);
+if (args.freezeAt === null) {
+  sheet.freezePanes.unfreeze();
+} else {
+  sheet.freezePanes.freezeAt(sheet.getRange(args.freezeAt));
+}
+await context.sync();
+return { sheet: args.sheetName, frozenAt: args.freezeAt };
+`
+      )
+    )
+  );
+  server.tool(
+    "replace_in_sheet",
+    "Find and replace text across a whole worksheet (substring match per cell by default). Returns the number of cells changed. Uses findAll so merged/hidden cells behave like the Excel UI.",
+    {
+      find: external_exports3.string().describe("Text to find."),
+      replace: external_exports3.string().describe("Replacement text."),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      matchCase: external_exports3.boolean().optional().describe("Case-sensitive search. Default false."),
+      completeMatch: external_exports3.boolean().optional().describe("Match the entire cell contents. Default false."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var found = sheet.findAll(args.find, { matchCase: args.matchCase === true, completeMatch: args.completeMatch === true });
+found.load("items/address,items/isNullObject,items/rowCount,items/columnCount,items/values");
+await context.sync();
+var live = found.items.filter(function (r) { return !r.isNullObject; });
+var changed = 0;
+for (var i = 0; i < live.length; i++) {
+  var replaced = false;
+  var grid = live[i].values;
+  for (var r = 0; r < grid.length; r++) {
+    for (var c = 0; c < grid[r].length; c++) {
+      var v = grid[r][c];
+      if (typeof v !== "string") continue;
+      var hay = args.matchCase ? v : v.toLowerCase();
+      var needle = args.matchCase ? args.find : args.find.toLowerCase();
+      if (hay.indexOf(needle) === -1) continue;
+      var out = "";
+      var pos = 0;
+      var idx = hay.indexOf(needle);
+      while (idx !== -1) {
+        out += v.slice(pos, idx) + args.replace;
+        pos = idx + needle.length;
+        idx = hay.indexOf(needle, pos);
+      }
+      out += v.slice(pos);
+      grid[r][c] = out;
+      replaced = true;
+    }
+  }
+  if (replaced) {
+    live[i].values = grid;
+    changed++;
+  }
+}
+await context.sync();
+return { replacedCells: changed, matches: live.length };
+`
+      )
+    )
+  );
+  server.tool(
+    "clear_range",
+    "Clear the contents and formatting of a range in the live workbook.",
+    {
+      range: external_exports3.string().describe('A1 range address, e.g. "A1:C10".'),
+      sheetName: external_exports3.string().optional().describe("Worksheet name. Defaults to the active worksheet."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+sheet.getRange(args.range).clear();
+await context.sync();
+return { cleared: args.range };
+`
+      )
+    )
+  );
+  server.tool(
+    "copy_range",
+    "Copy a source range to a target range in the live workbook. Copies values, formulas and formatting by default; valuesOnly copies just the results.",
+    {
+      source: external_exports3.string().describe('A1 range address to copy from, e.g. "A1:C3".'),
+      target: external_exports3.string().describe('A1 range address (top-left corner) to copy into, e.g. "E1".'),
+      sheetName: external_exports3.string().optional().describe("Worksheet name for both ranges. Defaults to the active worksheet."),
+      valuesOnly: external_exports3.boolean().optional().describe("Copy only the calculated values, not formulas or formatting."),
+      workbookId: external_exports3.string().optional().describe("Target workbook ID from list_workbooks. Optional when only one workbook is connected.")
+    },
+    withTool(
+      async (p) => execExcel(
+        pool2,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var src = sheet.getRange(args.source);
+var dst = sheet.getRange(args.target);
+if (args.valuesOnly) {
+  dst.copyFrom(src, "Values");
+} else {
+  dst.copyFrom(src);
+}
+await context.sync();
+return { copied: args.source + " -> " + args.target, valuesOnly: args.valuesOnly === true };
+`
+      )
+    )
+  );
 }
 
 // server/tools/exec.ts
@@ -57085,6 +57338,252 @@ return { text: selection.text };
 context.document.save();
 await context.sync();
 return { saved: true };
+`
+      )
+    )
+  );
+  server.tool(
+    "list_content_controls",
+    "List all content controls (template fields) in the document: id, title, tag, type, current text and placeholder. Use set_content_control_text with the id to fill them.",
+    {
+      tag: external_exports3.string().optional().describe("Only return content controls with this tag."),
+      title: external_exports3.string().optional().describe("Only return content controls with this title."),
+      documentId: external_exports3.string().optional().describe("Target document ID from list_documents. Optional when only one document is connected.")
+    },
+    withTool(
+      async (p) => execWord(
+        pool2,
+        p.documentId,
+        p,
+        `
+var controls = context.document.contentControls;
+controls.load("id,title,tag,type,text,placeholderText,appearance");
+await context.sync();
+var items = controls.items.map(function (c) {
+  return { id: c.id, title: c.title, tag: c.tag, type: c.type, text: c.text, placeholder: c.placeholderText, appearance: c.appearance };
+});
+if (args.tag !== undefined) items = items.filter(function (c) { return c.tag === args.tag; });
+if (args.title !== undefined) items = items.filter(function (c) { return c.title === args.title; });
+return { count: items.length, contentControls: items };
+`
+      )
+    )
+  );
+  server.tool(
+    "set_content_control_text",
+    "Replace the text of a content control (template field) identified by its id from list_content_controls. Optionally update its title and tag.",
+    {
+      id: external_exports3.number().int().describe("Content control id from list_content_controls."),
+      text: external_exports3.string().describe("New text for the content control."),
+      title: external_exports3.string().optional().describe("New title for the content control."),
+      tag: external_exports3.string().optional().describe("New tag for the content control."),
+      documentId: external_exports3.string().optional().describe("Target document ID from list_documents. Optional when only one document is connected.")
+    },
+    withTool(
+      async (p) => execWord(
+        pool2,
+        p.documentId,
+        p,
+        `
+var control = context.document.contentControls.getByIdOrNullObject(args.id);
+control.load("isNullObject,id");
+await context.sync();
+if (control.isNullObject) {
+  throw new Error("Content control " + args.id + " not found");
+}
+control.insertText(args.text, "Replace");
+if (args.title !== undefined) control.title = args.title;
+if (args.tag !== undefined) control.tag = args.tag;
+await context.sync();
+control.load("text,title,tag");
+await context.sync();
+return { id: control.id, text: control.text, title: control.title, tag: control.tag };
+`
+      )
+    )
+  );
+  server.tool(
+    "read_comments",
+    "Read all comments in the document body: id, author, text, resolved state, date, and replies. Note: adding replies is not supported by the current Word.js API set.",
+    {
+      documentId: external_exports3.string().optional().describe("Target document ID from list_documents. Optional when only one document is connected.")
+    },
+    withTool(
+      async (p) => execWord(
+        pool2,
+        p.documentId,
+        p,
+        `
+var comments = context.document.body.getRange().getComments();
+comments.load("id,author,content,resolved,createdDate,replies");
+await context.sync();
+for (var i = 0; i < comments.items.length; i++) {
+  comments.items[i].replies.load("id,content,author");
+}
+await context.sync();
+return {
+  comments: comments.items.map(function (c) {
+    return {
+      id: c.id,
+      author: c.author,
+      content: c.content,
+      resolved: c.resolved,
+      created: c.createdDate,
+      replies: c.replies.items.map(function (r) {
+        return { id: r.id, author: r.author, content: r.content };
+      }),
+    };
+  }),
+};
+`
+      )
+    )
+  );
+  server.tool(
+    "get_document_properties",
+    "Read the document metadata: title, author, subject, keywords, comments, category, creation and last-save dates.",
+    {
+      documentId: external_exports3.string().optional().describe("Target document ID from list_documents. Optional when only one document is connected.")
+    },
+    withTool(
+      async (p) => execWord(
+        pool2,
+        p.documentId,
+        p,
+        `
+var properties = context.document.properties;
+properties.load("title,author,subject,keywords,comments,category,creationDate,lastSaveDate");
+await context.sync();
+return {
+  title: properties.title,
+  author: properties.author,
+  subject: properties.subject,
+  keywords: properties.keywords,
+  comments: properties.comments,
+  category: properties.category,
+  created: properties.creationDate,
+  lastSaved: properties.lastSaveDate,
+};
+`
+      )
+    )
+  );
+  server.tool(
+    "set_document_properties",
+    "Set document metadata (title, author, subject, keywords, comments, category). Only provided fields are changed.",
+    {
+      title: external_exports3.string().optional().describe("Document title."),
+      author: external_exports3.string().optional().describe("Document author."),
+      subject: external_exports3.string().optional().describe("Document subject."),
+      keywords: external_exports3.string().optional().describe("Document keywords."),
+      comments: external_exports3.string().optional().describe("Document comments field."),
+      category: external_exports3.string().optional().describe("Document category."),
+      documentId: external_exports3.string().optional().describe("Target document ID from list_documents. Optional when only one document is connected.")
+    },
+    withTool(
+      async (p) => execWord(
+        pool2,
+        p.documentId,
+        p,
+        `
+var properties = context.document.properties;
+if (args.title !== undefined) properties.title = args.title;
+if (args.author !== undefined) properties.author = args.author;
+if (args.subject !== undefined) properties.subject = args.subject;
+if (args.keywords !== undefined) properties.keywords = args.keywords;
+if (args.comments !== undefined) properties.comments = args.comments;
+if (args.category !== undefined) properties.category = args.category;
+await context.sync();
+return { updated: true };
+`
+      )
+    )
+  );
+  server.tool(
+    "edit_table_columns",
+    'Add or delete columns of a table. Add: position "Before" inserts left of the first column, "After" right of the last column; optionally pre-fill with values (2D array, one column per entry). Delete: remove count columns starting at columnIndex (0-based).',
+    {
+      tableIndex: external_exports3.number().int().min(0).describe("Zero-based table index."),
+      action: external_exports3.enum(["add", "delete"]).describe("Add or delete columns."),
+      position: external_exports3.enum(["Before", "After"]).optional().describe('For add: "Before" inserts at the left edge, "After" at the right edge.'),
+      count: external_exports3.number().int().min(1).optional().describe("Number of columns (default 1)."),
+      values: external_exports3.array(external_exports3.array(external_exports3.string())).optional().describe("For add: cell texts as 2D array (rows x added columns)."),
+      columnIndex: external_exports3.number().int().min(0).optional().describe("For delete: first column index to remove."),
+      documentId: external_exports3.string().optional().describe("Target document ID from list_documents. Optional when only one document is connected.")
+    },
+    withTool(
+      async (p) => execWord(
+        pool2,
+        p.documentId,
+        p,
+        `
+var tables = context.document.body.tables;
+tables.load("items");
+await context.sync();
+if (args.tableIndex < 0 || args.tableIndex >= tables.items.length) {
+  throw new Error("Table index " + args.tableIndex + " out of range (0-" + (tables.items.length - 1) + ")");
+}
+var table = tables.items[args.tableIndex];
+if (args.action === "add") {
+  var count = args.count === undefined ? 1 : args.count;
+  if (args.values !== undefined) {
+    table.addColumns(args.position, count, args.values);
+  } else {
+    table.addColumns(args.position, count);
+  }
+  await context.sync();
+  return { tableIndex: args.tableIndex, action: "add", position: args.position, count: count };
+}
+var startIndex = args.columnIndex === undefined ? 0 : args.columnIndex;
+var delCount = args.count === undefined ? 1 : args.count;
+table.deleteColumns(startIndex, delCount);
+await context.sync();
+return { tableIndex: args.tableIndex, action: "delete", columnIndex: startIndex, count: delCount };
+`
+      )
+    )
+  );
+  server.tool(
+    "set_table_cells",
+    "Set the text of multiple table cells in one call. Rows and columns are 0-based indices into the table.",
+    {
+      tableIndex: external_exports3.number().int().min(0).describe("Zero-based table index."),
+      cells: external_exports3.array(
+        external_exports3.object({
+          row: external_exports3.number().int().min(0).describe("Zero-based row index."),
+          column: external_exports3.number().int().min(0).describe("Zero-based column index."),
+          text: external_exports3.string().describe("New cell text.")
+        })
+      ).min(1).describe("Cells to update."),
+      documentId: external_exports3.string().optional().describe("Target document ID from list_documents. Optional when only one document is connected.")
+    },
+    withTool(
+      async (p) => execWord(
+        pool2,
+        p.documentId,
+        p,
+        `
+var tables = context.document.body.tables;
+tables.load("items");
+await context.sync();
+if (args.tableIndex < 0 || args.tableIndex >= tables.items.length) {
+  throw new Error("Table index " + args.tableIndex + " out of range (0-" + (tables.items.length - 1) + ")");
+}
+var table = tables.items[args.tableIndex];
+var results = [];
+for (var i = 0; i < args.cells.length; i++) {
+  var cell = table.getCellOrNullObject(args.cells[i].row, args.cells[i].column);
+  cell.load("isNullObject");
+  await context.sync();
+  if (cell.isNullObject) {
+    results.push({ row: args.cells[i].row, column: args.cells[i].column, error: "cell out of range" });
+  } else {
+    cell.body.insertText(args.cells[i].text, "Replace");
+    results.push({ row: args.cells[i].row, column: args.cells[i].column, text: args.cells[i].text });
+  }
+}
+await context.sync();
+return { tableIndex: args.tableIndex, cells: results };
 `
       )
     )

@@ -326,4 +326,134 @@ describe('Word tools', () => {
       expect(code).toContain('context.document.save()')
     })
   })
+
+  describe('list_content_controls', () => {
+    it('lists content controls with metadata', async () => {
+      const { code, result } = await callTool(
+        'list_content_controls',
+        {},
+        { count: 1, contentControls: [{ id: 7, title: 'Client', tag: 'client', type: 'richText' }] },
+      )
+      expect(code).toContain('context.document.contentControls')
+      expect(code).toContain('id,title,tag,type,text,placeholderText,appearance')
+      expect(JSON.parse(result.text).contentControls[0].title).toBe('Client')
+    })
+
+    it('filters by tag client-side', async () => {
+      const { code } = await callTool('list_content_controls', { tag: 'client' }, { count: 0, contentControls: [] })
+      expect(code).toContain('c.tag === args.tag')
+      expect(code).toContain('var args = {"tag":"client"}')
+    })
+  })
+
+  describe('set_content_control_text', () => {
+    it('replaces the text of the control by id', async () => {
+      const { code, result } = await callTool(
+        'set_content_control_text',
+        { id: 7, text: 'Acme Corp', title: 'Client' },
+        { id: 7, text: 'Acme Corp', title: 'Client' },
+      )
+      expect(code).toContain('getByIdOrNullObject(args.id)')
+      expect(code).toContain('insertText(args.text, "Replace")')
+      expect(JSON.parse(result.text).text).toBe('Acme Corp')
+    })
+
+    it('fails with a clear error for an unknown id', async () => {
+      const { code } = await callTool(
+        'set_content_control_text',
+        { id: 99, text: 'x' },
+        { error: 'Content control 99 not found' },
+      )
+      expect(code).toContain('isNullObject')
+    })
+  })
+
+  describe('read_comments', () => {
+    it('reads comments with replies via the body range', async () => {
+      const { code, result } = await callTool(
+        'read_comments',
+        {},
+        { comments: [{ id: '1', author: 'A', content: 'c', resolved: false, replies: [] }] },
+      )
+      expect(code).toContain('getRange().getComments()')
+      expect(code).toContain('replies.load("id,content,author")')
+      expect(JSON.parse(result.text).comments[0].author).toBe('A')
+    })
+  })
+
+  describe('get_document_properties', () => {
+    it('reads the metadata fields', async () => {
+      const { code, result } = await callTool('get_document_properties', {}, { title: 'T', author: 'A' })
+      expect(code).toContain('context.document.properties')
+      expect(code).toContain('title,author,subject,keywords,comments,category,creationDate,lastSaveDate')
+      expect(JSON.parse(result.text).title).toBe('T')
+    })
+  })
+
+  describe('set_document_properties', () => {
+    it('sets only the provided fields', async () => {
+      const { code, result } = await callTool(
+        'set_document_properties',
+        { title: 'New title', author: 'Me' },
+        { updated: true },
+      )
+      expect(code).toContain('if (args.title !== undefined) properties.title = args.title')
+      expect(code).toContain('if (args.author !== undefined) properties.author = args.author')
+      expect(code).toContain('var args = {"title":"New title","author":"Me"}')
+      expect(JSON.parse(result.text).updated).toBe(true)
+    })
+  })
+
+  describe('edit_table_columns', () => {
+    it('adds a column with values', async () => {
+      const { code, result } = await callTool(
+        'edit_table_columns',
+        { tableIndex: 0, action: 'add', position: 'After', count: 1, values: [['N1'], ['N2']] },
+        { tableIndex: 0, action: 'add' },
+      )
+      expect(code).toContain('table.addColumns(args.position, count, args.values)')
+      expect(JSON.parse(result.text).action).toBe('add')
+    })
+
+    it('deletes columns starting at the given index', async () => {
+      const { code, result } = await callTool(
+        'edit_table_columns',
+        { tableIndex: 0, action: 'delete', columnIndex: 1, count: 2 },
+        { tableIndex: 0, action: 'delete', columnIndex: 1, count: 2 },
+      )
+      expect(code).toContain('table.deleteColumns(startIndex, delCount)')
+      expect(JSON.parse(result.text).count).toBe(2)
+    })
+  })
+
+  describe('set_table_cells', () => {
+    it('writes multiple cells via getCellOrNullObject', async () => {
+      const { code, result } = await callTool(
+        'set_table_cells',
+        { tableIndex: 0, cells: [{ row: 0, column: 1, text: 'B1' }] },
+        { tableIndex: 0, cells: [{ row: 0, column: 1, text: 'B1' }] },
+      )
+      expect(code).toContain('getCellOrNullObject(args.cells[i].row, args.cells[i].column)')
+      expect(code).toContain('cell.body.insertText(args.cells[i].text, "Replace")')
+      expect(JSON.parse(result.text).cells[0].text).toBe('B1')
+    })
+
+    it('rejects an out-of-range table index locally', async () => {
+      const { code } = await callTool(
+        'set_table_cells',
+        { tableIndex: 5, cells: [{ row: 0, column: 0, text: 'x' }] },
+        {},
+      )
+      expect(code).toContain('Table index " + args.tableIndex + " out of range')
+    })
+
+    it('injects hostile cell text as JSON, not interpolated', async () => {
+      const { code } = await callTool(
+        'set_table_cells',
+        { tableIndex: 0, cells: [{ row: 0, column: 0, text: '"); evil()' }] },
+        {},
+      )
+      expect(code).toContain('"text":"\\"); evil()"')
+    })
+  })
 })

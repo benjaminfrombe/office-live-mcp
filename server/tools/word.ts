@@ -689,4 +689,287 @@ return { saved: true };
       ),
     ),
   )
+
+  server.tool(
+    'list_content_controls',
+    'List all content controls (template fields) in the document: id, title, tag, type, current text and placeholder. Use set_content_control_text with the id to fill them.',
+    {
+      tag: z.string().optional().describe('Only return content controls with this tag.'),
+      title: z.string().optional().describe('Only return content controls with this title.'),
+      documentId: z
+        .string()
+        .optional()
+        .describe('Target document ID from list_documents. Optional when only one document is connected.'),
+    },
+    withTool(async (p) =>
+      execWord(
+        pool,
+        p.documentId,
+        p,
+        `
+var controls = context.document.contentControls;
+controls.load("id,title,tag,type,text,placeholderText,appearance");
+await context.sync();
+var items = controls.items.map(function (c) {
+  return { id: c.id, title: c.title, tag: c.tag, type: c.type, text: c.text, placeholder: c.placeholderText, appearance: c.appearance };
+});
+if (args.tag !== undefined) items = items.filter(function (c) { return c.tag === args.tag; });
+if (args.title !== undefined) items = items.filter(function (c) { return c.title === args.title; });
+return { count: items.length, contentControls: items };
+`,
+      ),
+    ),
+  )
+
+  server.tool(
+    'set_content_control_text',
+    'Replace the text of a content control (template field) identified by its id from list_content_controls. Optionally update its title and tag.',
+    {
+      id: z.number().int().describe('Content control id from list_content_controls.'),
+      text: z.string().describe('New text for the content control.'),
+      title: z.string().optional().describe('New title for the content control.'),
+      tag: z.string().optional().describe('New tag for the content control.'),
+      documentId: z
+        .string()
+        .optional()
+        .describe('Target document ID from list_documents. Optional when only one document is connected.'),
+    },
+    withTool(async (p) =>
+      execWord(
+        pool,
+        p.documentId,
+        p,
+        `
+var control = context.document.contentControls.getByIdOrNullObject(args.id);
+control.load("isNullObject,id");
+await context.sync();
+if (control.isNullObject) {
+  throw new Error("Content control " + args.id + " not found");
+}
+control.insertText(args.text, "Replace");
+if (args.title !== undefined) control.title = args.title;
+if (args.tag !== undefined) control.tag = args.tag;
+await context.sync();
+control.load("text,title,tag");
+await context.sync();
+return { id: control.id, text: control.text, title: control.title, tag: control.tag };
+`,
+      ),
+    ),
+  )
+
+  server.tool(
+    'read_comments',
+    'Read all comments in the document body: id, author, text, resolved state, date, and replies. Note: adding replies is not supported by the current Word.js API set.',
+    {
+      documentId: z
+        .string()
+        .optional()
+        .describe('Target document ID from list_documents. Optional when only one document is connected.'),
+    },
+    withTool(async (p) =>
+      execWord(
+        pool,
+        p.documentId,
+        p,
+        `
+var comments = context.document.body.getRange().getComments();
+comments.load("id,author,content,resolved,createdDate,replies");
+await context.sync();
+for (var i = 0; i < comments.items.length; i++) {
+  comments.items[i].replies.load("id,content,author");
+}
+await context.sync();
+return {
+  comments: comments.items.map(function (c) {
+    return {
+      id: c.id,
+      author: c.author,
+      content: c.content,
+      resolved: c.resolved,
+      created: c.createdDate,
+      replies: c.replies.items.map(function (r) {
+        return { id: r.id, author: r.author, content: r.content };
+      }),
+    };
+  }),
+};
+`,
+      ),
+    ),
+  )
+
+  server.tool(
+    'get_document_properties',
+    'Read the document metadata: title, author, subject, keywords, comments, category, creation and last-save dates.',
+    {
+      documentId: z
+        .string()
+        .optional()
+        .describe('Target document ID from list_documents. Optional when only one document is connected.'),
+    },
+    withTool(async (p) =>
+      execWord(
+        pool,
+        p.documentId,
+        p,
+        `
+var properties = context.document.properties;
+properties.load("title,author,subject,keywords,comments,category,creationDate,lastSaveDate");
+await context.sync();
+return {
+  title: properties.title,
+  author: properties.author,
+  subject: properties.subject,
+  keywords: properties.keywords,
+  comments: properties.comments,
+  category: properties.category,
+  created: properties.creationDate,
+  lastSaved: properties.lastSaveDate,
+};
+`,
+      ),
+    ),
+  )
+
+  server.tool(
+    'set_document_properties',
+    'Set document metadata (title, author, subject, keywords, comments, category). Only provided fields are changed.',
+    {
+      title: z.string().optional().describe('Document title.'),
+      author: z.string().optional().describe('Document author.'),
+      subject: z.string().optional().describe('Document subject.'),
+      keywords: z.string().optional().describe('Document keywords.'),
+      comments: z.string().optional().describe('Document comments field.'),
+      category: z.string().optional().describe('Document category.'),
+      documentId: z
+        .string()
+        .optional()
+        .describe('Target document ID from list_documents. Optional when only one document is connected.'),
+    },
+    withTool(async (p) =>
+      execWord(
+        pool,
+        p.documentId,
+        p,
+        `
+var properties = context.document.properties;
+if (args.title !== undefined) properties.title = args.title;
+if (args.author !== undefined) properties.author = args.author;
+if (args.subject !== undefined) properties.subject = args.subject;
+if (args.keywords !== undefined) properties.keywords = args.keywords;
+if (args.comments !== undefined) properties.comments = args.comments;
+if (args.category !== undefined) properties.category = args.category;
+await context.sync();
+return { updated: true };
+`,
+      ),
+    ),
+  )
+
+  server.tool(
+    'edit_table_columns',
+    'Add or delete columns of a table. Add: position "Before" inserts left of the first column, "After" right of the last column; optionally pre-fill with values (2D array, one column per entry). Delete: remove count columns starting at columnIndex (0-based).',
+    {
+      tableIndex: z.number().int().min(0).describe('Zero-based table index.'),
+      action: z.enum(['add', 'delete']).describe('Add or delete columns.'),
+      position: z
+        .enum(['Before', 'After'])
+        .optional()
+        .describe('For add: "Before" inserts at the left edge, "After" at the right edge.'),
+      count: z.number().int().min(1).optional().describe('Number of columns (default 1).'),
+      values: z
+        .array(z.array(z.string()))
+        .optional()
+        .describe('For add: cell texts as 2D array (rows x added columns).'),
+      columnIndex: z.number().int().min(0).optional().describe('For delete: first column index to remove.'),
+      documentId: z
+        .string()
+        .optional()
+        .describe('Target document ID from list_documents. Optional when only one document is connected.'),
+    },
+    withTool(async (p) =>
+      execWord(
+        pool,
+        p.documentId,
+        p,
+        `
+var tables = context.document.body.tables;
+tables.load("items");
+await context.sync();
+if (args.tableIndex < 0 || args.tableIndex >= tables.items.length) {
+  throw new Error("Table index " + args.tableIndex + " out of range (0-" + (tables.items.length - 1) + ")");
+}
+var table = tables.items[args.tableIndex];
+if (args.action === "add") {
+  var count = args.count === undefined ? 1 : args.count;
+  if (args.values !== undefined) {
+    table.addColumns(args.position, count, args.values);
+  } else {
+    table.addColumns(args.position, count);
+  }
+  await context.sync();
+  return { tableIndex: args.tableIndex, action: "add", position: args.position, count: count };
+}
+var startIndex = args.columnIndex === undefined ? 0 : args.columnIndex;
+var delCount = args.count === undefined ? 1 : args.count;
+table.deleteColumns(startIndex, delCount);
+await context.sync();
+return { tableIndex: args.tableIndex, action: "delete", columnIndex: startIndex, count: delCount };
+`,
+      ),
+    ),
+  )
+
+  server.tool(
+    'set_table_cells',
+    'Set the text of multiple table cells in one call. Rows and columns are 0-based indices into the table.',
+    {
+      tableIndex: z.number().int().min(0).describe('Zero-based table index.'),
+      cells: z
+        .array(
+          z.object({
+            row: z.number().int().min(0).describe('Zero-based row index.'),
+            column: z.number().int().min(0).describe('Zero-based column index.'),
+            text: z.string().describe('New cell text.'),
+          }),
+        )
+        .min(1)
+        .describe('Cells to update.'),
+      documentId: z
+        .string()
+        .optional()
+        .describe('Target document ID from list_documents. Optional when only one document is connected.'),
+    },
+    withTool(async (p) =>
+      execWord(
+        pool,
+        p.documentId,
+        p,
+        `
+var tables = context.document.body.tables;
+tables.load("items");
+await context.sync();
+if (args.tableIndex < 0 || args.tableIndex >= tables.items.length) {
+  throw new Error("Table index " + args.tableIndex + " out of range (0-" + (tables.items.length - 1) + ")");
+}
+var table = tables.items[args.tableIndex];
+var results = [];
+for (var i = 0; i < args.cells.length; i++) {
+  var cell = table.getCellOrNullObject(args.cells[i].row, args.cells[i].column);
+  cell.load("isNullObject");
+  await context.sync();
+  if (cell.isNullObject) {
+    results.push({ row: args.cells[i].row, column: args.cells[i].column, error: "cell out of range" });
+  } else {
+    cell.body.insertText(args.cells[i].text, "Replace");
+    results.push({ row: args.cells[i].row, column: args.cells[i].column, text: args.cells[i].text });
+  }
+}
+await context.sync();
+return { tableIndex: args.tableIndex, cells: results };
+`,
+      ),
+    ),
+  )
 }

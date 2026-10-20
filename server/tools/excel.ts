@@ -974,4 +974,292 @@ return { sheet: args.sheetName, protected: args.protect };
       ),
     ),
   )
+
+  server.tool(
+    'read_threaded_comments',
+    'Read all threaded comments in the workbook: content, author, creation date, resolved state, and replies. Use reply_to_comment or resolve_comment with a comment id from this output.',
+    {
+      workbookId: z
+        .string()
+        .optional()
+        .describe('Target workbook ID from list_workbooks. Optional when only one workbook is connected.'),
+    },
+    withTool(async (p) =>
+      execExcel(
+        pool,
+        p.workbookId,
+        p,
+        `
+var comments = context.workbook.comments;
+comments.load("id,content,authorName,creationDate,resolved,replies");
+await context.sync();
+var replyLoads = [];
+for (var i = 0; i < comments.items.length; i++) {
+  comments.items[i].replies.load("id,content,authorName,creationDate");
+  replyLoads.push(comments.items[i].replies);
+}
+await context.sync();
+return {
+  comments: comments.items.map(function (c) {
+    return {
+      id: c.id,
+      content: c.content,
+      author: c.authorName,
+      created: c.creationDate,
+      resolved: c.resolved,
+      replies: c.replies.items.map(function (r) {
+        return { id: r.id, content: r.content, author: r.authorName, created: r.creationDate };
+      }),
+    };
+  }),
+};
+`,
+      ),
+    ),
+  )
+
+  server.tool(
+    'reply_to_comment',
+    'Add a reply to an existing threaded comment. Use the comment id from read_comments.',
+    {
+      commentId: z.string().describe('Comment id from read_comments.'),
+      text: z.string().describe('Reply text.'),
+      workbookId: z
+        .string()
+        .optional()
+        .describe('Target workbook ID from list_workbooks. Optional when only one workbook is connected.'),
+    },
+    withTool(async (p) =>
+      execExcel(
+        pool,
+        p.workbookId,
+        p,
+        `
+var comment = context.workbook.comments.getItem(args.commentId);
+comment.replies.add(args.text);
+await context.sync();
+return { replied: args.commentId };
+`,
+      ),
+    ),
+  )
+
+  server.tool(
+    'resolve_comment',
+    'Resolve or reopen a threaded comment. Use the comment id from read_comments.',
+    {
+      commentId: z.string().describe('Comment id from read_comments.'),
+      resolved: z.boolean().describe('True to resolve, false to reopen.'),
+      workbookId: z
+        .string()
+        .optional()
+        .describe('Target workbook ID from list_workbooks. Optional when only one workbook is connected.'),
+    },
+    withTool(async (p) =>
+      execExcel(
+        pool,
+        p.workbookId,
+        p,
+        `
+var comment = context.workbook.comments.getItem(args.commentId);
+comment.resolved = args.resolved;
+await context.sync();
+comment.load("resolved");
+await context.sync();
+return { commentId: args.commentId, resolved: comment.resolved };
+`,
+      ),
+    ),
+  )
+
+  server.tool(
+    'set_hyperlink',
+    'Set a hyperlink on a cell (address, display text, tooltip). The cell text is replaced by textToDisplay when provided. Pass address as null to remove the hyperlink.',
+    {
+      cellAddress: z.string().describe('Sheet-qualified cell reference, e.g. "Sheet1!B2".'),
+      address: z
+        .string()
+        .nullable()
+        .describe('Target URL, e.g. "https://example.com". Pass null to remove the hyperlink.'),
+      textToDisplay: z.string().optional().describe('Cell text shown for the link. Defaults to the address.'),
+      tooltip: z.string().optional().describe('Screen tip shown on hover.'),
+      workbookId: z
+        .string()
+        .optional()
+        .describe('Target workbook ID from list_workbooks. Optional when only one workbook is connected.'),
+    },
+    withTool(async (p) =>
+      execExcel(
+        pool,
+        p.workbookId,
+        p,
+        `
+var range = context.workbook.worksheets.getItem(args.cellAddress.split("!")[0]).getRange(args.cellAddress.split("!").slice(1).join("!"));
+if (args.address === null) {
+  range.hyperlink = null;
+} else {
+  var link = { address: args.address };
+  if (args.textToDisplay !== undefined) link.textToDisplay = args.textToDisplay;
+  if (args.tooltip !== undefined) link.screenTip = args.tooltip;
+  range.hyperlink = link;
+}
+await context.sync();
+range.load("hyperlink");
+await context.sync();
+return { cell: args.cellAddress, hyperlink: range.hyperlink === null ? null : { address: range.hyperlink.address, text: range.hyperlink.textToDisplay } };
+`,
+      ),
+    ),
+  )
+
+  server.tool(
+    'freeze_panes',
+    'Freeze rows and columns of a worksheet at a cell (everything above and left of the cell stays visible), or unfreeze. E.g. freezeAt "A2" freezes the first row, "B2" freezes row 1 and column A.',
+    {
+      sheetName: z.string().describe('Worksheet name.'),
+      freezeAt: z.string().nullable().describe('Cell reference to freeze at, e.g. "A2". Pass null to unfreeze.'),
+      workbookId: z
+        .string()
+        .optional()
+        .describe('Target workbook ID from list_workbooks. Optional when only one workbook is connected.'),
+    },
+    withTool(async (p) =>
+      execExcel(
+        pool,
+        p.workbookId,
+        p,
+        `
+var sheet = context.workbook.worksheets.getItem(args.sheetName);
+if (args.freezeAt === null) {
+  sheet.freezePanes.unfreeze();
+} else {
+  sheet.freezePanes.freezeAt(sheet.getRange(args.freezeAt));
+}
+await context.sync();
+return { sheet: args.sheetName, frozenAt: args.freezeAt };
+`,
+      ),
+    ),
+  )
+
+  server.tool(
+    'replace_in_sheet',
+    'Find and replace text across a whole worksheet (substring match per cell by default). Returns the number of cells changed. Uses findAll so merged/hidden cells behave like the Excel UI.',
+    {
+      find: z.string().describe('Text to find.'),
+      replace: z.string().describe('Replacement text.'),
+      sheetName: z.string().optional().describe('Worksheet name. Defaults to the active worksheet.'),
+      matchCase: z.boolean().optional().describe('Case-sensitive search. Default false.'),
+      completeMatch: z.boolean().optional().describe('Match the entire cell contents. Default false.'),
+      workbookId: z
+        .string()
+        .optional()
+        .describe('Target workbook ID from list_workbooks. Optional when only one workbook is connected.'),
+    },
+    withTool(async (p) =>
+      execExcel(
+        pool,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var found = sheet.findAll(args.find, { matchCase: args.matchCase === true, completeMatch: args.completeMatch === true });
+found.load("items/address,items/isNullObject,items/rowCount,items/columnCount,items/values");
+await context.sync();
+var live = found.items.filter(function (r) { return !r.isNullObject; });
+var changed = 0;
+for (var i = 0; i < live.length; i++) {
+  var replaced = false;
+  var grid = live[i].values;
+  for (var r = 0; r < grid.length; r++) {
+    for (var c = 0; c < grid[r].length; c++) {
+      var v = grid[r][c];
+      if (typeof v !== "string") continue;
+      var hay = args.matchCase ? v : v.toLowerCase();
+      var needle = args.matchCase ? args.find : args.find.toLowerCase();
+      if (hay.indexOf(needle) === -1) continue;
+      var out = "";
+      var pos = 0;
+      var idx = hay.indexOf(needle);
+      while (idx !== -1) {
+        out += v.slice(pos, idx) + args.replace;
+        pos = idx + needle.length;
+        idx = hay.indexOf(needle, pos);
+      }
+      out += v.slice(pos);
+      grid[r][c] = out;
+      replaced = true;
+    }
+  }
+  if (replaced) {
+    live[i].values = grid;
+    changed++;
+  }
+}
+await context.sync();
+return { replacedCells: changed, matches: live.length };
+`,
+      ),
+    ),
+  )
+
+  server.tool(
+    'clear_range',
+    'Clear the contents and formatting of a range in the live workbook.',
+    {
+      range: z.string().describe('A1 range address, e.g. "A1:C10".'),
+      sheetName: z.string().optional().describe('Worksheet name. Defaults to the active worksheet.'),
+      workbookId: z
+        .string()
+        .optional()
+        .describe('Target workbook ID from list_workbooks. Optional when only one workbook is connected.'),
+    },
+    withTool(async (p) =>
+      execExcel(
+        pool,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+sheet.getRange(args.range).clear();
+await context.sync();
+return { cleared: args.range };
+`,
+      ),
+    ),
+  )
+
+  server.tool(
+    'copy_range',
+    'Copy a source range to a target range in the live workbook. Copies values, formulas and formatting by default; valuesOnly copies just the results.',
+    {
+      source: z.string().describe('A1 range address to copy from, e.g. "A1:C3".'),
+      target: z.string().describe('A1 range address (top-left corner) to copy into, e.g. "E1".'),
+      sheetName: z.string().optional().describe('Worksheet name for both ranges. Defaults to the active worksheet.'),
+      valuesOnly: z.boolean().optional().describe('Copy only the calculated values, not formulas or formatting.'),
+      workbookId: z
+        .string()
+        .optional()
+        .describe('Target workbook ID from list_workbooks. Optional when only one workbook is connected.'),
+    },
+    withTool(async (p) =>
+      execExcel(
+        pool,
+        p.workbookId,
+        p,
+        `
+${SHEET_LINE}
+var src = sheet.getRange(args.source);
+var dst = sheet.getRange(args.target);
+if (args.valuesOnly) {
+  dst.copyFrom(src, "Values");
+} else {
+  dst.copyFrom(src);
+}
+await context.sync();
+return { copied: args.source + " -> " + args.target, valuesOnly: args.valuesOnly === true };
+`,
+      ),
+    ),
+  )
 }

@@ -445,4 +445,134 @@ describe('Excel tools', () => {
       expect(code).toContain('range.format.columnWidth = args.columnWidth')
     })
   })
+
+  describe('read_comments', () => {
+    it('loads comment fields and replies', async () => {
+      const { code, result } = await callTool(
+        'read_threaded_comments',
+        {},
+        {
+          comments: [{ id: 'c1', content: 'Check this', author: 'A', resolved: false, replies: [] }],
+        },
+      )
+      expect(code).toContain('context.workbook.comments')
+      expect(code).toContain('replies.load("id,content,authorName,creationDate")')
+      expect(JSON.parse(result.text).comments[0].id).toBe('c1')
+    })
+  })
+
+  describe('reply_to_comment', () => {
+    it('adds a reply to the comment id', async () => {
+      const { code, result } = await callTool('reply_to_comment', { commentId: 'c1', text: 'Done' }, { replied: 'c1' })
+      expect(code).toContain('comments.getItem(args.commentId)')
+      expect(code).toContain('replies.add(args.text)')
+      expect(JSON.parse(result.text).replied).toBe('c1')
+    })
+
+    it('injects the reply text as JSON, not interpolated', async () => {
+      const { code } = await callTool('reply_to_comment', { commentId: 'c1', text: '"); evil()' }, {})
+      expect(code).toContain('var args = {"commentId":"c1","text":"\\"); evil()"}')
+    })
+  })
+
+  describe('resolve_comment', () => {
+    it('sets the resolved flag and reads it back', async () => {
+      const { code, result } = await callTool(
+        'resolve_comment',
+        { commentId: 'c1', resolved: true },
+        { commentId: 'c1', resolved: true },
+      )
+      expect(code).toContain('comment.resolved = args.resolved')
+      expect(JSON.parse(result.text).resolved).toBe(true)
+    })
+  })
+
+  describe('set_hyperlink', () => {
+    it('sets an object hyperlink with text and tooltip', async () => {
+      const { code, result } = await callTool(
+        'set_hyperlink',
+        { cellAddress: 'Sheet1!B2', address: 'https://example.com', textToDisplay: 'Example' },
+        { cell: 'Sheet1!B2', hyperlink: { address: 'https://example.com/' } },
+      )
+      expect(code).toContain('range.hyperlink = link')
+      expect(code).toContain('link.textToDisplay = args.textToDisplay')
+      expect(JSON.parse(result.text).hyperlink.address).toBe('https://example.com/')
+    })
+
+    it('clears the hyperlink when address is null', async () => {
+      const { code } = await callTool('set_hyperlink', { cellAddress: 'Sheet1!B2', address: null }, {})
+      expect(code).toContain('range.hyperlink = null')
+    })
+
+    it('splits the sheet-qualified address', async () => {
+      const { code } = await callTool('set_hyperlink', { cellAddress: 'Q3 Data!B2', address: 'https://x.dev' }, {})
+      expect(code).toContain('getItem(args.cellAddress.split("!")[0])')
+    })
+  })
+
+  describe('freeze_panes', () => {
+    it('freezes at the given cell', async () => {
+      const { code, result } = await callTool(
+        'freeze_panes',
+        { sheetName: 'Sheet1', freezeAt: 'B2' },
+        { sheet: 'Sheet1', frozenAt: 'B2' },
+      )
+      expect(code).toContain('freezePanes.freezeAt(sheet.getRange(args.freezeAt))')
+      expect(JSON.parse(result.text).frozenAt).toBe('B2')
+    })
+
+    it('unfreezes when freezeAt is null', async () => {
+      const { code } = await callTool('freeze_panes', { sheetName: 'Sheet1', freezeAt: null }, {})
+      expect(code).toContain('freezePanes.unfreeze()')
+    })
+  })
+
+  describe('replace_in_sheet', () => {
+    it('uses findAll and rewrites matching cells', async () => {
+      const { code, result } = await callTool(
+        'replace_in_sheet',
+        { find: '2025', replace: '2026' },
+        { replacedCells: 3, matches: 3 },
+      )
+      expect(code).toContain('sheet.findAll(args.find')
+      expect(code).toContain('live[i].values = grid')
+      expect(JSON.parse(result.text).replacedCells).toBe(3)
+    })
+
+    it('handles case-insensitive replacement without corrupting casing', async () => {
+      const { code } = await callTool('replace_in_sheet', { find: 'q3', replace: 'Q4' }, {})
+      expect(code).toContain('var hay = args.matchCase ? v : v.toLowerCase()')
+      expect(code).toContain('hay.indexOf(needle, pos)')
+    })
+
+    it('injects find and replace as JSON', async () => {
+      const { code } = await callTool('replace_in_sheet', { find: 'Q"1', replace: 'Q"2' }, {})
+      expect(code).toContain('var args = {"find":"Q\\"1","replace":"Q\\"2"}')
+    })
+  })
+
+  describe('clear_range', () => {
+    it('clears the range', async () => {
+      const { code, result } = await callTool('clear_range', { range: 'A1:C3' }, { cleared: 'A1:C3' })
+      expect(code).toContain('sheet.getRange(args.range).clear()')
+      expect(JSON.parse(result.text).cleared).toBe('A1:C3')
+    })
+  })
+
+  describe('copy_range', () => {
+    it('copies values only when requested', async () => {
+      const { code, result } = await callTool(
+        'copy_range',
+        { source: 'A1:C3', target: 'E1', valuesOnly: true },
+        { copied: 'A1:C3 -> E1', valuesOnly: true },
+      )
+      expect(code).toContain('dst.copyFrom(src, "Values")')
+      expect(JSON.parse(result.text).valuesOnly).toBe(true)
+    })
+
+    it('copies everything by default', async () => {
+      const { code } = await callTool('copy_range', { source: 'A1:C3', target: 'E1' }, {})
+      expect(code).toContain('dst.copyFrom(src)')
+    })
+  })
 })
