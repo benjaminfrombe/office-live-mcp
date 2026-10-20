@@ -40,7 +40,7 @@ const tls = process.argv.includes('--tls')
 const defaultPort = tls ? 8443 : 8080
 const port = Number(process.env.BRIDGE_PORT) || defaultPort
 
-const manifestName = tls ? 'manifest-https.xml' : APPS[app].manifest
+const manifestName = tls ? APPS[app].manifest.replace('.xml', '-https.xml') : APPS[app].manifest
 const src = resolve(PROJECT_ROOT, 'addin', manifestName)
 const wefDir = resolve(homedir(), `Library/Containers/${APPS[app].container}/Data/Documents/wef`)
 const dest = resolve(wefDir, 'manifest.xml')
