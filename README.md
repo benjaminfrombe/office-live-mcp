@@ -50,6 +50,22 @@ node dist/index.cjs --http --bridge
 
 Then open a document in any of the three apps, click the add-in button in the Home ribbon, and connect your MCP client to `http://127.0.0.1:3001/mcp`.
 
+### Optional: the ribbon icon (HTTPS)
+
+Everything works over plain HTTP except one cosmetic detail: Office refuses to load the **ribbon icon** over HTTP, so the button shows a generic placeholder. The add-in, taskpane and bridge connection are unaffected.
+
+To get the real icon, serve the bridge over HTTPS with a locally trusted certificate (one-time setup):
+
+```bash
+brew install mkcert && mkcert -install        # or: npx office-addin-dev-certs install
+mkcert -cert-file certs/localhost.pem -key-file certs/localhost-key.pem localhost 127.0.0.1 ::1
+
+BRIDGE_TLS=1 node dist/index.cjs --http --bridge               # bridge on https://localhost:8443
+node --experimental-strip-types scripts/sideload.ts --tls      # per app: add --app word / --app excel
+```
+
+Then restart the Office apps. Without this step, just ignore the placeholder icon.
+
 ## Windows installation
 
 Verified on Windows 11 (ARM64, Office Insider 16.0.20430) in a Parallels VM. Recent Windows Office builds reject the old sideload shortcuts (Developer-registry manifests only load under a debugger, the new "Apps" storefront never queries custom catalogs), so the supported route is the classic add-in dialog with a **shared folder catalog**:
