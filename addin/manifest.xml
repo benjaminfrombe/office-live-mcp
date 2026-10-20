@@ -11,8 +11,8 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Office Live MCP"/>
   <Description DefaultValue="Bridge for Claude Code to manipulate live PowerPoint presentations"/>
-  <IconUrl DefaultValue="https://localhost:8443/assets/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://localhost:8443/assets/icon-80.png"/>
+  <IconUrl DefaultValue="https://localhost:8443/assets/icon-32.png?v=2"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:8443/assets/icon-80.png?v=2"/>
   <SupportUrl DefaultValue="https://localhost:8443"/>
 
   <AppDomains>
@@ -70,9 +70,9 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon16" DefaultValue="https://localhost:8443/assets/icon-16.png"/>
-        <bt:Image id="Icon32" DefaultValue="https://localhost:8443/assets/icon-32.png"/>
-        <bt:Image id="Icon80" DefaultValue="https://localhost:8443/assets/icon-80.png"/>
+        <bt:Image id="Icon16" DefaultValue="https://localhost:8443/assets/icon-16.png?v=2"/>
+        <bt:Image id="Icon32" DefaultValue="https://localhost:8443/assets/icon-32.png?v=2"/>
+        <bt:Image id="Icon80" DefaultValue="https://localhost:8443/assets/icon-80.png?v=2"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="TaskpaneUrl" DefaultValue="https://localhost:8443/index.html"/>
