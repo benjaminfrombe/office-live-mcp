@@ -56195,6 +56195,30 @@ var import_node_fs7 = require("node:fs");
 var import_jszip4 = __toESM(require_lib4(), 1);
 function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
+    "show_slide",
+    "Bring a slide into view in the live presentation (navigates the user to that slide). Call this after editing a slide so the user can see the result; also useful to walk the user through a deck slide by slide.",
+    {
+      slideIndex: external_exports3.number().int().min(0).describe("Zero-based slide index to show."),
+      presentationId: external_exports3.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
+    },
+    withTool(async ({ slideIndex, presentationId }) => {
+      const target = pool2.resolveTarget(presentationId);
+      const code = `return new Promise(function(resolve, reject) {
+  Office.context.document.goToByIdAsync(${slideIndex + 1}, Office.GoToType.Index, function(navResult) {
+    if (navResult.status !== Office.AsyncResultStatus.Succeeded) {
+      reject(new Error("Navigation failed: " + navResult.error.message));
+      return;
+    }
+    resolve({ shown: ${slideIndex} });
+  });
+});`;
+      const result = await pool2.sendCommand("executeCode", { code }, target.ws);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result ?? { shown: slideIndex }) }]
+      };
+    })
+  );
+  server.tool(
     "add_slide",
     "Add a new slide from a layout at a specific position, with placeholder text pre-filled and shapes renamed to layout names. Use inspect_layouts to find available layout names and placeholder names. Returns the new slide index and its placeholder shapes with semantic names.",
     {
@@ -57934,10 +57958,20 @@ function autoSideloadManifest(tls, port) {
 var pool = new ConnectionPool();
 var mcpHttpTransports = /* @__PURE__ */ new Map();
 function createMcpServer(getSessionId, getActiveSessionCount) {
-  const mcpServer = new McpServer({
-    name: "office-live-mcp",
-    version: PKG_VERSION
-  });
+  const mcpServer = new McpServer(
+    {
+      name: "office-live-mcp",
+      version: PKG_VERSION
+    },
+    {
+      instructions: [
+        "This server drives LIVE Office documents (Word, Excel, PowerPoint) through an add-in taskpane; the user watches every change happen in real time.",
+        "View etiquette: edits happen in place and do not move the user's view. After finishing an edit burst on a slide (PowerPoint: show_slide; Word/Excel: execute_*js selection changes), call show_slide (PowerPoint) or otherwise bring the edited content into view so the user can see the result.",
+        "When multiple documents are connected, always pass the explicit documentId/workbookId/presentationId from list_documents/list_workbooks/list_presentations.",
+        "Tools that need a saved file (get_local_copy, read_deck_text, read_speaker_notes, add_slide) fail on unsaved documents with a GeneralException; save first."
+      ].join("\n")
+    }
+  );
   registerTools(mcpServer, pool, getSessionId, getActiveSessionCount);
   return mcpServer;
 }

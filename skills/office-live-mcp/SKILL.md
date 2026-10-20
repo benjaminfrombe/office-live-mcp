@@ -27,6 +27,7 @@ When asked to enable or configure PowerPoint MCP in a project — follow the [se
 | `inspect_slide` | Detailed shape inspector (~80 tok/shape): text, positions, fills | `slideRange`, `presentationId?` |
 | `scan_slide` | Lightweight shape scanner (~40 tok/shape): IDs, types, positions | `slideRange`, `presentationId?` |
 | `screenshot_slide` | Capture one slide as PNG (~1000 tok) | `slideIndex`, `width?` (default 720), `presentationId?` |
+| `show_slide` | Navigate the user's view to a slide (call after finishing an edit on a slide) | `slideIndex`, `presentationId?` |
 | `preview_deck` | Batch overview of all/selected slides with thumbnails + text | `slideRange?`, `imageWidth?` (default 480), `includeImages?`, `presentationId?` |
 | `copy_slides` | Copy slides between two open presentations (data stays server-side) | `sourceSlideIndex`, `sourcePresentationId`, `destinationPresentationId`, `formatting?`, `targetSlideId?` |
 | `insert_image` | Insert image from file path, URL, or base64 data (data stays server-side for file/url) | `source`, `sourceType` (`file`/`url`/`base64`), `slideIndex?`, `left?`, `top?`, `width?`, `height?`, `presentationId?` |
@@ -166,6 +167,7 @@ For multi-step work, check in at key milestones. Show interim outputs and confir
 4. **See**: `screenshot_slide` — visually inspect specific slides
 5. **Modify**: `execute_officejs` — build entire slides in a single call (all shapes, text, connectors, accents at once) for efficiency and to avoid mid-build visual flashing
 6. **Verify**: full verification loop — `verify_slides` + `/review-slide-visual` (see below). **Both steps are mandatory. Never skip `/review-slide-visual`.**
+7. **Show**: after finishing an edit burst on a slide, call `show_slide` to bring the edited slide into view — the user watches every change live and wants to see the result. Do not call it per individual edit during batch builds (that flickers); call it once per finished slide.
 
 Always inspect before modifying. Always verify after modifying. Every modified slide must pass both structural AND visual review before you move on or declare done.
 
