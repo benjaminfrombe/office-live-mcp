@@ -58162,6 +58162,12 @@ if (bridgeActive) {
   });
   wss.on("connection", (ws) => {
     console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] Add-in WebSocket connected`);
+    ws.on("close", () => {
+      console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] Add-in WebSocket closed`);
+    });
+    ws.on("error", (err) => {
+      console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] Add-in WebSocket error: ${err.message}`);
+    });
     ws.on("message", (data) => {
       let msg;
       try {

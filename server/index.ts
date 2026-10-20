@@ -484,6 +484,12 @@ if (bridgeActive) {
 
   wss.on('connection', (ws: WebSocket) => {
     console.error(`[${new Date().toISOString()}] Add-in WebSocket connected`)
+    ws.on('close', () => {
+      console.error(`[${new Date().toISOString()}] Add-in WebSocket closed`)
+    })
+    ws.on('error', (err: Error) => {
+      console.error(`[${new Date().toISOString()}] Add-in WebSocket error: ${err.message}`)
+    })
 
     ws.on('message', (data: Buffer) => {
       let msg: {
