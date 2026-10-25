@@ -35,7 +35,7 @@ There is a second advantage that matters just as much. Everything here runs loca
 
 ```bash
 git clone https://github.com/benjaminfrombe/office-live-mcp.git
-cd powerpoint-mcp
+cd office-live-mcp
 npm install
 npm run build
 
@@ -43,12 +43,34 @@ npm run build
 node --experimental-strip-types scripts/sideload.ts                # PowerPoint
 node --experimental-strip-types scripts/sideload.ts --app word     # Word
 node --experimental-strip-types scripts/sideload.ts --app excel    # Excel
-
-# start the bridge
-node dist/index.cjs --http --bridge
 ```
 
-Then open a document in any of the three apps, click the add-in button in the Home ribbon, and connect your MCP client to `http://127.0.0.1:3001/mcp`.
+Then open a document in any of the three apps, click the add-in button in the Home ribbon, and point your MCP client at the server (below) — **no bridge to start manually**.
+
+## Connecting an MCP client
+
+The default mode is **stdio**: the client (Claude Code, OpenCode, Claude Desktop, …) spawns the server, and the server makes sure a shared bridge daemon is running.
+
+```json
+{
+  "mcpServers": {
+    "office-live-mcp": { "command": "node", "args": ["/absolute/path/to/office-live-mcp/dist/index.cjs"] }
+  }
+}
+```
+
+What happens on connect:
+
+- If no daemon is up, one is started **detached** (`--http --bridge`: taskpane on :8080, MCP on :3001) and it stays up after the client session ends — the Office add-in needs it even when no AI session is open.
+- If a daemon is already up (another harness, an earlier session, the machine just rebooted), it is reused. Multiple harnesses share one daemon and see the same live documents.
+- If the daemon crashed or died with a reboot, the next client connect brings it back.
+
+Useful extras:
+
+- `node dist/index.cjs --stop-daemon` — stop the shared daemon (however it was started).
+- `~/.office-live-mcp/daemon.log` — daemon log; `~/.office-live-mcp/daemon.env` — optional `KEY=VALUE` lines merged into the daemon environment (e.g. `BRIDGE_TLS=1`).
+- Prefer an HTTP MCP client? Start the daemon once (`node dist/index.cjs --http --bridge`) and connect to `http://127.0.0.1:3001/mcp`.
+- Legacy single-session mode (`--stdio --bridge`, everything in one process) still exists but does not survive multiple concurrent clients.
 
 ### Optional: the ribbon icon (HTTPS)
 
@@ -60,7 +82,7 @@ To get the real icon, serve the bridge over HTTPS with a locally trusted certifi
 brew install mkcert && mkcert -install        # or: npx office-addin-dev-certs install
 mkcert -cert-file certs/localhost.pem -key-file certs/localhost-key.pem localhost 127.0.0.1 ::1
 
-BRIDGE_TLS=1 node dist/index.cjs --http --bridge               # bridge on https://localhost:8443
+printf 'BRIDGE_TLS=1\n' > ~/.office-live-mcp/daemon.env   # picked up by the auto-started daemon
 node --experimental-strip-types scripts/sideload.ts --tls      # per app: add --app word / --app excel
 ```
 
@@ -70,15 +92,9 @@ Then restart the Office apps. Without this step, just ignore the placeholder ico
 
 Verified on Windows 11 (ARM64, Office Insider 16.0.20430) in a Parallels VM. Recent Windows Office builds reject the old sideload shortcuts (Developer-registry manifests only load under a debugger, the new "Apps" storefront never queries custom catalogs), so the supported route is the classic add-in dialog with a **shared folder catalog**:
 
-1. Copy `dist/index.cjs` and `addin/` to the Windows machine (e.g. `C:\o365-bridge`), then start the bridge there:
+1. Copy `dist/index.cjs` and `addin/` to the Windows machine (e.g. `C:\o365-bridge`). You do **not** need to start anything: the first MCP client connect starts the daemon automatically (same stdio setup as above, with Windows paths). To run it standalone instead: `node C:\o365-bridge\dist\index.cjs --http --bridge` — taskpane on `http://localhost:8080`, MCP on `http://localhost:3001/mcp`.
 
-   ```bat
-   node C:\o365-bridge\dist\index.cjs --http --bridge
-   ```
-
-   This serves the taskpane on `http://localhost:8080` and MCP on `http://localhost:3001/mcp`.
-
-2. Publish the `addin/` folder as a network share (UNC path) that the Windows user can list — a native SMB share, or on a VM the host's shared folder (e.g. `\\Mac\Home\powerpoint-mcp\addin` under Parallels).
+2. Publish the `addin/` folder as a network share (UNC path) that the Windows user can list — a native SMB share, or on a VM the host's shared folder (e.g. `\\Mac\Home\office-live-mcp\addin` under Parallels).
 
 3. Trust that folder as an add-in catalog (per user, one-time):
 
@@ -88,7 +104,7 @@ Verified on Windows 11 (ARM64, Office Insider 16.0.20430) in a Parallels VM. Rec
    reg add HKCU\Software\Microsoft\Office\16.0\Wef\TrustedCatalogs\{7E3F2A11-93C4-4B5D-8E6F-1A2B3C4D5E6F} /v Flags /t REG_DWORD /d 1 /f
    ```
 
-4. Restart the Office app, then: **Home → Add-ins → Advanced...** → **SHARED FOLDER** tab → select *Office Live MCP* → **Add**. The taskpane opens and connects to the bridge over `ws://localhost:8080`; point your MCP client at `http://localhost:3001/mcp`.
+4. Restart the Office app, then: **Home → Add-ins → Advanced...** → **SHARED FOLDER** tab → select *Office Live MCP* → **Add**. The taskpane opens and connects to the bridge over `ws://localhost:8080`. The daemon's environment file lives at `%USERPROFILE%\.office-live-mcp\daemon.env`, its log at `%USERPROFILE%\.office-live-mcp\daemon.log`.
 
 Notes:
 

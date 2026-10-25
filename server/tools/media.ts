@@ -216,7 +216,7 @@ return new Promise(function(resolve, reject) {
             continue
           }
         }
-        enriched.push(r)
+        enriched.push({ ...r })
       }
       return { content: [{ type: 'text' as const, text: JSON.stringify(enriched, null, 2) }] }
     }),

@@ -15,6 +15,7 @@ import { WebSocketServer } from 'ws'
 import { ConnectionPool } from './bridge.ts'
 import { substituteManifestPort } from './manifest.ts'
 import { handleSharePointCatalog, setManifestDir } from './sharepoint-catalog.ts'
+import { runStdioProxy, stopDaemon } from './stdio-proxy.ts'
 import { clearSessionWarnings, registerTools } from './tools.ts'
 import { runVersionCheck } from './version-check.ts'
 
@@ -51,10 +52,11 @@ const cliArgs = process.argv.slice(2)
 const enableStdio = cliArgs.includes('--stdio')
 const enableHttp = cliArgs.includes('--http')
 const enableBridge = cliArgs.includes('--bridge')
+const enableStopDaemon = cliArgs.includes('--stop-daemon')
 
 // Default: --stdio if no flags given
 const noFlagsGiven = !enableStdio && !enableHttp && !enableBridge
-const stdioActive = enableStdio || noFlagsGiven
+const stdioActive = (enableStdio || noFlagsGiven) && !enableStopDaemon
 const httpActive = enableHttp
 const bridgeActive = enableBridge
 
@@ -569,11 +571,22 @@ if (httpActive) {
       res.end(
         JSON.stringify({
           status: 'ok',
+          version: PKG_VERSION,
           connections: pool.size,
           sessions: mcpHttpTransports.size,
           bridge: bridgeActive,
         }),
       )
+      return
+    }
+
+    // Localhost-only administrative shutdown, used by `--stop-daemon`. The
+    // server binds 127.0.0.1 exclusively, so no remote party can reach this.
+    if (url === '/shutdown' && req.method === 'POST') {
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ status: 'shutting down' }))
+      console.error('Shutdown requested via POST /shutdown')
+      setTimeout(() => process.exit(0), 100)
       return
     }
 
@@ -610,16 +623,39 @@ if (httpActive) {
 
 // ---------------------------------------------------------------------------
 // Start: STDIO MCP transport
+//
+// Two modes:
+//  - `--stdio --bridge` (legacy): everything in one process. Only works for a
+//    single harness session — a second session's bridge dies on EADDRINUSE.
+//  - `--stdio` (default): ensure a detached shared daemon (--http --bridge)
+//    and proxy stdio JSON-RPC to its HTTP MCP endpoint. Multiple harnesses
+//    share one daemon, which also serves the Office add-in.
 // ---------------------------------------------------------------------------
 
-if (stdioActive) {
+if (enableStopDaemon) {
+  stopDaemon().then((wasRunning) => {
+    if (wasRunning) {
+      console.error('office-live-mcp daemon stopped')
+      process.exit(0)
+    }
+    console.error('No office-live-mcp daemon appears to be running')
+    process.exit(1)
+  })
+} else if (stdioActive && !bridgeActive) {
+  runStdioProxy({ localVersion: PKG_VERSION })
+    .then(() => process.exit(0))
+    .catch((err: unknown) => {
+      console.error(`MCP STDIO proxy failed: ${err instanceof Error ? err.message : String(err)}`)
+      process.exit(1)
+    })
+} else if (stdioActive) {
   const stdioTransport = new StdioServerTransport()
   const stdioMcpServer = createMcpServer(
     () => 'stdio',
     () => 1,
   )
   stdioMcpServer.connect(stdioTransport).then(() => {
-    console.error('MCP STDIO transport running')
+    console.error('MCP STDIO transport running (legacy in-process mode, --bridge active)')
   })
 }
 
@@ -627,7 +663,11 @@ if (stdioActive) {
 // Version check (non-blocking, fire-and-forget)
 // ---------------------------------------------------------------------------
 
-runVersionCheck(PKG_VERSION)
+if (stdioActive && !bridgeActive && !enableStopDaemon) {
+  // Proxy mode: the daemon owns the update check; the wrapper stays silent.
+} else {
+  runVersionCheck(PKG_VERSION)
+}
 
 // ---------------------------------------------------------------------------
 // Startup summary
@@ -641,7 +681,13 @@ const activeInterfaces = [
   .filter(Boolean)
   .join(' + ')
 
-console.error(`office-live-mcp started [${activeInterfaces}]`)
-if (!bridgeActive) {
-  console.error('  Note: Bridge not active. Tools requiring the add-in will return errors.')
+if (enableStopDaemon) {
+  // --stop-daemon runs a one-shot command; no server summary applies.
+} else if (stdioActive && !bridgeActive) {
+  console.error('office-live-mcp started [STDIO proxy → shared daemon]')
+} else {
+  console.error(`office-live-mcp started [${activeInterfaces}]`)
+  if (!bridgeActive) {
+    console.error('  Note: Bridge not active. Tools requiring the add-in will return errors.')
+  }
 }

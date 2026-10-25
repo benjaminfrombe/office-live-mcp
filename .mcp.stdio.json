@@ -1,11 +1,9 @@
 {
   "mcpServers": {
-    "powerpoint-mcp": {
+    "office-live-mcp": {
       "command": "node",
       "args": [
-        "./dist/index.cjs",
-        "--stdio",
-        "--bridge"
+        "./dist/index.cjs"
       ]
     }
   }

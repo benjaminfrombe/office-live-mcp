@@ -17794,7 +17794,7 @@ var require_BufferList = __commonJS({
         this.head = this.tail = null;
         this.length = 0;
       };
-      BufferList.prototype.join = function join5(s) {
+      BufferList.prototype.join = function join6(s) {
         if (this.length === 0) return "";
         var p = this.head;
         var ret = "" + p.data;
@@ -27247,11 +27247,11 @@ var require_lib4 = __commonJS({
 
 // server/index.ts
 var import_node_crypto2 = require("node:crypto");
-var import_node_fs9 = require("node:fs");
+var import_node_fs10 = require("node:fs");
 var import_node_http = require("node:http");
 var import_node_https = require("node:https");
-var import_node_os2 = require("node:os");
-var import_node_path4 = require("node:path");
+var import_node_os3 = require("node:os");
+var import_node_path5 = require("node:path");
 var import_node_url3 = require("node:url");
 
 // node_modules/zod/v3/helpers/util.js
@@ -53100,6 +53100,232 @@ function handleSharePointCatalog(req, res, rawUrl) {
   return true;
 }
 
+// server/stdio-proxy.ts
+var import_node_child_process = require("node:child_process");
+var import_node_fs2 = require("node:fs");
+var import_node_os = require("node:os");
+var import_node_path2 = require("node:path");
+var HEALTH_TIMEOUT_MS = 1e3;
+var DAEMON_START_TIMEOUT_MS = 15e3;
+var DAEMON_POLL_INTERVAL_MS = 200;
+function mcpHttpBase() {
+  return `http://127.0.0.1:${Number(process.env.MCP_PORT) || 3001}`;
+}
+var DAEMON_DIR = process.env.OLM_DAEMON_DIR || (0, import_node_path2.join)((0, import_node_os.homedir)(), ".office-live-mcp");
+var DAEMON_LOCK_FILE = (0, import_node_path2.join)(DAEMON_DIR, "daemon.lock");
+var DAEMON_LOG_FILE = process.env.OLM_DAEMON_LOG || (0, import_node_path2.join)(DAEMON_DIR, "daemon.log");
+async function fetchDaemonHealth(timeoutMs = HEALTH_TIMEOUT_MS) {
+  try {
+    const res = await fetch(`${mcpHttpBase()}/health`, { signal: AbortSignal.timeout(timeoutMs) });
+    if (!res.ok) return void 0;
+    return await res.json();
+  } catch {
+    return void 0;
+  }
+}
+function isPidAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return !(typeof err === "object" && err !== null && "code" in err && err.code === "ESRCH");
+  }
+}
+function readDaemonLock() {
+  try {
+    const parsed = JSON.parse((0, import_node_fs2.readFileSync)(DAEMON_LOCK_FILE, "utf8"));
+    if (typeof parsed.pid === "number" && Number.isInteger(parsed.pid) && parsed.pid > 0) {
+      return { pid: parsed.pid };
+    }
+  } catch {
+  }
+  return void 0;
+}
+function writeDaemonLock(pid) {
+  (0, import_node_fs2.mkdirSync)(DAEMON_DIR, { recursive: true });
+  (0, import_node_fs2.writeFileSync)(DAEMON_LOCK_FILE, JSON.stringify({ pid, startedAt: (/* @__PURE__ */ new Date()).toISOString() }));
+}
+async function waitForDaemonHealth(timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const health = await fetchDaemonHealth();
+    if (health) return health;
+    await new Promise((r) => setTimeout(r, DAEMON_POLL_INTERVAL_MS));
+  }
+  return void 0;
+}
+function readDaemonEnvFile() {
+  const env = {};
+  try {
+    const lines = (0, import_node_fs2.readFileSync)((0, import_node_path2.join)(DAEMON_DIR, "daemon.env"), "utf8").split("\n");
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq <= 0) continue;
+      env[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
+    }
+  } catch {
+  }
+  return env;
+}
+function spawnDaemon() {
+  (0, import_node_fs2.mkdirSync)(DAEMON_DIR, { recursive: true });
+  const logFd = (0, import_node_fs2.openSync)(DAEMON_LOG_FILE, "a");
+  const entry = process.argv[1];
+  if (!entry) throw new Error("Cannot determine server entry point (process.argv[1] is empty)");
+  const isTs = entry.endsWith(".ts");
+  const args = [...isTs ? ["--experimental-strip-types"] : [], entry, "--http", "--bridge"];
+  const child = (0, import_node_child_process.spawn)(process.execPath, args, {
+    detached: true,
+    stdio: ["ignore", logFd, logFd],
+    env: { ...process.env, ...readDaemonEnvFile() },
+    // Windows: the detached child would otherwise get its own visible console
+    // window popping up on first harness connect.
+    windowsHide: true
+  });
+  child.unref();
+  (0, import_node_fs2.closeSync)(logFd);
+  return child.pid ?? -1;
+}
+async function ensureDaemon(localVersion, deps = {}) {
+  const spawnFn = deps.spawnDaemon ?? spawnDaemon;
+  const startTimeoutMs = deps.startTimeoutMs ?? DAEMON_START_TIMEOUT_MS;
+  let health = await fetchDaemonHealth();
+  if (health) {
+    warnOnVersionSkew(health, localVersion, false);
+    return { alreadyRunning: true, health };
+  }
+  const lock = readDaemonLock();
+  const lockHeldByLiveProcess = lock !== void 0 && isPidAlive(lock.pid);
+  if (!lockHeldByLiveProcess) {
+    const pid = spawnFn();
+    if (pid > 0) writeDaemonLock(pid);
+  }
+  health = await waitForDaemonHealth(startTimeoutMs);
+  if (!health) {
+    throw new Error(
+      `office-live-mcp daemon did not become healthy within ${startTimeoutMs / 1e3}s (check ${DAEMON_LOG_FILE})`
+    );
+  }
+  warnOnVersionSkew(health, localVersion, true);
+  return { alreadyRunning: false, health };
+}
+function warnOnVersionSkew(health, localVersion, started) {
+  if (health.version && health.version !== localVersion) {
+    const verb = started ? "started" : "found";
+    console.error(
+      `[stdio-proxy] Warning: daemon ${verb} is v${health.version} but this wrapper is v${localVersion}. Restart the daemon (office-live-mcp --stop-daemon, then reconnect) to pick up the new version.`
+    );
+  }
+}
+async function stopDaemon() {
+  try {
+    const res = await fetch(`${mcpHttpBase()}/shutdown`, { method: "POST", signal: AbortSignal.timeout(2e3) });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+function parseSseMessages(body) {
+  const messages = [];
+  for (const line of body.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("data:")) continue;
+    const payload = trimmed.slice(5).trim();
+    if (!payload || payload === "[DONE]") continue;
+    try {
+      messages.push(JSON.parse(payload));
+    } catch {
+    }
+  }
+  return messages;
+}
+async function runStdioProxy(options) {
+  const stdin = options.stdin ?? process.stdin;
+  const stdout = options.stdout ?? process.stdout;
+  const ensure = options.ensure ?? (() => ensureDaemon(options.localVersion));
+  const { alreadyRunning } = await ensure();
+  if (!alreadyRunning) {
+    console.error("[stdio-proxy] Daemon started (detached); it stays up after this session ends.");
+  }
+  let sessionId;
+  let queue = Promise.resolve();
+  function enqueueMessage(raw) {
+    queue = queue.then(() => handleMessage(raw)).catch((err) => {
+      stdout.write(
+        `${JSON.stringify({
+          jsonrpc: "2.0",
+          error: { code: -32603, message: `office-live-mcp proxy error: ${String(err)}` },
+          id: null
+        })}
+`
+      );
+    });
+  }
+  async function handleMessage(raw) {
+    try {
+      JSON.parse(raw);
+    } catch {
+      return;
+    }
+    const headers = {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream"
+    };
+    if (sessionId) headers["Mcp-Session-Id"] = sessionId;
+    const res = await fetch(`${mcpHttpBase()}/mcp`, {
+      method: "POST",
+      headers,
+      body: raw
+    });
+    const newSessionId = res.headers.get("mcp-session-id");
+    if (newSessionId) sessionId = newSessionId;
+    const contentType3 = res.headers.get("content-type") ?? "";
+    const body = await res.text();
+    let messages;
+    if (contentType3.includes("text/event-stream")) {
+      messages = parseSseMessages(body);
+    } else if (body.trim()) {
+      messages = [JSON.parse(body)];
+    } else {
+      messages = [];
+    }
+    for (const msg of messages) {
+      stdout.write(`${JSON.stringify(msg)}
+`);
+    }
+  }
+  return new Promise((resolve3, reject) => {
+    let buffer = "";
+    stdin.setEncoding("utf8");
+    stdin.on("data", (chunk) => {
+      buffer += chunk;
+      let newlineIndex = buffer.indexOf("\n");
+      while (newlineIndex !== -1) {
+        const line = buffer.slice(0, newlineIndex).trim();
+        buffer = buffer.slice(newlineIndex + 1);
+        newlineIndex = buffer.indexOf("\n");
+        if (!line) continue;
+        enqueueMessage(line);
+      }
+    });
+    stdin.on("end", () => {
+      queue.then(() => {
+        if (sessionId) {
+          fetch(`${mcpHttpBase()}/mcp`, {
+            method: "DELETE",
+            headers: { "Mcp-Session-Id": sessionId }
+          }).catch(() => {
+          });
+        }
+        resolve3();
+      }, reject);
+    });
+    stdin.on("error", reject);
+  });
+}
+
 // server/chart-builder.ts
 var C_NS = "http://schemas.openxmlformats.org/drawingml/2006/chart";
 var A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
@@ -53845,9 +54071,9 @@ async function extractDeckText(zipBuffer, slideIndices, includeNotes) {
 }
 
 // server/tools/shared.ts
-var import_node_fs2 = require("node:fs");
-var import_node_os = require("node:os");
-var import_node_path2 = require("node:path");
+var import_node_fs3 = require("node:fs");
+var import_node_os2 = require("node:os");
+var import_node_path3 = require("node:path");
 var import_node_url = require("node:url");
 var localCopyCache = /* @__PURE__ */ new Map();
 var themeCache = /* @__PURE__ */ new Map();
@@ -53930,7 +54156,7 @@ async function getLocalCopyPath(connPool, target) {
   const filePath = target.filePath;
   if (filePath && !filePath.startsWith("http")) {
     const localPath = toLocalFilePath(filePath);
-    if (!(0, import_node_fs2.existsSync)(localPath)) throw new Error(`Local file not found: ${localPath}`);
+    if (!(0, import_node_fs3.existsSync)(localPath)) throw new Error(`Local file not found: ${localPath}`);
     return localPath;
   }
   const revCode = `
@@ -53941,7 +54167,7 @@ async function getLocalCopyPath(connPool, target) {
   `;
   const currentRevision = await connPool.sendCommand("executeCode", { code: revCode }, target.ws);
   const cached2 = localCopyCache.get(target.presentationId);
-  if (cached2 && cached2.revision === currentRevision && (0, import_node_fs2.existsSync)(cached2.localPath)) {
+  if (cached2 && cached2.revision === currentRevision && (0, import_node_fs3.existsSync)(cached2.localPath)) {
     return cached2.localPath;
   }
   const exportCode = `
@@ -53990,8 +54216,8 @@ async function getLocalCopyPath(connPool, target) {
   `;
   const base643 = await connPool.sendCommand("executeCode", { code: exportCode }, target.ws, 12e4);
   const filename = filePath ? decodeURIComponent(filePath.split("/").pop() || "presentation.pptx") : "presentation.pptx";
-  const dest = (0, import_node_path2.join)((0, import_node_os.tmpdir)(), `pptbridge-${Date.now()}-${filename}`);
-  (0, import_node_fs2.writeFileSync)(dest, Buffer.from(base643, "base64"));
+  const dest = (0, import_node_path3.join)((0, import_node_os2.tmpdir)(), `pptbridge-${Date.now()}-${filename}`);
+  (0, import_node_fs3.writeFileSync)(dest, Buffer.from(base643, "base64"));
   localCopyCache.set(target.presentationId, { localPath: dest, revision: currentRevision });
   return dest;
 }
@@ -55424,7 +55650,7 @@ function registerExecTools(server, pool2, getSessionId, getActiveSessionCount) {
 }
 
 // server/tools/inspect.ts
-var import_node_fs3 = require("node:fs");
+var import_node_fs4 = require("node:fs");
 var import_jszip2 = __toESM(require_lib4(), 1);
 function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
@@ -55537,7 +55763,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
         return { content: [{ type: "text", text: JSON.stringify({ layouts: layouts2, usedOnly: true }) }] };
       }
       const localPath = await getLocalCopyPath(pool2, target);
-      const fileData = (0, import_node_fs3.readFileSync)(localPath);
+      const fileData = (0, import_node_fs4.readFileSync)(localPath);
       const zip = await import_jszip2.default.loadAsync(fileData);
       const layouts = await extractLayoutsFromZip(zip);
       try {
@@ -55834,11 +56060,11 @@ ${textParts.join("\n")}` : "\n(no text content)";
 }
 
 // server/tools/media.ts
-var import_node_fs5 = require("node:fs");
+var import_node_fs6 = require("node:fs");
 
 // server/icons.ts
-var import_node_fs4 = require("node:fs");
-var import_node_path3 = require("node:path");
+var import_node_fs5 = require("node:fs");
+var import_node_path4 = require("node:path");
 var import_node_url2 = require("node:url");
 var import_meta = {};
 var MANIFEST_URL = "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/fonts/FluentSystemIcons-Regular.json";
@@ -55875,8 +56101,8 @@ function buildIndexFromManifest(manifest) {
 }
 function loadStaticIndex() {
   try {
-    const dir = (0, import_node_path3.dirname)((0, import_node_url2.fileURLToPath)(import_meta.url));
-    const raw = (0, import_node_fs4.readFileSync)((0, import_node_path3.join)(dir, "icon-index.json"), "utf-8");
+    const dir = (0, import_node_path4.dirname)((0, import_node_url2.fileURLToPath)(import_meta.url));
+    const raw = (0, import_node_fs5.readFileSync)((0, import_node_path4.join)(dir, "icon-index.json"), "utf-8");
     const data = JSON.parse(raw);
     return data.map((e) => ({
       name: e.n,
@@ -56020,7 +56246,7 @@ function registerMediaTools(server, pool2, getSessionId, getActiveSessionCount) 
     withTool(async ({ source, sourceType, slideIndex, left, top, width, height, color, presentationId }) => {
       let base64Data;
       if (sourceType === "file") {
-        base64Data = (0, import_node_fs5.readFileSync)(source).toString("base64");
+        base64Data = (0, import_node_fs6.readFileSync)(source).toString("base64");
       } else if (sourceType === "url") {
         const resp = await fetch(source);
         if (!resp.ok) {
@@ -56155,7 +56381,7 @@ return new Promise(function(resolve, reject) {
             continue;
           }
         }
-        enriched.push(r);
+        enriched.push({ ...r });
       }
       return { content: [{ type: "text", text: JSON.stringify(enriched, null, 2) }] };
     })
@@ -56163,7 +56389,7 @@ return new Promise(function(resolve, reject) {
 }
 
 // server/tools/notes.ts
-var import_node_fs6 = require("node:fs");
+var import_node_fs7 = require("node:fs");
 var import_jszip3 = __toESM(require_lib4(), 1);
 
 // server/notes-helpers.ts
@@ -56382,7 +56608,7 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
     withTool(async ({ slideRange, presentationId }) => {
       const target = pool2.resolveTarget(presentationId);
       const localPath = await getLocalCopyPath(pool2, target);
-      const data = (0, import_node_fs6.readFileSync)(localPath);
+      const data = (0, import_node_fs7.readFileSync)(localPath);
       const zip = await import_jszip3.default.loadAsync(data);
       const indices = parseSlideRange(slideRange);
       const notesMap = await readNotesFromDeck(zip, indices);
@@ -56395,7 +56621,7 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
 }
 
 // server/tools/slides.ts
-var import_node_fs7 = require("node:fs");
+var import_node_fs8 = require("node:fs");
 var import_jszip4 = __toESM(require_lib4(), 1);
 function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
@@ -56451,7 +56677,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
       }
       const target = pool2.resolveTarget(presentationId);
       const localPath = await getLocalCopyPath(pool2, target);
-      const fileData = (0, import_node_fs7.readFileSync)(localPath);
+      const fileData = (0, import_node_fs8.readFileSync)(localPath);
       const zip = await import_jszip4.default.loadAsync(fileData);
       const layouts = await extractLayoutsFromZip(zip);
       const targetLower = layoutName.toLowerCase();
@@ -56721,7 +56947,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
 }
 
 // server/tools/text.ts
-var import_node_fs8 = require("node:fs");
+var import_node_fs9 = require("node:fs");
 function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
     "edit_shape_paragraphs",
@@ -56789,7 +57015,7 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
     withTool(async ({ slideRange, includeNotes, presentationId }) => {
       const target = pool2.resolveTarget(presentationId);
       const localPath = await getLocalCopyPath(pool2, target);
-      const zipBuffer = (0, import_node_fs8.readFileSync)(localPath);
+      const zipBuffer = (0, import_node_fs9.readFileSync)(localPath);
       const indices = slideRange ? parseSlideRange(slideRange) : null;
       const result = await extractDeckText(zipBuffer, indices, includeNotes === true);
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount());
@@ -58082,15 +58308,15 @@ var BRIDGE_DEFAULT_HTTP_PORT = 8080;
 var BRIDGE_DEFAULT_HTTPS_PORT = 8443;
 var MCP_HTTP_PORT = Number(process.env.MCP_PORT) || 3001;
 var MAX_HTTP_BODY_BYTES = 16 * 1024 * 1024;
-var SCRIPT_DIR = typeof __dirname !== "undefined" ? __dirname : (0, import_node_path4.dirname)((0, import_node_url3.fileURLToPath)(import_meta2.url));
-var PROJECT_ROOT = (0, import_node_path4.resolve)(SCRIPT_DIR, "..");
-var BRIDGE_CERT_PATH = process.env.BRIDGE_CERT_PATH || (0, import_node_path4.resolve)(PROJECT_ROOT, "certs", "localhost.pem");
-var BRIDGE_KEY_PATH = process.env.BRIDGE_KEY_PATH || (0, import_node_path4.resolve)(PROJECT_ROOT, "certs", "localhost-key.pem");
-var ADDIN_STATIC_DIR = (0, import_node_path4.resolve)(PROJECT_ROOT, "addin");
+var SCRIPT_DIR = typeof __dirname !== "undefined" ? __dirname : (0, import_node_path5.dirname)((0, import_node_url3.fileURLToPath)(import_meta2.url));
+var PROJECT_ROOT = (0, import_node_path5.resolve)(SCRIPT_DIR, "..");
+var BRIDGE_CERT_PATH = process.env.BRIDGE_CERT_PATH || (0, import_node_path5.resolve)(PROJECT_ROOT, "certs", "localhost.pem");
+var BRIDGE_KEY_PATH = process.env.BRIDGE_KEY_PATH || (0, import_node_path5.resolve)(PROJECT_ROOT, "certs", "localhost-key.pem");
+var ADDIN_STATIC_DIR = (0, import_node_path5.resolve)(PROJECT_ROOT, "addin");
 setManifestDir(ADDIN_STATIC_DIR);
 var PKG_VERSION = (() => {
   try {
-    return JSON.parse((0, import_node_fs9.readFileSync)((0, import_node_path4.resolve)(PROJECT_ROOT, "package.json"), "utf8")).version;
+    return JSON.parse((0, import_node_fs10.readFileSync)((0, import_node_path5.resolve)(PROJECT_ROOT, "package.json"), "utf8")).version;
   } catch {
     return "0.0.0";
   }
@@ -58099,8 +58325,9 @@ var cliArgs = process.argv.slice(2);
 var enableStdio = cliArgs.includes("--stdio");
 var enableHttp = cliArgs.includes("--http");
 var enableBridge = cliArgs.includes("--bridge");
+var enableStopDaemon = cliArgs.includes("--stop-daemon");
 var noFlagsGiven = !enableStdio && !enableHttp && !enableBridge;
-var stdioActive = enableStdio || noFlagsGiven;
+var stdioActive = (enableStdio || noFlagsGiven) && !enableStopDaemon;
 var httpActive = enableHttp;
 var bridgeActive = enableBridge;
 if (stdioActive) {
@@ -58129,7 +58356,7 @@ Flags (composable):
   process.exit(1);
 }
 var bridgeTls = process.env.BRIDGE_TLS === "1";
-if (bridgeActive && bridgeTls && (!(0, import_node_fs9.existsSync)(BRIDGE_CERT_PATH) || !(0, import_node_fs9.existsSync)(BRIDGE_KEY_PATH))) {
+if (bridgeActive && bridgeTls && (!(0, import_node_fs10.existsSync)(BRIDGE_CERT_PATH) || !(0, import_node_fs10.existsSync)(BRIDGE_KEY_PATH))) {
   console.error(
     `Error: BRIDGE_TLS=1 but TLS certificate files not found.
   Expected: ${BRIDGE_CERT_PATH} and ${BRIDGE_KEY_PATH}
@@ -58139,17 +58366,17 @@ if (bridgeActive && bridgeTls && (!(0, import_node_fs9.existsSync)(BRIDGE_CERT_P
 }
 var BRIDGE_PORT = Number(process.env.BRIDGE_PORT) || (bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT);
 function autoSideloadManifest(tls, port) {
-  const markerFile = (0, import_node_path4.resolve)(PROJECT_ROOT, ".sideloaded");
-  const pkgPath = (0, import_node_path4.resolve)(PROJECT_ROOT, "package.json");
+  const markerFile = (0, import_node_path5.resolve)(PROJECT_ROOT, ".sideloaded");
+  const pkgPath = (0, import_node_path5.resolve)(PROJECT_ROOT, "package.json");
   let currentVersion = "unknown";
   try {
-    const pkg = JSON.parse((0, import_node_fs9.readFileSync)(pkgPath, "utf8"));
+    const pkg = JSON.parse((0, import_node_fs10.readFileSync)(pkgPath, "utf8"));
     currentVersion = pkg.version;
   } catch {
   }
   const markerValue = `${currentVersion}:${port}`;
   try {
-    const existing = (0, import_node_fs9.readFileSync)(markerFile, "utf8").trim();
+    const existing = (0, import_node_fs10.readFileSync)(markerFile, "utf8").trim();
     if (existing === markerValue) {
       console.error("[sideload] Add-in already installed (use `npm run sideload` to update)");
       return;
@@ -58158,17 +58385,17 @@ function autoSideloadManifest(tls, port) {
   } catch {
   }
   const defaultPort = tls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT;
-  const wefDir = (0, import_node_path4.join)((0, import_node_os2.homedir)(), "Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef");
+  const wefDir = (0, import_node_path5.join)((0, import_node_os3.homedir)(), "Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef");
   const manifestName = tls ? "manifest-https.xml" : "manifest.xml";
-  const src = (0, import_node_path4.resolve)(ADDIN_STATIC_DIR, manifestName);
-  const dest = (0, import_node_path4.join)(wefDir, "manifest.xml");
+  const src = (0, import_node_path5.resolve)(ADDIN_STATIC_DIR, manifestName);
+  const dest = (0, import_node_path5.join)(wefDir, "manifest.xml");
   try {
-    if (!(0, import_node_fs9.existsSync)(src)) return;
-    const template = (0, import_node_fs9.readFileSync)(src, "utf8");
+    if (!(0, import_node_fs10.existsSync)(src)) return;
+    const template = (0, import_node_fs10.readFileSync)(src, "utf8");
     const content = substituteManifestPort(template, defaultPort, port);
-    (0, import_node_fs9.mkdirSync)(wefDir, { recursive: true });
-    (0, import_node_fs9.writeFileSync)(dest, content);
-    (0, import_node_fs9.writeFileSync)(markerFile, markerValue);
+    (0, import_node_fs10.mkdirSync)(wefDir, { recursive: true });
+    (0, import_node_fs10.writeFileSync)(dest, content);
+    (0, import_node_fs10.writeFileSync)(markerFile, markerValue);
     console.error("[sideload] Add-in manifest installed for PowerPoint");
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -58206,7 +58433,7 @@ var MIME_TYPES = {
   ".xml": "application/xml; charset=UTF-8"
 };
 function getMimeType(filePath) {
-  const ext = (0, import_node_path4.extname)(filePath);
+  const ext = (0, import_node_path5.extname)(filePath);
   return MIME_TYPES[ext] ?? "application/octet-stream";
 }
 var RequestBodyTooLargeError = class extends Error {
@@ -58345,21 +58572,21 @@ function serveStatic(req, res) {
   }
   const urlPath = rawUrl === "/" ? "/index.html" : rawUrl;
   console.error(`[bridge] GET ${rawUrl}`);
-  const filePath = (0, import_node_path4.resolve)((0, import_node_path4.join)(ADDIN_STATIC_DIR, urlPath));
-  const relToStaticDir = (0, import_node_path4.relative)(ADDIN_STATIC_DIR, filePath);
-  if (relToStaticDir.startsWith("..") || (0, import_node_path4.resolve)(ADDIN_STATIC_DIR, relToStaticDir) !== filePath) {
+  const filePath = (0, import_node_path5.resolve)((0, import_node_path5.join)(ADDIN_STATIC_DIR, urlPath));
+  const relToStaticDir = (0, import_node_path5.relative)(ADDIN_STATIC_DIR, filePath);
+  if (relToStaticDir.startsWith("..") || (0, import_node_path5.resolve)(ADDIN_STATIC_DIR, relToStaticDir) !== filePath) {
     res.writeHead(403, { "Content-Type": "text/plain" });
     res.end("403 Forbidden");
     return;
   }
-  if (!(0, import_node_fs9.existsSync)(filePath)) {
+  if (!(0, import_node_fs10.existsSync)(filePath)) {
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("404 Not Found");
     return;
   }
-  const raw = (0, import_node_fs9.readFileSync)(filePath);
+  const raw = (0, import_node_fs10.readFileSync)(filePath);
   const mimeType = getMimeType(filePath);
-  const content = (0, import_node_path4.extname)(filePath) === ".xml" ? substituteManifestPort(
+  const content = (0, import_node_path5.extname)(filePath) === ".xml" ? substituteManifestPort(
     raw.toString(),
     bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT,
     BRIDGE_PORT
@@ -58373,12 +58600,12 @@ function serveStatic(req, res) {
 }
 if (bridgeActive) {
   autoSideloadManifest(bridgeTls, BRIDGE_PORT);
-  const bridgeServer = bridgeTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs9.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs9.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http.createServer)(serveStatic);
+  const bridgeServer = bridgeTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs10.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs10.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http.createServer)(serveStatic);
   const allowedOrigins = /* @__PURE__ */ new Set();
   for (const host of ["localhost", "127.0.0.1"]) {
     allowedOrigins.add(`${bridgeTls ? "https" : "http"}://${host}:${BRIDGE_PORT}`);
   }
-  for (const ifaces of Object.values((0, import_node_os2.networkInterfaces)())) {
+  for (const ifaces of Object.values((0, import_node_os3.networkInterfaces)())) {
     for (const iface of ifaces ?? []) {
       if (iface.family === "IPv4" && !iface.internal) {
         allowedOrigins.add(`${bridgeTls ? "https" : "http"}://${iface.address}:${BRIDGE_PORT}`);
@@ -58461,11 +58688,19 @@ if (httpActive) {
       res.end(
         JSON.stringify({
           status: "ok",
+          version: PKG_VERSION,
           connections: pool.size,
           sessions: mcpHttpTransports.size,
           bridge: bridgeActive
         })
       );
+      return;
+    }
+    if (url2 === "/shutdown" && req.method === "POST") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: "shutting down" }));
+      console.error("Shutdown requested via POST /shutdown");
+      setTimeout(() => process.exit(0), 100);
       return;
     }
     if (url2 === "/mcp") {
@@ -58498,25 +58733,47 @@ if (httpActive) {
   });
 }
 var handleMcpHttpRequest2;
-if (stdioActive) {
+if (enableStopDaemon) {
+  stopDaemon().then((wasRunning) => {
+    if (wasRunning) {
+      console.error("office-live-mcp daemon stopped");
+      process.exit(0);
+    }
+    console.error("No office-live-mcp daemon appears to be running");
+    process.exit(1);
+  });
+} else if (stdioActive && !bridgeActive) {
+  runStdioProxy({ localVersion: PKG_VERSION }).then(() => process.exit(0)).catch((err) => {
+    console.error(`MCP STDIO proxy failed: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(1);
+  });
+} else if (stdioActive) {
   const stdioTransport = new StdioServerTransport();
   const stdioMcpServer = createMcpServer(
     () => "stdio",
     () => 1
   );
   stdioMcpServer.connect(stdioTransport).then(() => {
-    console.error("MCP STDIO transport running");
+    console.error("MCP STDIO transport running (legacy in-process mode, --bridge active)");
   });
 }
-runVersionCheck(PKG_VERSION);
+if (stdioActive && !bridgeActive && !enableStopDaemon) {
+} else {
+  runVersionCheck(PKG_VERSION);
+}
 var activeInterfaces = [
   stdioActive && "STDIO",
   httpActive && `HTTP(:${MCP_HTTP_PORT})`,
   bridgeActive && `Bridge(:${BRIDGE_PORT})`
 ].filter(Boolean).join(" + ");
-console.error(`office-live-mcp started [${activeInterfaces}]`);
-if (!bridgeActive) {
-  console.error("  Note: Bridge not active. Tools requiring the add-in will return errors.");
+if (enableStopDaemon) {
+} else if (stdioActive && !bridgeActive) {
+  console.error("office-live-mcp started [STDIO proxy \u2192 shared daemon]");
+} else {
+  console.error(`office-live-mcp started [${activeInterfaces}]`);
+  if (!bridgeActive) {
+    console.error("  Note: Bridge not active. Tools requiring the add-in will return errors.");
+  }
 }
 /*! Bundled license information:
 
