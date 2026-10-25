@@ -72455,12 +72455,7 @@ function registryCommands(uncPath) {
     ["reg", ["add", REG_KEY, "/v", "Flags", "/t", "REG_DWORD", "/d", "1", "/f"]]
   ];
 }
-function mcpConfigSnippet(entryCommand) {
-  const command = JSON.stringify(entryCommand);
-  return ["{", `  "mcpServers": {`, `    "office-live-mcp": { "command": ${command} }`, "  }", "}"].join("\n");
-}
-function harnessInstructions(entryCommand, platform) {
-  const snippet = mcpConfigSnippet(entryCommand);
+function harnessInstructions(entryCommand, platform, nodePath) {
   const isMac = platform === "darwin";
   const lines = [];
   lines.push("Add the MCP server to your AI harness (pick the one you use):");
@@ -72470,17 +72465,29 @@ function harnessInstructions(entryCommand, platform) {
     `    Config: ${isMac ? "~/.config/opencode/opencode.jsonc" : "%USERPROFILE%\\.config\\opencode\\opencode.jsonc"}`
   );
   lines.push('    Add to the "mcp" section:');
-  lines.push(`      ${snippet.replaceAll("\n", "\n      ")}`);
+  lines.push("      {");
+  lines.push('        "office-live-mcp": {');
+  lines.push('          "type": "local",');
+  lines.push(`          "command": ["${nodePath}", "${entryCommand}"],`);
+  lines.push('          "enabled": true');
+  lines.push("        }");
+  lines.push("      }");
   lines.push("");
   lines.push("  Claude Code");
   lines.push("    Run:");
-  lines.push(`      claude mcp add office-live-mcp --scope user -- node "${entryCommand}"`);
+  lines.push(`      claude mcp add office-live-mcp --scope user -- ${nodePath} "${entryCommand}"`);
   lines.push("");
   lines.push("  Claude Desktop");
   lines.push(
     `    Config: ${isMac ? "~/Library/Application Support/Claude/claude_desktop_config.json" : "%APPDATA%\\Claude\\claude_desktop_config.json"}`
   );
-  lines.push(`    ${snippet.replaceAll("\n", "\n    ")}`);
+  lines.push('    Add to "mcpServers":');
+  lines.push("      {");
+  lines.push('        "office-live-mcp": {');
+  lines.push(`          "command": "${nodePath}",`);
+  lines.push(`          "args": ["${entryCommand}"]`);
+  lines.push("        }");
+  lines.push("      }");
   return lines;
 }
 function daemonTlsEnabled() {
@@ -72730,7 +72737,7 @@ async function runSetup() {
     process.exit(1);
   }
   const entry = process.argv[1] ?? "office-live-mcp";
-  console.log(["", ...harnessInstructions(entry, process.platform)].join("\n"));
+  console.log(["", ...harnessInstructions(entry, process.platform, process.execPath)].join("\n"));
 }
 
 // server/sharepoint-catalog.ts

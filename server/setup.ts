@@ -92,9 +92,10 @@ export function mcpConfigSnippet(entryCommand: string): string {
 /**
  * Per-harness add instructions, with the real entry path filled in and
  * platform-aware config locations. Returned as lines for testability.
+ * nodePath must be an absolute node executable (Windows users often have no
+ * node on PATH, and a .cjs entry is not directly executable there).
  */
-export function harnessInstructions(entryCommand: string, platform: NodeJS.Platform): string[] {
-  const snippet = mcpConfigSnippet(entryCommand)
+export function harnessInstructions(entryCommand: string, platform: NodeJS.Platform, nodePath: string): string[] {
   const isMac = platform === 'darwin'
   const lines: string[] = []
 
@@ -105,11 +106,17 @@ export function harnessInstructions(entryCommand: string, platform: NodeJS.Platf
     `    Config: ${isMac ? '~/.config/opencode/opencode.jsonc' : '%USERPROFILE%\\.config\\opencode\\opencode.jsonc'}`,
   )
   lines.push('    Add to the "mcp" section:')
-  lines.push(`      ${snippet.replaceAll('\n', '\n      ')}`)
+  lines.push('      {')
+  lines.push('        "office-live-mcp": {')
+  lines.push('          "type": "local",')
+  lines.push(`          "command": ["${nodePath}", "${entryCommand}"],`)
+  lines.push('          "enabled": true')
+  lines.push('        }')
+  lines.push('      }')
   lines.push('')
   lines.push('  Claude Code')
   lines.push('    Run:')
-  lines.push(`      claude mcp add office-live-mcp --scope user -- node "${entryCommand}"`)
+  lines.push(`      claude mcp add office-live-mcp --scope user -- ${nodePath} "${entryCommand}"`)
   lines.push('')
   lines.push('  Claude Desktop')
   lines.push(
@@ -119,7 +126,13 @@ export function harnessInstructions(entryCommand: string, platform: NodeJS.Platf
         : '%APPDATA%\\Claude\\claude_desktop_config.json'
     }`,
   )
-  lines.push(`    ${snippet.replaceAll('\n', '\n    ')}`)
+  lines.push('    Add to "mcpServers":')
+  lines.push('      {')
+  lines.push('        "office-live-mcp": {')
+  lines.push(`          "command": "${nodePath}",`)
+  lines.push(`          "args": ["${entryCommand}"]`)
+  lines.push('        }')
+  lines.push('      }')
   return lines
 }
 
@@ -429,5 +442,5 @@ export async function runSetup(): Promise<void> {
   }
 
   const entry = process.argv[1] ?? 'office-live-mcp'
-  console.log(['', ...harnessInstructions(entry, process.platform)].join('\n'))
+  console.log(['', ...harnessInstructions(entry, process.platform, process.execPath)].join('\n'))
 }
