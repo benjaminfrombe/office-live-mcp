@@ -72457,31 +72457,23 @@ function registryCommands(uncPath) {
 }
 function harnessInstructions(entryCommand, platform, nodePath) {
   const isMac = platform === "darwin";
-  const home = isMac ? "~" : "%USERPROFILE%";
   const lines = [];
-  lines.push("STEP 1 - Add the MCP server to your AI harness (Claude, OpenCode, Codex, ChatGPT, ...)");
+  lines.push("Done. Two steps left:");
   lines.push("");
-  lines.push(`  Server path : ${entryCommand}`);
-  lines.push(`  Run with    : ${nodePath}  (node)`);
+  lines.push("  STEP 1 - Add the MCP server to your AI harness (Claude, OpenCode, Codex,");
+  lines.push("           ChatGPT, ...). Copy-paste examples for every harness:");
+  lines.push("           https://github.com/benjaminfrombe/office-live-mcp#connect-your-harness");
+  lines.push(`             Server path : ${entryCommand}`);
+  lines.push(`             Run with    : ${nodePath}  (node)`);
   lines.push("");
-  lines.push(
-    `  OpenCode         ${home}${isMac ? "/.config/opencode/opencode.jsonc" : "\\.config\\opencode\\opencode.jsonc"} - "mcp" section:`
-  );
-  lines.push(`                      "office-live-mcp": { "command": ["${nodePath}", "${entryCommand}"] }`);
-  lines.push("  Claude Code      run:");
-  lines.push(`                      claude mcp add office-live-mcp --scope user -- ${nodePath} "${entryCommand}"`);
-  lines.push(
-    `  Claude Desktop   ${isMac ? "~/Library/Application Support/Claude/claude_desktop_config.json" : "%APPDATA%\\Claude\\claude_desktop_config.json"} - "mcpServers" section:`
-  );
-  lines.push(`                      "office-live-mcp": { "command": "${nodePath}", "args": ["${entryCommand}"] }`);
-  lines.push(`  Codex            ${home}${isMac ? "/.codex/config.toml" : "\\.codex\\config.toml"}:`);
-  lines.push("                      [mcp_servers.office-live-mcp]");
-  lines.push(`                      command = "${nodePath}"`);
-  lines.push(`                      args = ["${entryCommand}"]`);
-  lines.push("  ChatGPT Desktop  Settings -> Connectors -> add an MCP connector (UI; use the path above)");
-  lines.push("");
-  lines.push("STEP 2 - Open PowerPoint / Word / Excel -> Home -> Add-ins -> Advanced...");
-  lines.push('        -> SHARED FOLDER tab -> "Office Live MCP" -> Add');
+  const officeStep = isMac ? [
+    "  STEP 2 - Restart your Office apps, open a document, and click the add-in button",
+    '           in the Home ribbon ("Office Live MCP").'
+  ] : [
+    "  STEP 2 - Close and reopen PowerPoint / Word / Excel, then:",
+    '           Home -> Add-ins -> Advanced... -> SHARED FOLDER tab -> "Office Live MCP" -> Add'
+  ];
+  lines.push(...officeStep);
   return lines;
 }
 function daemonTlsEnabled() {
@@ -72618,14 +72610,6 @@ async function setupWindowsHttpsCatalog() {
     }
   }
   console.log(`[setup] Trusted add-in catalog registered: ${HTTPS_CATALOG_URL} (registry, current user only)`);
-  console.log(
-    [
-      "[setup] One manual step left (Office requires it):",
-      "  1. Close and reopen PowerPoint / Word / Excel",
-      "  2. Home ribbon \u2192 Add-ins \u2192 Advanced... \u2192 MY ORGANIZATION tab",
-      '  3. Select "Office Live MCP" \u2192 Add'
-    ].join("\n")
-  );
   return true;
 }
 function setupWindowsUncCatalog() {
@@ -72699,14 +72683,6 @@ function setupWindowsUncCatalog() {
     }
   }
   console.log("[setup] Trusted add-in catalog registered (registry, current user only)");
-  console.log(
-    [
-      "[setup] One manual step left (Office requires it):",
-      "  1. Close and reopen PowerPoint / Word / Excel",
-      "  2. Home ribbon \u2192 Add-ins \u2192 Advanced... \u2192 SHARED FOLDER tab",
-      '  3. Select "Office Live MCP" \u2192 Add'
-    ].join("\n")
-  );
 }
 async function setupWindows() {
   if (process.env.OLM_HTTPS_CATALOG === "1") {

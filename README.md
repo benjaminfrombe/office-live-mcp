@@ -72,6 +72,45 @@ Useful extras:
 - Prefer an HTTP MCP client? Start the daemon once (`node dist/index.cjs --http --bridge`) and connect to `http://127.0.0.1:3001/mcp`.
 - Legacy single-session mode (`--stdio --bridge`, everything in one process) still exists but does not survive multiple concurrent clients.
 
+### Connect your harness
+
+`office-live-mcp setup` prints your exact server path and node executable. Use them in one of these:
+
+**OpenCode** — `~/.config/opencode/opencode.jsonc` (Windows: `%USERPROFILE%\.config\opencode\opencode.jsonc`), `"mcp"` section:
+
+```json
+"office-live-mcp": {
+  "type": "local",
+  "command": ["<node>", "<server path>"],
+  "enabled": true
+}
+```
+
+**Claude Code** — one command:
+
+```
+claude mcp add office-live-mcp --scope user -- <node> "<server path>"
+```
+
+**Claude Desktop** — `~/Library/Application Support/Claude/claude_desktop_config.json` (Windows: `%APPDATA%\Claude\claude_desktop_config.json`), `"mcpServers"` section:
+
+```json
+"office-live-mcp": {
+  "command": "<node>",
+  "args": ["<server path>"]
+}
+```
+
+**Codex** — `~/.codex/config.toml` (Windows: `%USERPROFILE%\.codex\config.toml`):
+
+```toml
+[mcp_servers.office-live-mcp]
+command = "<node>"
+args = ["<server path>"]
+```
+
+**ChatGPT Desktop** — Settings → Connectors → add an MCP connector (UI; fill in the server path from setup).
+
 ### Optional: the ribbon icon (HTTPS)
 
 Everything works over plain HTTP except one cosmetic detail: Office refuses to load the **ribbon icon** over HTTP, so the button shows a generic placeholder. The add-in, taskpane and bridge connection are unaffected.
