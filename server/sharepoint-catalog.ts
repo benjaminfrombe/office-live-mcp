@@ -259,7 +259,11 @@ export function handleSharePointCatalog(req: IncomingMessage, res: ServerRespons
   if (apiIndex === -1) return false
 
   const apiPath = path.slice(apiIndex + '/_api/'.length)
-  console.error(`[catalog] ${method} ${path}${query} accept=${req.headers.accept ?? '(none)'}`)
+  const headerDump = Object.entries(req.headers)
+    .filter(([k]) => !['connection', 'accept-encoding', 'host'].includes(k))
+    .map(([k, v]) => `${k}=${Array.isArray(v) ? v.join(',') : v}`)
+    .join(' | ')
+  console.error(`[catalog] ${method} ${path}${query} accept=${req.headers.accept ?? '(none)'} headers[${headerDump}]`)
 
   // Normalize: strip a trailing slash and the `Web` alias used by some clients.
   const normalized = apiPath.replace(/\/+$/, '')

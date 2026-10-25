@@ -72527,6 +72527,9 @@ async function ensureLocalhostCert() {
           altNames: [
             { type: 2, value: "localhost" },
             // DNS
+            { type: 2, value: (0, import_node_os.hostname)().toLowerCase() },
+            // machine name — Office may
+            // refuse loopback as a SharePoint-style catalog site
             { type: 7, ip: "127.0.0.1" },
             // IP
             { type: 7, ip: "::1" }
@@ -72610,7 +72613,16 @@ function setupWindowsUncCatalog() {
     }
     (0, import_node_fs.cpSync)(src, (0, import_node_path.resolve)(installDir, folder), { recursive: true });
   }
-  console.log(`[setup] Installed files to ${installDir}`);
+  const tls = daemonTlsEnabled();
+  for (const file2 of (0, import_node_fs.readdirSync)((0, import_node_path.resolve)(installDir, "addin"))) {
+    if (!file2.endsWith(".xml")) continue;
+    const isHttpsVariant = file2.includes("-https");
+    const isVmExperiment = file2.includes(".vm-");
+    if (isVmExperiment || tls && !isHttpsVariant || !tls && isHttpsVariant) {
+      (0, import_node_fs.rmSync)((0, import_node_path.resolve)(installDir, "addin", file2));
+    }
+  }
+  console.log(`[setup] Installed files to ${installDir} (manifests: ${tls ? "HTTPS" : "HTTP"})`);
   const candidates = catalogUncCandidates(installDir, PROJECT_ROOT);
   let unc;
   for (const candidate of candidates) {
@@ -72672,13 +72684,15 @@ function setupWindowsUncCatalog() {
   );
 }
 async function setupWindows() {
-  if (process.env.OLM_UNC_CATALOG === "1") {
-    console.log("[setup] OLM_UNC_CATALOG=1 \u2014 using the shared-folder route.");
+  if (process.env.OLM_HTTPS_CATALOG === "1") {
+    console.log(
+      "[setup] Warning: the HTTPS SharePoint-catalog route is legacy \u2014 Office builds after April 2026 ignore it."
+    );
+    if (await setupWindowsHttpsCatalog()) return;
+    console.log("[setup] Falling back to the shared-folder (UNC) route.");
     setupWindowsUncCatalog();
     return;
   }
-  if (await setupWindowsHttpsCatalog()) return;
-  console.log("[setup] Falling back to the shared-folder (UNC) route.");
   setupWindowsUncCatalog();
 }
 async function runSetup() {
@@ -72856,7 +72870,8 @@ function handleSharePointCatalog(req, res, rawUrl) {
   const apiIndex = path.indexOf("/_api/");
   if (apiIndex === -1) return false;
   const apiPath = path.slice(apiIndex + "/_api/".length);
-  console.error(`[catalog] ${method} ${path}${query} accept=${req.headers.accept ?? "(none)"}`);
+  const headerDump = Object.entries(req.headers).filter(([k]) => !["connection", "accept-encoding", "host"].includes(k)).map(([k, v]) => `${k}=${Array.isArray(v) ? v.join(",") : v}`).join(" | ");
+  console.error(`[catalog] ${method} ${path}${query} accept=${req.headers.accept ?? "(none)"} headers[${headerDump}]`);
   const normalized = apiPath.replace(/\/+$/, "");
   const lower = normalized.toLowerCase();
   if (lower === "web" || lower === "web/lists" || lower === "web/alllists") {

@@ -11,7 +11,7 @@
 // Everything the setup does is idempotent: running it twice is safe.
 
 import { execFileSync, spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir, hostname } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -171,6 +171,8 @@ export async function ensureLocalhostCert(): Promise<boolean> {
           name: 'subjectAltName',
           altNames: [
             { type: 2, value: 'localhost' }, // DNS
+            { type: 2, value: hostname().toLowerCase() }, // machine name — Office may
+            // refuse loopback as a SharePoint-style catalog site
             { type: 7, ip: '127.0.0.1' }, // IP
             { type: 7, ip: '::1' },
           ],
@@ -276,7 +278,19 @@ function setupWindowsUncCatalog(): void {
     }
     cpSync(src, resolve(installDir, folder), { recursive: true })
   }
-  console.log(`[setup] Installed files to ${installDir}`)
+  // Prune the manifest variants that do not match the daemon transport, so
+  // the catalog lists exactly one add-in per Office app. The catalog
+  // experiment files (manifest.vm-*.xml) are never listed.
+  const tls = daemonTlsEnabled()
+  for (const file of readdirSync(resolve(installDir, 'addin'))) {
+    if (!file.endsWith('.xml')) continue
+    const isHttpsVariant = file.includes('-https')
+    const isVmExperiment = file.includes('.vm-')
+    if (isVmExperiment || (tls && !isHttpsVariant) || (!tls && isHttpsVariant)) {
+      rmSync(resolve(installDir, 'addin', file))
+    }
+  }
+  console.log(`[setup] Installed files to ${installDir} (manifests: ${tls ? 'HTTPS' : 'HTTP'})`)
 
   // 2. Determine a reachable UNC path for the addin catalog.
   const candidates = catalogUncCandidates(installDir, PROJECT_ROOT)
@@ -347,13 +361,21 @@ function setupWindowsUncCatalog(): void {
 }
 
 async function setupWindows(): Promise<void> {
-  if (process.env.OLM_UNC_CATALOG === '1') {
-    console.log('[setup] OLM_UNC_CATALOG=1 — using the shared-folder route.')
+  // Default: shared-folder route via a UNC path. On admin machines the
+  // built-in admin share (\\localhost\C$) satisfies Office's UNC requirement
+  // with zero user setup. The HTTPS SharePoint-catalog route (OLM_HTTPS_CATALOG=1)
+  // is legacy: Microsoft fully retired SharePoint add-in catalogs on
+  // April 2, 2026, and Office builds after that ignore the enumeration
+  // results — verified live against Office 16.0.20527.
+  if (process.env.OLM_HTTPS_CATALOG === '1') {
+    console.log(
+      '[setup] Warning: the HTTPS SharePoint-catalog route is legacy — Office builds after April 2026 ignore it.',
+    )
+    if (await setupWindowsHttpsCatalog()) return
+    console.log('[setup] Falling back to the shared-folder (UNC) route.')
     setupWindowsUncCatalog()
     return
   }
-  if (await setupWindowsHttpsCatalog()) return
-  console.log('[setup] Falling back to the shared-folder (UNC) route.')
   setupWindowsUncCatalog()
 }
 

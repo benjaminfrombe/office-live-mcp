@@ -98,13 +98,15 @@ node C:\path\to\office-live-mcp\dist\index.cjs setup
 
 What it does:
 
-1. Copies `dist/` and `addin/` to `%LOCALAPPDATA%\office-live-mcp`.
-2. Finds a reachable UNC path for the add-in catalog (in order): `OLM_CATALOG_UNC` env override → the Parallels host share when running from `\\Mac\Home\...` → a dedicated `OfficeLiveMCP` share (creates it if your terminal is elevated) → the default admin share (`\\localhost\C$`). Office only trusts network paths for custom add-ins — that is a Microsoft requirement, not ours.
-3. Registers that path as a trusted add-in catalog in the registry (HKCU, no elevation needed).
+1. Copies `dist/` and `addin/` to `%LOCALAPPDATA%\office-live-mcp`, keeping only the manifest variants that match the daemon transport (HTTPS or plain) so the catalog lists exactly one add-in per Office app.
+2. Registers a trusted add-in catalog in the registry (HKCU, no elevation needed) pointing at that folder through a UNC path. Office only trusts network paths for custom add-ins — that is a Microsoft requirement. In practice no share has to be created: setup uses, in order, an `OLM_CATALOG_UNC` override → the Parallels host share when running from `\\Mac\Home\...` → a dedicated `OfficeLiveMCP` share (created automatically in an elevated terminal) → the built-in admin share (`\\localhost\C$`), which exists by default on admin machines.
+3. Prints the ready-to-paste MCP client config.
 
 Then the one step no installer can do, because Office requires it:
 
 4. **Close and reopen the Office app** → **Home → Add-ins → Advanced...** → **SHARED FOLDER** tab → select *Office Live MCP* → **Add**.
+
+> **Why not an HTTPS catalog (no UNC at all)?** The bridge can emulate a SharePoint app catalog over `https://localhost:8443` (`OLM_HTTPS_CATALOG=1`, see `server/sharepoint-catalog.ts`), and Office would then list the add-in under MY ORGANIZATION. This worked on Office builds up to 16.0.20430, but Microsoft fully retired SharePoint add-in catalogs on April 2, 2026 — current builds still probe the catalog yet discard the results, so the route is dead on modern Office. The UNC route above is the only supported one.
 
 Notes:
 
