@@ -132,7 +132,43 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # ---------------------------------------------------------------------------
-# 4. Next steps
+# 4. Claude Desktop extension (.mcpb) — offer to install when detected
+# ---------------------------------------------------------------------------
+
+$claudeDesktop = $null
+foreach ($candidate in @(
+    "$env:LOCALAPPDATA\Packages\Claude_*",
+    "$env:APPDATA\Claude"
+)) {
+    $found = Get-Item $candidate -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($found) { $claudeDesktop = $found.FullName; break }
+}
+if ($claudeDesktop) {
+    $mcpb = Get-ChildItem (Join-Path $installedDir '*.mcpb') -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($mcpb) {
+        $answer = Read-Host "Claude Desktop detected. Install the Office Live MCP extension now? (y/n)"
+        if ($answer -eq 'y' -or $answer -eq 'Y') {
+            try {
+                # Claude Desktop registers the .mcpb association: opening the
+                # file makes it show the extension install prompt.
+                Start-Process $mcpb.FullName
+                Write-Step "Opened $($mcpb.Name) - confirm the install in Claude Desktop."
+            } catch {
+                Write-Host @"
+
+[installer] Could not open the file automatically. Install it manually:
+  Claude Desktop -> Settings -> Extensions -> Advanced settings ->
+  Install Extension -> pick:
+  $($mcpb.FullName)
+
+"@ -ForegroundColor Yellow
+            }
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
+# 5. Next steps
 # ---------------------------------------------------------------------------
 
 Write-Host @"

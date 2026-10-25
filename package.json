@@ -9,6 +9,7 @@
   },
   "files": [
     "dist/",
+    "*.mcpb",
     "addin/",
     ".claude-plugin/",
     ".codex-plugin/",
