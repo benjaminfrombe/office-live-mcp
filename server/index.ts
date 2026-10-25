@@ -312,7 +312,14 @@ async function handleMcpPost(req: IncomingMessage, res: ServerResponse): Promise
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         enableDnsRebindingProtection: true,
-        allowedHosts: [`127.0.0.1:${MCP_HTTP_PORT}`, `localhost:${MCP_HTTP_PORT}`],
+        // The same transport serves both the dedicated MCP HTTP port and
+        // MCP-on-the-bridge, so allow both ports (plain + TLS) on both hosts.
+        allowedHosts: [
+          `127.0.0.1:${MCP_HTTP_PORT}`,
+          `localhost:${MCP_HTTP_PORT}`,
+          `127.0.0.1:${BRIDGE_PORT}`,
+          `localhost:${BRIDGE_PORT}`,
+        ],
         onsessioninitialized: (sid) => {
           mcpHttpTransports.set(sid, transport)
           console.error(`MCP HTTP session initialized: ${sid}`)
