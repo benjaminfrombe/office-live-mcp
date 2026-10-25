@@ -1,5 +1,6 @@
-# Fail if server/ files are staged but dist/index.cjs is not
-if git diff --cached --name-only | grep -q '^server/' && \
+# Fail if server/ source files are staged but dist/index.cjs is not
+# (test-only changes do not affect the bundle)
+if git diff --cached --name-only | grep '^server/' | grep -qv '\.test\.ts$' && \
    ! git diff --cached --name-only | grep -q '^dist/index.cjs$'; then
   echo "Error: server/ files changed but dist/index.cjs not staged."
   echo "Run: npm run build && git add dist/index.cjs"

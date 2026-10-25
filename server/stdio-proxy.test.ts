@@ -274,7 +274,7 @@ describe('runStdioProxy', () => {
       stdin,
       stdout,
       localVersion: '0.6.0',
-      ensure: () => Promise.resolve({ alreadyRunning: true, health: { status: 'ok' }, base: 'http://127.0.0.1:8792' }),
+      ensure: () => Promise.resolve({ alreadyRunning: true, health: { status: 'ok' }, base: 'http://127.0.0.1:1' }),
     })
 
     stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 7, method: 'tools/list', params: {} })}\n`)
