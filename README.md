@@ -38,7 +38,7 @@ There is a second advantage that matters just as much. Everything here runs loca
 ```bash
 npm install -g office-live-mcp
 
-# install the add-in into the Office apps + print your MCP client config
+# install the add-in into the Office apps + print your server path
 office-live-mcp setup
 ```
 
@@ -48,7 +48,7 @@ office-live-mcp setup
 irm https://raw.githubusercontent.com/benjaminfrombe/office-live-mcp/main/install.ps1 | iex
 ```
 
-`setup` is idempotent — run it again any time. On macOS it sideloads the manifest into each installed Office app (needs Full Disk Access for your terminal; it tells you if macOS blocks it). Then open a document, click the add-in button in the Home ribbon, and connect your MCP client with the printed config. **No bridge to start manually.**
+`setup` is idempotent — run it again any time. On macOS it sideloads the manifest into each installed Office app (needs Full Disk Access for your terminal; it tells you if macOS blocks it). Then open a document, click the add-in button in the Home ribbon, and add the server to your MCP client as shown under [Connecting an MCP client](#connecting-an-mcp-client). **No bridge to start manually.**
 
 <details>
 <summary>Installing from source instead</summary>
@@ -88,7 +88,7 @@ Useful extras:
 - `office-live-mcp --stop-daemon` — stop the shared daemon (however it was started).
 - `~/.office-live-mcp/daemon.log` — daemon log; `~/.office-live-mcp/daemon.env` — optional `KEY=VALUE` lines merged into the daemon environment (e.g. `BRIDGE_TLS=1`).
 - Prefer an HTTP MCP client? Start the daemon once (`office-live-mcp --http --bridge`) and connect to `http://127.0.0.1:8792/mcp`.
-- Legacy single-session mode (`--stdio --bridge`, everything in one process) still exists but does not survive multiple concurrent clients.
+- Legacy in-process mode (`--stdio --bridge`, everything in one process) still exists; if the bridge port is already owned by another office-live-mcp process (e.g. Claude Desktop's extension host), it relays MCP to that bridge instead of failing.
 
 ### Connect your harness
 
@@ -165,7 +165,7 @@ What it does:
 
 1. Copies `dist/` and `addin/` to `%LOCALAPPDATA%\office-live-mcp`, keeping only the manifest variants that match the daemon transport (HTTPS or plain) so the catalog lists exactly one add-in per Office app.
 2. Registers a trusted add-in catalog in the registry (HKCU, no elevation needed) pointing at that folder through a UNC path. Office only trusts network paths for custom add-ins — that is a Microsoft requirement. In practice no share has to be created: setup uses, in order, an `OLM_CATALOG_UNC` override → a dedicated `OfficeLiveMCP` share (created automatically in an elevated terminal) → the built-in admin share (`\\localhost\C$`), which exists by default on admin machines.
-3. Prints the ready-to-paste MCP client config.
+3. Prints your server path and node executable, plus the link with copy-paste MCP client examples for every harness.
 
 Then the one step no installer can do, because Office requires it:
 
@@ -184,7 +184,7 @@ Notes:
 
 Two layers, because they catch different bugs.
 
-The mock suite (411 tests) verifies tool registration, argument handling and the generated Office.js code, plus the stdio→daemon proxy (auto-start, session handling, SSE parsing, stop). It is fast and runs on every change.
+The mock suite (428 tests) verifies tool registration, argument handling and the generated Office.js code, plus the stdio→daemon proxy (auto-start, discovery, session handling, SSE parsing, stop). It is fast and runs on every change.
 
 The live suite runs every tool against a real open document. This is where the mock tests turned out to be insufficient: live testing caught three real API bugs the mocks could never find. `Range.findAllOrNullObject` does not exist on this host, `DataValidationRule` takes a type-keyed object rather than a `{ type, ... }` envelope, and calculation lives on `workbook.application`, not `workbook`. All fixed and now covered by both layers.
 
