@@ -154,21 +154,20 @@ if ($claudeDesktop) {
     if ($mcpb) {
         $answer = Read-Host "Claude Desktop detected. Install the Office Live MCP extension now? (y/n)"
         if ($answer -eq 'y' -or $answer -eq 'Y') {
-            try {
-                # Claude Desktop registers the .mcpb association: opening the
-                # file makes it show the extension install prompt.
-                Start-Process $mcpb.FullName
-                Write-Step "Opened $($mcpb.Name) - confirm the install in Claude Desktop."
-            } catch {
-                Write-Host @"
+            # On Windows, Claude Desktop has no .mcpb file association (and in
+            # Parallels the Mac association would hijack it), so opening the
+            # file is not reliable - open Explorer with it selected instead
+            # and have the user drag it onto the Extensions panel.
+            Start-Process explorer.exe "/select,`"$($mcpb.FullName)`""
+            Write-Host @"
 
-[installer] Could not open the file automatically. Install it manually:
-  Claude Desktop -> Settings -> Extensions -> Advanced settings ->
-  Install Extension -> pick:
-  $($mcpb.FullName)
+[installer] Explorer is open with the extension file selected.
+  1. In Claude Desktop: Settings -> Extensions
+  2. Drag this file onto the panel:
+     $($mcpb.FullName)
+  3. Confirm the install in Claude Desktop.
 
 "@ -ForegroundColor Yellow
-            }
         }
     }
 }
