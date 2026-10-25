@@ -1,159 +1,51 @@
 {
   "manifest_version": "0.3",
   "name": "office-live-mcp",
-  "display_name": "PowerPoint MCP",
+  "display_name": "Office Live MCP",
   "version": "0.6.0",
-  "description": "Manipulate live, open PowerPoint presentations via Office.js — add shapes, text, images, and more to open presentations in real time.",
-  "long_description": "PowerPoint MCP lets Claude control live, open PowerPoint presentations on macOS through Office.js APIs. Unlike file-based solutions, this extension manipulates the presentation in real time.\n\n**Capabilities:**\n- Add and modify shapes, text boxes, tables, and images\n- Read slide structure and content\n- Take visual screenshots of slides\n- Copy slides between presentations\n- Execute arbitrary Office.js code\n\n**How it works:**\nThe extension runs a local bridge server that connects to a PowerPoint add-in via WebSocket. On first launch, the add-in is automatically installed into PowerPoint.\n\n**Requirements:** Microsoft PowerPoint for Mac (16.96+), macOS.",
+  "description": "Drive live, open Word, Excel and PowerPoint documents via Office.js — edits appear in real time.",
+  "long_description": "Office Live MCP lets Claude control live, open Word, Excel and PowerPoint documents on macOS and Windows through Office.js APIs. Unlike file-based solutions, this extension manipulates the document in real time, and you watch every change happen.\n\n**Capabilities:**\n- PowerPoint: 27 tools — inspect decks, edit shapes and text, raw OOXML access, charts, screenshots, speaker notes\n- Excel: 32 tools — read/write ranges, formulas, formatting, worksheets, tables, charts, data validation, comments\n- Word: 26 tools — paragraphs, styles, search and replace, tables, comments, tracked changes\n- Plus an execute_officejs/execute_exceljs/execute_wordjs escape hatch per host\n\n**How it works:**\nThe extension runs a local bridge server that connects to an Office add-in via WebSocket. The add-in must be installed into the Office apps (one-time; see the project README for the setup command).",
   "author": {
-    "name": "Krzysztof Zarzycki",
-    "url": "https://github.com/kzarzycki"
+    "name": "Benjamin Jacobs",
+    "url": "https://github.com/benjaminfrombe"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/kzarzycki/powerpoint-mcp"
+    "url": "https://github.com/benjaminfrombe/office-live-mcp"
   },
-  "homepage": "https://github.com/kzarzycki/powerpoint-mcp#readme",
-  "support": "https://github.com/kzarzycki/powerpoint-mcp/issues",
+  "homepage": "https://github.com/benjaminfrombe/office-live-mcp#readme",
+  "support": "https://github.com/benjaminfrombe/office-live-mcp/issues",
   "icon": "icon.png",
   "server": {
     "type": "node",
     "entry_point": "server/index.cjs",
     "mcp_config": {
       "command": "node",
-      "args": [
-        "${__dirname}/server/index.cjs",
-        "--stdio",
-        "--bridge"
-      ],
+      "args": ["${__dirname}/server/index.cjs"],
       "env": {}
     }
   },
   "tools": [
-    {
-      "name": "list_presentations",
-      "description": "List all connected PowerPoint presentations"
-    },
-    {
-      "name": "inspect_deck",
-      "description": "Deck overview: slide dimensions, theme (colors + fonts), and all slides with layout and shape count"
-    },
-    {
-      "name": "inspect_layouts",
-      "description": "Slide layouts with names, types, placeholders, and positions. Supports field selection."
-    },
-    {
-      "name": "inspect_slide",
-      "description": "Detailed slide inspector: shapes with text, positions, sizes, and fills"
-    },
-    {
-      "name": "scan_slide",
-      "description": "Lightweight shape scanner: IDs, types, and positions"
-    },
-    {
-      "name": "screenshot_slide",
-      "description": "Capture a slide as a PNG screenshot"
-    },
-    {
-      "name": "preview_deck",
-      "description": "Batch overview of all/selected slides with optional thumbnails and text"
-    },
-    {
-      "name": "get_local_copy",
-      "description": "Export presentation to a local file path"
-    },
-    {
-      "name": "copy_slides",
-      "description": "Copy slides between open presentations"
-    },
-    {
-      "name": "insert_image",
-      "description": "Insert an image onto a slide"
-    },
-    {
-      "name": "add_slide",
-      "description": "Add a new slide from a layout at a specific position, with placeholder text pre-filled"
-    },
-    {
-      "name": "duplicate_slide",
-      "description": "Duplicate a slide within the same presentation"
-    },
-    {
-      "name": "read_speaker_notes",
-      "description": "Read speaker notes from slides as plain text"
-    },
-    {
-      "name": "edit_speaker_notes",
-      "description": "Set speaker notes on one or more slides (accepts markdown)"
-    },
-    {
-      "name": "verify_slides",
-      "description": "Run programmatic checks on a slide (overlap, bounds, empty text, tiny shapes)"
-    },
-    {
-      "name": "read_deck_text",
-      "description": "Lightweight text extractor: slide titles and body as plain strings (~20x smaller than inspect_slide)"
-    },
-    {
-      "name": "read_shape_paragraphs",
-      "description": "Read raw OOXML paragraphs from a shape's text body"
-    },
-    {
-      "name": "edit_shape_paragraphs",
-      "description": "Replace paragraph content of a shape with raw OOXML"
-    },
-    {
-      "name": "read_slide_xml",
-      "description": "Read the full raw OOXML of a slide or a specific shape"
-    },
-    {
-      "name": "edit_slide_xml",
-      "description": "Edit slide XML and reimport (xml or code mode)"
-    },
-    {
-      "name": "read_slide_zip",
-      "description": "Read multiple files from the exported slide zip"
-    },
-    {
-      "name": "edit_slide_zip",
-      "description": "Update multiple files in the slide zip and reimport"
-    },
-    {
-      "name": "edit_slide_chart",
-      "description": "Create a chart on a slide from structured data"
-    },
-    {
-      "name": "search_text",
-      "description": "Search for text across all slides in the presentation"
-    },
-    {
-      "name": "format_shapes",
-      "description": "Apply formatting to multiple shapes on a slide in one call"
-    },
-    {
-      "name": "execute_officejs",
-      "description": "Execute arbitrary Office.js code in the live presentation"
-    },
-    {
-      "name": "search_fluent_icons",
-      "description": "Search Microsoft Fluent UI icons by keyword"
-    }
+    { "name": "list_presentations", "description": "List connected PowerPoint presentations" },
+    { "name": "list_workbooks", "description": "List connected Excel workbooks" },
+    { "name": "list_documents", "description": "List connected Word documents" },
+    { "name": "edit_slide_xml", "description": "Edit PowerPoint slide OOXML and reimport" },
+    { "name": "execute_officejs", "description": "Execute arbitrary Office.js code in the live document" }
   ],
+  "user_config": {
+    "BRIDGE_TLS": {
+      "type": "string",
+      "title": "Serve the bridge over HTTPS",
+      "description": "Set to 1 to serve the bridge over HTTPS/WSS (requires trusted localhost certs)",
+      "default": ""
+    }
+  },
   "compatibility": {
-    "platforms": [
-      "darwin"
-    ],
+    "platforms": ["darwin", "win32"],
     "runtimes": {
       "node": ">=24.0.0"
     }
   },
-  "keywords": [
-    "powerpoint",
-    "office",
-    "presentation",
-    "slides",
-    "office-js",
-    "live-editing"
-  ],
+  "keywords": ["office", "word", "excel", "powerpoint", "office-js", "live-editing", "mcp"],
   "license": "MIT"
 }

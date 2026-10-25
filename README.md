@@ -101,7 +101,7 @@ claude mcp add office-live-mcp --scope user -- <node> "<server path>"
 }
 ```
 
-**Codex** — `~/.codex/config.toml` (Windows: `%USERPROFILE%\.codex\config.toml`):
+**ChatGPT Desktop & Codex** — the ChatGPT desktop app shares its MCP configuration with Codex: `~/.codex/config.toml` (Windows: `%USERPROFILE%\.codex\config.toml`):
 
 ```toml
 [mcp_servers.office-live-mcp]
@@ -109,7 +109,7 @@ command = "<node>"
 args = ["<server path>"]
 ```
 
-**ChatGPT Desktop** — Settings → Connectors → add an MCP connector (UI; fill in the server path from setup).
+(ChatGPT on the web only reaches remote HTTPS servers, so it needs a tunnel for a local bridge like this one.)
 
 ### Optional: the ribbon icon (HTTPS)
 

@@ -4,7 +4,7 @@ set -e
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 STAGE_DIR="$REPO_DIR/dist/mcpb-stage"
 
-echo "=== Building PowerPoint MCP .mcpb ==="
+echo "=== Building Office Live MCP .mcpb ==="
 
 # 1. Build CJS bundle
 echo "[build] Building self-contained CJS bundle..."
@@ -22,7 +22,7 @@ cp "$REPO_DIR/dist/index.cjs" "$STAGE_DIR/server/index.cjs"
 # 4. Copy add-in static files
 echo "[build] Copying add-in files..."
 cp "$REPO_DIR/addin/index.html" "$REPO_DIR/addin/app.js" "$REPO_DIR/addin/style.css" "$STAGE_DIR/addin/"
-cp "$REPO_DIR/addin/manifest.xml" "$REPO_DIR/addin/manifest-https.xml" "$STAGE_DIR/addin/"
+cp "$REPO_DIR"/addin/manifest*.xml "$STAGE_DIR/addin/"
 cp "$REPO_DIR/addin/assets/"*.png "$STAGE_DIR/addin/assets/"
 
 # 5. Copy manifest and icon
@@ -31,7 +31,7 @@ cp "$REPO_DIR/addin/assets/icon-80.png" "$STAGE_DIR/icon.png"
 
 # 6. Pack as .mcpb
 VERSION=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('$REPO_DIR/package.json','utf8')).version)")
-MCPB_FILE="$REPO_DIR/powerpoint-mcp-v${VERSION}.mcpb"
+MCPB_FILE="$REPO_DIR/office-live-mcp-v${VERSION}.mcpb"
 
 echo "[pack] Creating $MCPB_FILE..."
 cd "$STAGE_DIR"
