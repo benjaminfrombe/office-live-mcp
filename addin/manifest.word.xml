@@ -11,12 +11,12 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Office Live MCP"/>
   <Description DefaultValue="Bridge for Claude Code to manipulate live Office documents"/>
-  <IconUrl DefaultValue="https://localhost:8443/assets/icon-32.png?v=2"/>
-  <HighResolutionIconUrl DefaultValue="https://localhost:8443/assets/icon-80.png?v=2"/>
-  <SupportUrl DefaultValue="https://localhost:8443"/>
+  <IconUrl DefaultValue="http://localhost:8080/assets/icon-32.png?v=2"/>
+  <HighResolutionIconUrl DefaultValue="http://localhost:8080/assets/icon-80.png?v=2"/>
+  <SupportUrl DefaultValue="http://localhost:8080"/>
 
   <AppDomains>
-    <AppDomain>https://localhost:8443</AppDomain>
+    <AppDomain>http://localhost:8080</AppDomain>
   </AppDomains>
 
   <Hosts>
@@ -24,7 +24,7 @@
   </Hosts>
 
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://localhost:8443/index.html"/>
+    <SourceLocation DefaultValue="http://localhost:8080/index.html"/>
   </DefaultSettings>
 
   <Permissions>ReadWriteDocument</Permissions>
@@ -70,12 +70,12 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon16" DefaultValue="https://localhost:8443/assets/icon-16.png?v=2"/>
-        <bt:Image id="Icon32" DefaultValue="https://localhost:8443/assets/icon-32.png?v=2"/>
-        <bt:Image id="Icon80" DefaultValue="https://localhost:8443/assets/icon-80.png?v=2"/>
+        <bt:Image id="Icon16" DefaultValue="http://localhost:8080/assets/icon-16.png?v=2"/>
+        <bt:Image id="Icon32" DefaultValue="http://localhost:8080/assets/icon-32.png?v=2"/>
+        <bt:Image id="Icon80" DefaultValue="http://localhost:8080/assets/icon-80.png?v=2"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="TaskpaneUrl" DefaultValue="https://localhost:8443/index.html"/>
+        <bt:Url id="TaskpaneUrl" DefaultValue="http://localhost:8080/index.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="Bridge"/>
