@@ -137,12 +137,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host @"
 
-[installer] Done. Two things left:
-
-  1. Add the MCP server to your harness (OpenCode, Claude Code or Claude
-     Desktop) - the exact steps and config snippets were printed by setup
-     just above.
-  2. In PowerPoint / Word / Excel: Home -> Add-ins -> Advanced... ->
-     SHARED FOLDER tab -> select "Office Live MCP" -> Add.
+[installer] Done. Follow the two steps printed by setup just above:
+add the MCP server to your harness, then add the add-in in Office.
 
 "@ -ForegroundColor Green
