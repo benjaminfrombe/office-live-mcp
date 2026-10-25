@@ -72457,37 +72457,31 @@ function registryCommands(uncPath) {
 }
 function harnessInstructions(entryCommand, platform, nodePath) {
   const isMac = platform === "darwin";
+  const home = isMac ? "~" : "%USERPROFILE%";
   const lines = [];
-  lines.push("Add the MCP server to your AI harness (pick the one you use):");
+  lines.push("STEP 1 - Add the MCP server to your AI harness (Claude, OpenCode, Codex, ChatGPT, ...)");
   lines.push("");
-  lines.push("  OpenCode");
+  lines.push(`  Server path : ${entryCommand}`);
+  lines.push(`  Run with    : ${nodePath}  (node)`);
+  lines.push("");
   lines.push(
-    `    Config: ${isMac ? "~/.config/opencode/opencode.jsonc" : "%USERPROFILE%\\.config\\opencode\\opencode.jsonc"}`
+    `  OpenCode         ${home}${isMac ? "/.config/opencode/opencode.jsonc" : "\\.config\\opencode\\opencode.jsonc"} - "mcp" section:`
   );
-  lines.push('    Add to the "mcp" section:');
-  lines.push("      {");
-  lines.push('        "office-live-mcp": {');
-  lines.push('          "type": "local",');
-  lines.push(`          "command": ["${nodePath}", "${entryCommand}"],`);
-  lines.push('          "enabled": true');
-  lines.push("        }");
-  lines.push("      }");
-  lines.push("");
-  lines.push("  Claude Code");
-  lines.push("    Run:");
-  lines.push(`      claude mcp add office-live-mcp --scope user -- ${nodePath} "${entryCommand}"`);
-  lines.push("");
-  lines.push("  Claude Desktop");
+  lines.push(`                      "office-live-mcp": { "command": ["${nodePath}", "${entryCommand}"] }`);
+  lines.push("  Claude Code      run:");
+  lines.push(`                      claude mcp add office-live-mcp --scope user -- ${nodePath} "${entryCommand}"`);
   lines.push(
-    `    Config: ${isMac ? "~/Library/Application Support/Claude/claude_desktop_config.json" : "%APPDATA%\\Claude\\claude_desktop_config.json"}`
+    `  Claude Desktop   ${isMac ? "~/Library/Application Support/Claude/claude_desktop_config.json" : "%APPDATA%\\Claude\\claude_desktop_config.json"} - "mcpServers" section:`
   );
-  lines.push('    Add to "mcpServers":');
-  lines.push("      {");
-  lines.push('        "office-live-mcp": {');
-  lines.push(`          "command": "${nodePath}",`);
-  lines.push(`          "args": ["${entryCommand}"]`);
-  lines.push("        }");
-  lines.push("      }");
+  lines.push(`                      "office-live-mcp": { "command": "${nodePath}", "args": ["${entryCommand}"] }`);
+  lines.push(`  Codex            ${home}${isMac ? "/.codex/config.toml" : "\\.codex\\config.toml"}:`);
+  lines.push("                      [mcp_servers.office-live-mcp]");
+  lines.push(`                      command = "${nodePath}"`);
+  lines.push(`                      args = ["${entryCommand}"]`);
+  lines.push("  ChatGPT Desktop  Settings -> Connectors -> add an MCP connector (UI; use the path above)");
+  lines.push("");
+  lines.push("STEP 2 - Open PowerPoint / Word / Excel -> Home -> Add-ins -> Advanced...");
+  lines.push('        -> SHARED FOLDER tab -> "Office Live MCP" -> Add');
   return lines;
 }
 function daemonTlsEnabled() {
