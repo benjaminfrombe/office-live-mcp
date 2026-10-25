@@ -21,7 +21,7 @@
     "entry_point": "server/index.cjs",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/server/index.cjs"],
+      "args": ["${__dirname}/server/index.cjs", "--stdio", "--bridge"],
       "env": {}
     }
   },
