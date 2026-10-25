@@ -147,11 +147,19 @@ Then restart the Office apps. Without this step, just ignore the placeholder ico
 
 ## Windows installation
 
-Verified on Windows 11 (ARM64, Office Insider 16.0.20430) in a Parallels VM. Recent Windows Office builds reject the old sideload shortcuts (Developer-registry manifests only load under a debugger, the new "Apps" storefront never queries custom catalogs, and neither the classic nor the new dialog offers an "Upload My Add-in" option), so the supported route is a **shared folder catalog**. The one-liner above does everything; `setup` automates all of it:
+Open **PowerShell** (Start → type "powershell" → Enter) and paste this one line — it finds or installs Node.js, installs the package, and runs `setup`:
+
+```powershell
+irm https://raw.githubusercontent.com/benjaminfrombe/office-live-mcp/main/install.ps1 | iex
+```
+
+Already installed the package yourself? Then all you need is:
 
 ```bat
 office-live-mcp setup
 ```
+
+Verified on Windows 11 (ARM64, Office Insider 16.0.20430) in a Parallels VM. Recent Windows Office builds reject the old sideload shortcuts (Developer-registry manifests only load under a debugger, the new "Apps" storefront never queries custom catalogs, and neither the classic nor the new dialog offers an "Upload My Add-in" option), so the supported route is a **shared folder catalog** — `setup` automates all of it.
 
 What it does:
 
