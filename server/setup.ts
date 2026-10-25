@@ -89,6 +89,40 @@ export function mcpConfigSnippet(entryCommand: string): string {
   return ['{', `  "mcpServers": {`, `    "office-live-mcp": { "command": ${command} }`, '  }', '}'].join('\n')
 }
 
+/**
+ * Per-harness add instructions, with the real entry path filled in and
+ * platform-aware config locations. Returned as lines for testability.
+ */
+export function harnessInstructions(entryCommand: string, platform: NodeJS.Platform): string[] {
+  const snippet = mcpConfigSnippet(entryCommand)
+  const isMac = platform === 'darwin'
+  const lines: string[] = []
+
+  lines.push('Add the MCP server to your AI harness (pick the one you use):')
+  lines.push('')
+  lines.push('  OpenCode')
+  lines.push(
+    `    Config: ${isMac ? '~/.config/opencode/opencode.jsonc' : '%USERPROFILE%\\.config\\opencode\\opencode.jsonc'}`,
+  )
+  lines.push('    Add to the "mcp" section:')
+  lines.push(`      ${snippet.replaceAll('\n', '\n      ')}`)
+  lines.push('')
+  lines.push('  Claude Code')
+  lines.push('    Run:')
+  lines.push(`      claude mcp add office-live-mcp --scope user -- node "${entryCommand}"`)
+  lines.push('')
+  lines.push('  Claude Desktop')
+  lines.push(
+    `    Config: ${
+      isMac
+        ? '~/Library/Application Support/Claude/claude_desktop_config.json'
+        : '%APPDATA%\\Claude\\claude_desktop_config.json'
+    }`,
+  )
+  lines.push(`    ${snippet.replaceAll('\n', '\n    ')}`)
+  return lines
+}
+
 // ---------------------------------------------------------------------------
 // macOS setup
 // ---------------------------------------------------------------------------
@@ -395,13 +429,5 @@ export async function runSetup(): Promise<void> {
   }
 
   const entry = process.argv[1] ?? 'office-live-mcp'
-  console.log(
-    [
-      '',
-      '[setup] Connect your MCP client (Claude Code, OpenCode, Claude Desktop):',
-      mcpConfigSnippet(entry),
-      '',
-      '[setup] The bridge daemon starts automatically the first time a client connects.',
-    ].join('\n'),
-  )
+  console.log(['', ...harnessInstructions(entry, process.platform)].join('\n'))
 }

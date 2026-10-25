@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   catalogUncCandidates,
   ensureLocalhostCert,
+  harnessInstructions,
   isUncPath,
   MAC_APPS,
   manifestNameFor,
@@ -84,6 +85,24 @@ describe('ensureLocalhostCert', () => {
       delete process.env.BRIDGE_KEY_PATH
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+})
+
+describe('harnessInstructions', () => {
+  it('covers all three harnesses with the entry path filled in', () => {
+    const lines = harnessInstructions('/opt/office-live-mcp/dist/index.cjs', 'darwin')
+    const text = lines.join('\n')
+    expect(text).toContain('OpenCode')
+    expect(text).toContain('~/.config/opencode/opencode.jsonc')
+    expect(text).toContain('claude mcp add office-live-mcp --scope user -- node "/opt/office-live-mcp/dist/index.cjs"')
+    expect(text).toContain('Claude Desktop')
+    expect(text).toContain('~/Library/Application Support/Claude/claude_desktop_config.json')
+  })
+
+  it('uses Windows config locations on win32', () => {
+    const text = harnessInstructions('C:\\office-live-mcp\\dist\\index.cjs', 'win32').join('\n')
+    expect(text).toContain('%USERPROFILE%\\.config\\opencode\\opencode.jsonc')
+    expect(text).toContain('%APPDATA%\\Claude\\claude_desktop_config.json')
   })
 })
 

@@ -139,9 +139,10 @@ Write-Host @"
 
 [installer] Done. Two things left:
 
-  1. The bridge daemon starts automatically the first time an MCP client
-     (Claude Code, OpenCode, Claude Desktop) connects.
+  1. Add the MCP server to your harness (OpenCode, Claude Code or Claude
+     Desktop) - the exact steps and config snippets were printed by setup
+     just above.
   2. In PowerPoint / Word / Excel: Home -> Add-ins -> Advanced... ->
-     MY ORGANIZATION tab -> select "Office Live MCP" -> Add.
+     SHARED FOLDER tab -> select "Office Live MCP" -> Add.
 
 "@ -ForegroundColor Green
