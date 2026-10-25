@@ -77,9 +77,15 @@ if (-not $npm) {
 "@ -ForegroundColor Red
     exit 1
 }
-$nodeDir = Split-Path (Split-Path $npm)   # npm.cmd lives in <prefix>, node.exe next to it
+$nodeDir = Split-Path $npm                            # npm.cmd sits in the prefix root, next to node.exe
 $node = Join-Path $nodeDir 'node.exe'
-if (-not (Test-Path $node)) { $node = (Get-Command node -ErrorAction SilentlyContinue).Source }
+if (-not (Test-Path $node)) {
+    $node = (Get-Command node -ErrorAction SilentlyContinue).Source
+}
+if (-not $node -or -not (Test-Path $node)) {
+    Write-Host "[installer] Found npm at $npm but no node.exe next to it or on PATH." -ForegroundColor Red
+    exit 1
+}
 Write-Step "Node/npm found: $npm"
 
 # ---------------------------------------------------------------------------
