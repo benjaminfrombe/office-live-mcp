@@ -33,11 +33,19 @@ There is a second advantage that matters just as much. Everything here runs loca
 
 ## Quick start
 
+**macOS / Linux:**
+
 ```bash
 npm install -g office-live-mcp
 
 # install the add-in into the Office apps + print your MCP client config
 office-live-mcp setup
+```
+
+**Windows** — one line in PowerShell (finds/installs Node, installs the package, runs setup):
+
+```powershell
+irm https://raw.githubusercontent.com/benjaminfrombe/office-live-mcp/main/install.ps1 | iex
 ```
 
 `setup` is idempotent — run it again any time. On macOS it sideloads the manifest into each installed Office app (needs Full Disk Access for your terminal; it tells you if macOS blocks it). Then open a document, click the add-in button in the Home ribbon, and connect your MCP client with the printed config. **No bridge to start manually.**
@@ -139,7 +147,7 @@ Then restart the Office apps. Without this step, just ignore the placeholder ico
 
 ## Windows installation
 
-Verified on Windows 11 (ARM64, Office Insider 16.0.20430) in a Parallels VM. Recent Windows Office builds reject the old sideload shortcuts (Developer-registry manifests only load under a debugger, the new "Apps" storefront never queries custom catalogs, and neither the classic nor the new dialog offers an "Upload My Add-in" option), so the supported route is a **shared folder catalog**. `setup` automates all of it:
+Verified on Windows 11 (ARM64, Office Insider 16.0.20430) in a Parallels VM. Recent Windows Office builds reject the old sideload shortcuts (Developer-registry manifests only load under a debugger, the new "Apps" storefront never queries custom catalogs, and neither the classic nor the new dialog offers an "Upload My Add-in" option), so the supported route is a **shared folder catalog**. The one-liner above does everything; `setup` automates all of it:
 
 ```bat
 office-live-mcp setup
