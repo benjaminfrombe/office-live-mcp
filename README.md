@@ -39,13 +39,13 @@ cd office-live-mcp
 npm install
 npm run build
 
-# install the add-in into the Office apps (needs Full Disk Access for the terminal)
-node --experimental-strip-types scripts/sideload.ts                # PowerPoint
-node --experimental-strip-types scripts/sideload.ts --app word     # Word
-node --experimental-strip-types scripts/sideload.ts --app excel    # Excel
+# install the add-in into the Office apps + print your MCP client config
+node dist/index.cjs setup
 ```
 
-Then open a document in any of the three apps, click the add-in button in the Home ribbon, and point your MCP client at the server (below) — **no bridge to start manually**.
+`setup` is idempotent — run it again any time. On macOS it sideloads the manifest into each installed Office app (needs Full Disk Access for your terminal; it tells you if macOS blocks it). Then open a document, click the add-in button in the Home ribbon, and connect your MCP client with the printed config. **No bridge to start manually.**
+
+> With an npm install (`npm i -g office-live-mcp`) the same command is just `office-live-mcp setup`.
 
 ## Connecting an MCP client
 
@@ -90,24 +90,25 @@ Then restart the Office apps. Without this step, just ignore the placeholder ico
 
 ## Windows installation
 
-Verified on Windows 11 (ARM64, Office Insider 16.0.20430) in a Parallels VM. Recent Windows Office builds reject the old sideload shortcuts (Developer-registry manifests only load under a debugger, the new "Apps" storefront never queries custom catalogs), so the supported route is the classic add-in dialog with a **shared folder catalog**:
+Verified on Windows 11 (ARM64, Office Insider 16.0.20430) in a Parallels VM. Recent Windows Office builds reject the old sideload shortcuts (Developer-registry manifests only load under a debugger, the new "Apps" storefront never queries custom catalogs, and neither the classic nor the new dialog offers an "Upload My Add-in" option), so the supported route is a **shared folder catalog**. `setup` automates all of it:
 
-1. Copy `dist/index.cjs` and `addin/` to the Windows machine (e.g. `C:\o365-bridge`). You do **not** need to start anything: the first MCP client connect starts the daemon automatically (same stdio setup as above, with Windows paths). To run it standalone instead: `node C:\o365-bridge\dist\index.cjs --http --bridge` — taskpane on `http://localhost:8080`, MCP on `http://localhost:3001/mcp`.
+```bat
+node C:\path\to\office-live-mcp\dist\index.cjs setup
+```
 
-2. Publish the `addin/` folder as a network share (UNC path) that the Windows user can list — a native SMB share, or on a VM the host's shared folder (e.g. `\\Mac\Home\office-live-mcp\addin` under Parallels).
+What it does:
 
-3. Trust that folder as an add-in catalog (per user, one-time):
+1. Copies `dist/` and `addin/` to `%LOCALAPPDATA%\office-live-mcp`.
+2. Finds a reachable UNC path for the add-in catalog (in order): `OLM_CATALOG_UNC` env override → the Parallels host share when running from `\\Mac\Home\...` → a dedicated `OfficeLiveMCP` share (creates it if your terminal is elevated) → the default admin share (`\\localhost\C$`). Office only trusts network paths for custom add-ins — that is a Microsoft requirement, not ours.
+3. Registers that path as a trusted add-in catalog in the registry (HKCU, no elevation needed).
 
-   ```bat
-   reg add HKCU\Software\Microsoft\Office\16.0\Wef\TrustedCatalogs\{7E3F2A11-93C4-4B5D-8E6F-1A2B3C4D5E6F} /v Id   /t REG_SZ   /d {7E3F2A11-93C4-4B5D-8E6F-1A2B3C4D5E6F} /f
-   reg add HKCU\Software\Microsoft\Office\16.0\Wef\TrustedCatalogs\{7E3F2A11-93C4-4B5D-8E6F-1A2B3C4D5E6F} /v Url  /t REG_SZ   /d \\host\share\addin /f
-   reg add HKCU\Software\Microsoft\Office\16.0\Wef\TrustedCatalogs\{7E3F2A11-93C4-4B5D-8E6F-1A2B3C4D5E6F} /v Flags /t REG_DWORD /d 1 /f
-   ```
+Then the one step no installer can do, because Office requires it:
 
-4. Restart the Office app, then: **Home → Add-ins → Advanced...** → **SHARED FOLDER** tab → select *Office Live MCP* → **Add**. The taskpane opens and connects to the bridge over `ws://localhost:8080`. The daemon's environment file lives at `%USERPROFILE%\.office-live-mcp\daemon.env`, its log at `%USERPROFILE%\.office-live-mcp\daemon.log`.
+4. **Close and reopen the Office app** → **Home → Add-ins → Advanced...** → **SHARED FOLDER** tab → select *Office Live MCP* → **Add**.
 
 Notes:
 
+- The daemon's environment file lives at `%USERPROFILE%\.office-live-mcp\daemon.env`, its log at `%USERPROFILE%\.office-live-mcp\daemon.log`.
 - Use `manifest.xml` for PowerPoint, `manifest.word.xml` for Word, `manifest.excel.xml` for Excel. All point the taskpane at `http://localhost:8080`.
 - As on macOS, the ribbon icon stays a placeholder unless the bridge runs over HTTPS (see "Optional: the ribbon icon" above) and the manifests point at `https://localhost:8443`.
 - If a build refuses plain-HTTP catalogs, the bridge can also emulate a SharePoint-style HTTPS catalog (`server/sharepoint-catalog.ts`, enabled with `BRIDGE_TLS=1`): Office enumerates `https://<host>:8443` as a corporate catalog and the same manifests are served from there.

@@ -5,6 +5,9 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
@@ -28,6 +31,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // node_modules/ajv/dist/compile/codegen/code.js
 var require_code = __commonJS({
@@ -2980,7 +2984,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve3.call(this, root, ref);
+      let _sch = resolve4.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a2 = root.localRefs) === null || _a2 === void 0 ? void 0 : _a2[ref];
         const { schemaId } = this.opts;
@@ -3007,7 +3011,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve3(root, ref) {
+    function resolve4(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3871,7 +3875,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve3(baseURI, relativeURI, options) {
+    function resolve4(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const {
         parsed: baseParsed,
@@ -4262,7 +4266,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve3,
+      resolve: resolve4,
       resolveComponent,
       equal,
       serialize,
@@ -11034,6 +11038,19560 @@ var require_websocket_server = __commonJS({
   }
 });
 
+// node_modules/reflect-metadata/Reflect.js
+var require_Reflect = __commonJS({
+  "node_modules/reflect-metadata/Reflect.js"() {
+    var Reflect2;
+    (function(Reflect3) {
+      (function(factory) {
+        var root = typeof globalThis === "object" ? globalThis : typeof global === "object" ? global : typeof self === "object" ? self : typeof this === "object" ? this : sloppyModeThis();
+        var exporter = makeExporter(Reflect3);
+        if (typeof root.Reflect !== "undefined") {
+          exporter = makeExporter(root.Reflect, exporter);
+        }
+        factory(exporter, root);
+        if (typeof root.Reflect === "undefined") {
+          root.Reflect = Reflect3;
+        }
+        function makeExporter(target, previous) {
+          return function(key, value) {
+            Object.defineProperty(target, key, { configurable: true, writable: true, value });
+            if (previous)
+              previous(key, value);
+          };
+        }
+        function functionThis() {
+          try {
+            return Function("return this;")();
+          } catch (_) {
+          }
+        }
+        function indirectEvalThis() {
+          try {
+            return (void 0, eval)("(function() { return this; })()");
+          } catch (_) {
+          }
+        }
+        function sloppyModeThis() {
+          return functionThis() || indirectEvalThis();
+        }
+      })(function(exporter, root) {
+        var hasOwn = Object.prototype.hasOwnProperty;
+        var supportsSymbol = typeof Symbol === "function";
+        var toPrimitiveSymbol = supportsSymbol && typeof Symbol.toPrimitive !== "undefined" ? Symbol.toPrimitive : "@@toPrimitive";
+        var iteratorSymbol = supportsSymbol && typeof Symbol.iterator !== "undefined" ? Symbol.iterator : "@@iterator";
+        var supportsCreate = typeof Object.create === "function";
+        var supportsProto = { __proto__: [] } instanceof Array;
+        var downLevel = !supportsCreate && !supportsProto;
+        var HashMap = {
+          // create an object in dictionary mode (a.k.a. "slow" mode in v8)
+          create: supportsCreate ? function() {
+            return MakeDictionary(/* @__PURE__ */ Object.create(null));
+          } : supportsProto ? function() {
+            return MakeDictionary({ __proto__: null });
+          } : function() {
+            return MakeDictionary({});
+          },
+          has: downLevel ? function(map2, key) {
+            return hasOwn.call(map2, key);
+          } : function(map2, key) {
+            return key in map2;
+          },
+          get: downLevel ? function(map2, key) {
+            return hasOwn.call(map2, key) ? map2[key] : void 0;
+          } : function(map2, key) {
+            return map2[key];
+          }
+        };
+        var functionPrototype = Object.getPrototypeOf(Function);
+        var _Map = typeof Map === "function" && typeof Map.prototype.entries === "function" ? Map : CreateMapPolyfill();
+        var _Set = typeof Set === "function" && typeof Set.prototype.entries === "function" ? Set : CreateSetPolyfill();
+        var _WeakMap = typeof WeakMap === "function" ? WeakMap : CreateWeakMapPolyfill();
+        var registrySymbol = supportsSymbol ? /* @__PURE__ */ Symbol.for("@reflect-metadata:registry") : void 0;
+        var metadataRegistry = GetOrCreateMetadataRegistry();
+        var metadataProvider = CreateMetadataProvider(metadataRegistry);
+        function decorate(decorators, target, propertyKey, attributes) {
+          if (!IsUndefined(propertyKey)) {
+            if (!IsArray(decorators))
+              throw new TypeError();
+            if (!IsObject(target))
+              throw new TypeError();
+            if (!IsObject(attributes) && !IsUndefined(attributes) && !IsNull(attributes))
+              throw new TypeError();
+            if (IsNull(attributes))
+              attributes = void 0;
+            propertyKey = ToPropertyKey(propertyKey);
+            return DecorateProperty(decorators, target, propertyKey, attributes);
+          } else {
+            if (!IsArray(decorators))
+              throw new TypeError();
+            if (!IsConstructor(target))
+              throw new TypeError();
+            return DecorateConstructor(decorators, target);
+          }
+        }
+        exporter("decorate", decorate);
+        function metadata(metadataKey, metadataValue) {
+          function decorator(target, propertyKey) {
+            if (!IsObject(target))
+              throw new TypeError();
+            if (!IsUndefined(propertyKey) && !IsPropertyKey(propertyKey))
+              throw new TypeError();
+            OrdinaryDefineOwnMetadata(metadataKey, metadataValue, target, propertyKey);
+          }
+          return decorator;
+        }
+        exporter("metadata", metadata);
+        function defineMetadata(metadataKey, metadataValue, target, propertyKey) {
+          if (!IsObject(target))
+            throw new TypeError();
+          if (!IsUndefined(propertyKey))
+            propertyKey = ToPropertyKey(propertyKey);
+          return OrdinaryDefineOwnMetadata(metadataKey, metadataValue, target, propertyKey);
+        }
+        exporter("defineMetadata", defineMetadata);
+        function hasMetadata(metadataKey, target, propertyKey) {
+          if (!IsObject(target))
+            throw new TypeError();
+          if (!IsUndefined(propertyKey))
+            propertyKey = ToPropertyKey(propertyKey);
+          return OrdinaryHasMetadata(metadataKey, target, propertyKey);
+        }
+        exporter("hasMetadata", hasMetadata);
+        function hasOwnMetadata(metadataKey, target, propertyKey) {
+          if (!IsObject(target))
+            throw new TypeError();
+          if (!IsUndefined(propertyKey))
+            propertyKey = ToPropertyKey(propertyKey);
+          return OrdinaryHasOwnMetadata(metadataKey, target, propertyKey);
+        }
+        exporter("hasOwnMetadata", hasOwnMetadata);
+        function getMetadata(metadataKey, target, propertyKey) {
+          if (!IsObject(target))
+            throw new TypeError();
+          if (!IsUndefined(propertyKey))
+            propertyKey = ToPropertyKey(propertyKey);
+          return OrdinaryGetMetadata(metadataKey, target, propertyKey);
+        }
+        exporter("getMetadata", getMetadata);
+        function getOwnMetadata(metadataKey, target, propertyKey) {
+          if (!IsObject(target))
+            throw new TypeError();
+          if (!IsUndefined(propertyKey))
+            propertyKey = ToPropertyKey(propertyKey);
+          return OrdinaryGetOwnMetadata(metadataKey, target, propertyKey);
+        }
+        exporter("getOwnMetadata", getOwnMetadata);
+        function getMetadataKeys(target, propertyKey) {
+          if (!IsObject(target))
+            throw new TypeError();
+          if (!IsUndefined(propertyKey))
+            propertyKey = ToPropertyKey(propertyKey);
+          return OrdinaryMetadataKeys(target, propertyKey);
+        }
+        exporter("getMetadataKeys", getMetadataKeys);
+        function getOwnMetadataKeys(target, propertyKey) {
+          if (!IsObject(target))
+            throw new TypeError();
+          if (!IsUndefined(propertyKey))
+            propertyKey = ToPropertyKey(propertyKey);
+          return OrdinaryOwnMetadataKeys(target, propertyKey);
+        }
+        exporter("getOwnMetadataKeys", getOwnMetadataKeys);
+        function deleteMetadata(metadataKey, target, propertyKey) {
+          if (!IsObject(target))
+            throw new TypeError();
+          if (!IsUndefined(propertyKey))
+            propertyKey = ToPropertyKey(propertyKey);
+          if (!IsObject(target))
+            throw new TypeError();
+          if (!IsUndefined(propertyKey))
+            propertyKey = ToPropertyKey(propertyKey);
+          var provider = GetMetadataProvider(
+            target,
+            propertyKey,
+            /*Create*/
+            false
+          );
+          if (IsUndefined(provider))
+            return false;
+          return provider.OrdinaryDeleteMetadata(metadataKey, target, propertyKey);
+        }
+        exporter("deleteMetadata", deleteMetadata);
+        function DecorateConstructor(decorators, target) {
+          for (var i = decorators.length - 1; i >= 0; --i) {
+            var decorator = decorators[i];
+            var decorated = decorator(target);
+            if (!IsUndefined(decorated) && !IsNull(decorated)) {
+              if (!IsConstructor(decorated))
+                throw new TypeError();
+              target = decorated;
+            }
+          }
+          return target;
+        }
+        function DecorateProperty(decorators, target, propertyKey, descriptor) {
+          for (var i = decorators.length - 1; i >= 0; --i) {
+            var decorator = decorators[i];
+            var decorated = decorator(target, propertyKey, descriptor);
+            if (!IsUndefined(decorated) && !IsNull(decorated)) {
+              if (!IsObject(decorated))
+                throw new TypeError();
+              descriptor = decorated;
+            }
+          }
+          return descriptor;
+        }
+        function OrdinaryHasMetadata(MetadataKey, O, P) {
+          var hasOwn2 = OrdinaryHasOwnMetadata(MetadataKey, O, P);
+          if (hasOwn2)
+            return true;
+          var parent = OrdinaryGetPrototypeOf(O);
+          if (!IsNull(parent))
+            return OrdinaryHasMetadata(MetadataKey, parent, P);
+          return false;
+        }
+        function OrdinaryHasOwnMetadata(MetadataKey, O, P) {
+          var provider = GetMetadataProvider(
+            O,
+            P,
+            /*Create*/
+            false
+          );
+          if (IsUndefined(provider))
+            return false;
+          return ToBoolean(provider.OrdinaryHasOwnMetadata(MetadataKey, O, P));
+        }
+        function OrdinaryGetMetadata(MetadataKey, O, P) {
+          var hasOwn2 = OrdinaryHasOwnMetadata(MetadataKey, O, P);
+          if (hasOwn2)
+            return OrdinaryGetOwnMetadata(MetadataKey, O, P);
+          var parent = OrdinaryGetPrototypeOf(O);
+          if (!IsNull(parent))
+            return OrdinaryGetMetadata(MetadataKey, parent, P);
+          return void 0;
+        }
+        function OrdinaryGetOwnMetadata(MetadataKey, O, P) {
+          var provider = GetMetadataProvider(
+            O,
+            P,
+            /*Create*/
+            false
+          );
+          if (IsUndefined(provider))
+            return;
+          return provider.OrdinaryGetOwnMetadata(MetadataKey, O, P);
+        }
+        function OrdinaryDefineOwnMetadata(MetadataKey, MetadataValue, O, P) {
+          var provider = GetMetadataProvider(
+            O,
+            P,
+            /*Create*/
+            true
+          );
+          provider.OrdinaryDefineOwnMetadata(MetadataKey, MetadataValue, O, P);
+        }
+        function OrdinaryMetadataKeys(O, P) {
+          var ownKeys2 = OrdinaryOwnMetadataKeys(O, P);
+          var parent = OrdinaryGetPrototypeOf(O);
+          if (parent === null)
+            return ownKeys2;
+          var parentKeys = OrdinaryMetadataKeys(parent, P);
+          if (parentKeys.length <= 0)
+            return ownKeys2;
+          if (ownKeys2.length <= 0)
+            return parentKeys;
+          var set2 = new _Set();
+          var keys = [];
+          for (var _i = 0, ownKeys_1 = ownKeys2; _i < ownKeys_1.length; _i++) {
+            var key = ownKeys_1[_i];
+            var hasKey = set2.has(key);
+            if (!hasKey) {
+              set2.add(key);
+              keys.push(key);
+            }
+          }
+          for (var _a2 = 0, parentKeys_1 = parentKeys; _a2 < parentKeys_1.length; _a2++) {
+            var key = parentKeys_1[_a2];
+            var hasKey = set2.has(key);
+            if (!hasKey) {
+              set2.add(key);
+              keys.push(key);
+            }
+          }
+          return keys;
+        }
+        function OrdinaryOwnMetadataKeys(O, P) {
+          var provider = GetMetadataProvider(
+            O,
+            P,
+            /*create*/
+            false
+          );
+          if (!provider) {
+            return [];
+          }
+          return provider.OrdinaryOwnMetadataKeys(O, P);
+        }
+        function Type(x) {
+          if (x === null)
+            return 1;
+          switch (typeof x) {
+            case "undefined":
+              return 0;
+            case "boolean":
+              return 2;
+            case "string":
+              return 3;
+            case "symbol":
+              return 4;
+            case "number":
+              return 5;
+            case "object":
+              return x === null ? 1 : 6;
+            default:
+              return 6;
+          }
+        }
+        function IsUndefined(x) {
+          return x === void 0;
+        }
+        function IsNull(x) {
+          return x === null;
+        }
+        function IsSymbol(x) {
+          return typeof x === "symbol";
+        }
+        function IsObject(x) {
+          return typeof x === "object" ? x !== null : typeof x === "function";
+        }
+        function ToPrimitive(input, PreferredType) {
+          switch (Type(input)) {
+            case 0:
+              return input;
+            case 1:
+              return input;
+            case 2:
+              return input;
+            case 3:
+              return input;
+            case 4:
+              return input;
+            case 5:
+              return input;
+          }
+          var hint = PreferredType === 3 ? "string" : PreferredType === 5 ? "number" : "default";
+          var exoticToPrim = GetMethod(input, toPrimitiveSymbol);
+          if (exoticToPrim !== void 0) {
+            var result = exoticToPrim.call(input, hint);
+            if (IsObject(result))
+              throw new TypeError();
+            return result;
+          }
+          return OrdinaryToPrimitive(input, hint === "default" ? "number" : hint);
+        }
+        function OrdinaryToPrimitive(O, hint) {
+          if (hint === "string") {
+            var toString_1 = O.toString;
+            if (IsCallable(toString_1)) {
+              var result = toString_1.call(O);
+              if (!IsObject(result))
+                return result;
+            }
+            var valueOf = O.valueOf;
+            if (IsCallable(valueOf)) {
+              var result = valueOf.call(O);
+              if (!IsObject(result))
+                return result;
+            }
+          } else {
+            var valueOf = O.valueOf;
+            if (IsCallable(valueOf)) {
+              var result = valueOf.call(O);
+              if (!IsObject(result))
+                return result;
+            }
+            var toString_2 = O.toString;
+            if (IsCallable(toString_2)) {
+              var result = toString_2.call(O);
+              if (!IsObject(result))
+                return result;
+            }
+          }
+          throw new TypeError();
+        }
+        function ToBoolean(argument) {
+          return !!argument;
+        }
+        function ToString(argument) {
+          return "" + argument;
+        }
+        function ToPropertyKey(argument) {
+          var key = ToPrimitive(
+            argument,
+            3
+            /* String */
+          );
+          if (IsSymbol(key))
+            return key;
+          return ToString(key);
+        }
+        function IsArray(argument) {
+          return Array.isArray ? Array.isArray(argument) : argument instanceof Object ? argument instanceof Array : Object.prototype.toString.call(argument) === "[object Array]";
+        }
+        function IsCallable(argument) {
+          return typeof argument === "function";
+        }
+        function IsConstructor(argument) {
+          return typeof argument === "function";
+        }
+        function IsPropertyKey(argument) {
+          switch (Type(argument)) {
+            case 3:
+              return true;
+            case 4:
+              return true;
+            default:
+              return false;
+          }
+        }
+        function SameValueZero(x, y) {
+          return x === y || x !== x && y !== y;
+        }
+        function GetMethod(V, P) {
+          var func = V[P];
+          if (func === void 0 || func === null)
+            return void 0;
+          if (!IsCallable(func))
+            throw new TypeError();
+          return func;
+        }
+        function GetIterator(obj) {
+          var method = GetMethod(obj, iteratorSymbol);
+          if (!IsCallable(method))
+            throw new TypeError();
+          var iterator = method.call(obj);
+          if (!IsObject(iterator))
+            throw new TypeError();
+          return iterator;
+        }
+        function IteratorValue(iterResult) {
+          return iterResult.value;
+        }
+        function IteratorStep(iterator) {
+          var result = iterator.next();
+          return result.done ? false : result;
+        }
+        function IteratorClose(iterator) {
+          var f = iterator["return"];
+          if (f)
+            f.call(iterator);
+        }
+        function OrdinaryGetPrototypeOf(O) {
+          var proto = Object.getPrototypeOf(O);
+          if (typeof O !== "function" || O === functionPrototype)
+            return proto;
+          if (proto !== functionPrototype)
+            return proto;
+          var prototype = O.prototype;
+          var prototypeProto = prototype && Object.getPrototypeOf(prototype);
+          if (prototypeProto == null || prototypeProto === Object.prototype)
+            return proto;
+          var constructor = prototypeProto.constructor;
+          if (typeof constructor !== "function")
+            return proto;
+          if (constructor === O)
+            return proto;
+          return constructor;
+        }
+        function CreateMetadataRegistry() {
+          var fallback;
+          if (!IsUndefined(registrySymbol) && typeof root.Reflect !== "undefined" && !(registrySymbol in root.Reflect) && typeof root.Reflect.defineMetadata === "function") {
+            fallback = CreateFallbackProvider(root.Reflect);
+          }
+          var first;
+          var second;
+          var rest;
+          var targetProviderMap = new _WeakMap();
+          var registry2 = {
+            registerProvider,
+            getProvider,
+            setProvider
+          };
+          return registry2;
+          function registerProvider(provider) {
+            if (!Object.isExtensible(registry2)) {
+              throw new Error("Cannot add provider to a frozen registry.");
+            }
+            switch (true) {
+              case fallback === provider:
+                break;
+              case IsUndefined(first):
+                first = provider;
+                break;
+              case first === provider:
+                break;
+              case IsUndefined(second):
+                second = provider;
+                break;
+              case second === provider:
+                break;
+              default:
+                if (rest === void 0)
+                  rest = new _Set();
+                rest.add(provider);
+                break;
+            }
+          }
+          function getProviderNoCache(O, P) {
+            if (!IsUndefined(first)) {
+              if (first.isProviderFor(O, P))
+                return first;
+              if (!IsUndefined(second)) {
+                if (second.isProviderFor(O, P))
+                  return first;
+                if (!IsUndefined(rest)) {
+                  var iterator = GetIterator(rest);
+                  while (true) {
+                    var next = IteratorStep(iterator);
+                    if (!next) {
+                      return void 0;
+                    }
+                    var provider = IteratorValue(next);
+                    if (provider.isProviderFor(O, P)) {
+                      IteratorClose(iterator);
+                      return provider;
+                    }
+                  }
+                }
+              }
+            }
+            if (!IsUndefined(fallback) && fallback.isProviderFor(O, P)) {
+              return fallback;
+            }
+            return void 0;
+          }
+          function getProvider(O, P) {
+            var providerMap = targetProviderMap.get(O);
+            var provider;
+            if (!IsUndefined(providerMap)) {
+              provider = providerMap.get(P);
+            }
+            if (!IsUndefined(provider)) {
+              return provider;
+            }
+            provider = getProviderNoCache(O, P);
+            if (!IsUndefined(provider)) {
+              if (IsUndefined(providerMap)) {
+                providerMap = new _Map();
+                targetProviderMap.set(O, providerMap);
+              }
+              providerMap.set(P, provider);
+            }
+            return provider;
+          }
+          function hasProvider(provider) {
+            if (IsUndefined(provider))
+              throw new TypeError();
+            return first === provider || second === provider || !IsUndefined(rest) && rest.has(provider);
+          }
+          function setProvider(O, P, provider) {
+            if (!hasProvider(provider)) {
+              throw new Error("Metadata provider not registered.");
+            }
+            var existingProvider = getProvider(O, P);
+            if (existingProvider !== provider) {
+              if (!IsUndefined(existingProvider)) {
+                return false;
+              }
+              var providerMap = targetProviderMap.get(O);
+              if (IsUndefined(providerMap)) {
+                providerMap = new _Map();
+                targetProviderMap.set(O, providerMap);
+              }
+              providerMap.set(P, provider);
+            }
+            return true;
+          }
+        }
+        function GetOrCreateMetadataRegistry() {
+          var metadataRegistry2;
+          if (!IsUndefined(registrySymbol) && IsObject(root.Reflect) && Object.isExtensible(root.Reflect)) {
+            metadataRegistry2 = root.Reflect[registrySymbol];
+          }
+          if (IsUndefined(metadataRegistry2)) {
+            metadataRegistry2 = CreateMetadataRegistry();
+          }
+          if (!IsUndefined(registrySymbol) && IsObject(root.Reflect) && Object.isExtensible(root.Reflect)) {
+            Object.defineProperty(root.Reflect, registrySymbol, {
+              enumerable: false,
+              configurable: false,
+              writable: false,
+              value: metadataRegistry2
+            });
+          }
+          return metadataRegistry2;
+        }
+        function CreateMetadataProvider(registry2) {
+          var metadata2 = new _WeakMap();
+          var provider = {
+            isProviderFor: function(O, P) {
+              var targetMetadata = metadata2.get(O);
+              if (IsUndefined(targetMetadata))
+                return false;
+              return targetMetadata.has(P);
+            },
+            OrdinaryDefineOwnMetadata: OrdinaryDefineOwnMetadata2,
+            OrdinaryHasOwnMetadata: OrdinaryHasOwnMetadata2,
+            OrdinaryGetOwnMetadata: OrdinaryGetOwnMetadata2,
+            OrdinaryOwnMetadataKeys: OrdinaryOwnMetadataKeys2,
+            OrdinaryDeleteMetadata
+          };
+          metadataRegistry.registerProvider(provider);
+          return provider;
+          function GetOrCreateMetadataMap(O, P, Create) {
+            var targetMetadata = metadata2.get(O);
+            var createdTargetMetadata = false;
+            if (IsUndefined(targetMetadata)) {
+              if (!Create)
+                return void 0;
+              targetMetadata = new _Map();
+              metadata2.set(O, targetMetadata);
+              createdTargetMetadata = true;
+            }
+            var metadataMap = targetMetadata.get(P);
+            if (IsUndefined(metadataMap)) {
+              if (!Create)
+                return void 0;
+              metadataMap = new _Map();
+              targetMetadata.set(P, metadataMap);
+              if (!registry2.setProvider(O, P, provider)) {
+                targetMetadata.delete(P);
+                if (createdTargetMetadata) {
+                  metadata2.delete(O);
+                }
+                throw new Error("Wrong provider for target.");
+              }
+            }
+            return metadataMap;
+          }
+          function OrdinaryHasOwnMetadata2(MetadataKey, O, P) {
+            var metadataMap = GetOrCreateMetadataMap(
+              O,
+              P,
+              /*Create*/
+              false
+            );
+            if (IsUndefined(metadataMap))
+              return false;
+            return ToBoolean(metadataMap.has(MetadataKey));
+          }
+          function OrdinaryGetOwnMetadata2(MetadataKey, O, P) {
+            var metadataMap = GetOrCreateMetadataMap(
+              O,
+              P,
+              /*Create*/
+              false
+            );
+            if (IsUndefined(metadataMap))
+              return void 0;
+            return metadataMap.get(MetadataKey);
+          }
+          function OrdinaryDefineOwnMetadata2(MetadataKey, MetadataValue, O, P) {
+            var metadataMap = GetOrCreateMetadataMap(
+              O,
+              P,
+              /*Create*/
+              true
+            );
+            metadataMap.set(MetadataKey, MetadataValue);
+          }
+          function OrdinaryOwnMetadataKeys2(O, P) {
+            var keys = [];
+            var metadataMap = GetOrCreateMetadataMap(
+              O,
+              P,
+              /*Create*/
+              false
+            );
+            if (IsUndefined(metadataMap))
+              return keys;
+            var keysObj = metadataMap.keys();
+            var iterator = GetIterator(keysObj);
+            var k = 0;
+            while (true) {
+              var next = IteratorStep(iterator);
+              if (!next) {
+                keys.length = k;
+                return keys;
+              }
+              var nextValue = IteratorValue(next);
+              try {
+                keys[k] = nextValue;
+              } catch (e) {
+                try {
+                  IteratorClose(iterator);
+                } finally {
+                  throw e;
+                }
+              }
+              k++;
+            }
+          }
+          function OrdinaryDeleteMetadata(MetadataKey, O, P) {
+            var metadataMap = GetOrCreateMetadataMap(
+              O,
+              P,
+              /*Create*/
+              false
+            );
+            if (IsUndefined(metadataMap))
+              return false;
+            if (!metadataMap.delete(MetadataKey))
+              return false;
+            if (metadataMap.size === 0) {
+              var targetMetadata = metadata2.get(O);
+              if (!IsUndefined(targetMetadata)) {
+                targetMetadata.delete(P);
+                if (targetMetadata.size === 0) {
+                  metadata2.delete(targetMetadata);
+                }
+              }
+            }
+            return true;
+          }
+        }
+        function CreateFallbackProvider(reflect) {
+          var defineMetadata2 = reflect.defineMetadata, hasOwnMetadata2 = reflect.hasOwnMetadata, getOwnMetadata2 = reflect.getOwnMetadata, getOwnMetadataKeys2 = reflect.getOwnMetadataKeys, deleteMetadata2 = reflect.deleteMetadata;
+          var metadataOwner = new _WeakMap();
+          var provider = {
+            isProviderFor: function(O, P) {
+              var metadataPropertySet = metadataOwner.get(O);
+              if (!IsUndefined(metadataPropertySet) && metadataPropertySet.has(P)) {
+                return true;
+              }
+              if (getOwnMetadataKeys2(O, P).length) {
+                if (IsUndefined(metadataPropertySet)) {
+                  metadataPropertySet = new _Set();
+                  metadataOwner.set(O, metadataPropertySet);
+                }
+                metadataPropertySet.add(P);
+                return true;
+              }
+              return false;
+            },
+            OrdinaryDefineOwnMetadata: defineMetadata2,
+            OrdinaryHasOwnMetadata: hasOwnMetadata2,
+            OrdinaryGetOwnMetadata: getOwnMetadata2,
+            OrdinaryOwnMetadataKeys: getOwnMetadataKeys2,
+            OrdinaryDeleteMetadata: deleteMetadata2
+          };
+          return provider;
+        }
+        function GetMetadataProvider(O, P, Create) {
+          var registeredProvider = metadataRegistry.getProvider(O, P);
+          if (!IsUndefined(registeredProvider)) {
+            return registeredProvider;
+          }
+          if (Create) {
+            if (metadataRegistry.setProvider(O, P, metadataProvider)) {
+              return metadataProvider;
+            }
+            throw new Error("Illegal state.");
+          }
+          return void 0;
+        }
+        function CreateMapPolyfill() {
+          var cacheSentinel = {};
+          var arraySentinel = [];
+          var MapIterator = (
+            /** @class */
+            (function() {
+              function MapIterator2(keys, values, selector) {
+                this._index = 0;
+                this._keys = keys;
+                this._values = values;
+                this._selector = selector;
+              }
+              MapIterator2.prototype["@@iterator"] = function() {
+                return this;
+              };
+              MapIterator2.prototype[iteratorSymbol] = function() {
+                return this;
+              };
+              MapIterator2.prototype.next = function() {
+                var index = this._index;
+                if (index >= 0 && index < this._keys.length) {
+                  var result = this._selector(this._keys[index], this._values[index]);
+                  if (index + 1 >= this._keys.length) {
+                    this._index = -1;
+                    this._keys = arraySentinel;
+                    this._values = arraySentinel;
+                  } else {
+                    this._index++;
+                  }
+                  return { value: result, done: false };
+                }
+                return { value: void 0, done: true };
+              };
+              MapIterator2.prototype.throw = function(error48) {
+                if (this._index >= 0) {
+                  this._index = -1;
+                  this._keys = arraySentinel;
+                  this._values = arraySentinel;
+                }
+                throw error48;
+              };
+              MapIterator2.prototype.return = function(value) {
+                if (this._index >= 0) {
+                  this._index = -1;
+                  this._keys = arraySentinel;
+                  this._values = arraySentinel;
+                }
+                return { value, done: true };
+              };
+              return MapIterator2;
+            })()
+          );
+          var Map2 = (
+            /** @class */
+            (function() {
+              function Map3() {
+                this._keys = [];
+                this._values = [];
+                this._cacheKey = cacheSentinel;
+                this._cacheIndex = -2;
+              }
+              Object.defineProperty(Map3.prototype, "size", {
+                get: function() {
+                  return this._keys.length;
+                },
+                enumerable: true,
+                configurable: true
+              });
+              Map3.prototype.has = function(key) {
+                return this._find(
+                  key,
+                  /*insert*/
+                  false
+                ) >= 0;
+              };
+              Map3.prototype.get = function(key) {
+                var index = this._find(
+                  key,
+                  /*insert*/
+                  false
+                );
+                return index >= 0 ? this._values[index] : void 0;
+              };
+              Map3.prototype.set = function(key, value) {
+                var index = this._find(
+                  key,
+                  /*insert*/
+                  true
+                );
+                this._values[index] = value;
+                return this;
+              };
+              Map3.prototype.delete = function(key) {
+                var index = this._find(
+                  key,
+                  /*insert*/
+                  false
+                );
+                if (index >= 0) {
+                  var size = this._keys.length;
+                  for (var i = index + 1; i < size; i++) {
+                    this._keys[i - 1] = this._keys[i];
+                    this._values[i - 1] = this._values[i];
+                  }
+                  this._keys.length--;
+                  this._values.length--;
+                  if (SameValueZero(key, this._cacheKey)) {
+                    this._cacheKey = cacheSentinel;
+                    this._cacheIndex = -2;
+                  }
+                  return true;
+                }
+                return false;
+              };
+              Map3.prototype.clear = function() {
+                this._keys.length = 0;
+                this._values.length = 0;
+                this._cacheKey = cacheSentinel;
+                this._cacheIndex = -2;
+              };
+              Map3.prototype.keys = function() {
+                return new MapIterator(this._keys, this._values, getKey);
+              };
+              Map3.prototype.values = function() {
+                return new MapIterator(this._keys, this._values, getValue);
+              };
+              Map3.prototype.entries = function() {
+                return new MapIterator(this._keys, this._values, getEntry);
+              };
+              Map3.prototype["@@iterator"] = function() {
+                return this.entries();
+              };
+              Map3.prototype[iteratorSymbol] = function() {
+                return this.entries();
+              };
+              Map3.prototype._find = function(key, insert) {
+                if (!SameValueZero(this._cacheKey, key)) {
+                  this._cacheIndex = -1;
+                  for (var i = 0; i < this._keys.length; i++) {
+                    if (SameValueZero(this._keys[i], key)) {
+                      this._cacheIndex = i;
+                      break;
+                    }
+                  }
+                }
+                if (this._cacheIndex < 0 && insert) {
+                  this._cacheIndex = this._keys.length;
+                  this._keys.push(key);
+                  this._values.push(void 0);
+                }
+                return this._cacheIndex;
+              };
+              return Map3;
+            })()
+          );
+          return Map2;
+          function getKey(key, _) {
+            return key;
+          }
+          function getValue(_, value) {
+            return value;
+          }
+          function getEntry(key, value) {
+            return [key, value];
+          }
+        }
+        function CreateSetPolyfill() {
+          var Set2 = (
+            /** @class */
+            (function() {
+              function Set3() {
+                this._map = new _Map();
+              }
+              Object.defineProperty(Set3.prototype, "size", {
+                get: function() {
+                  return this._map.size;
+                },
+                enumerable: true,
+                configurable: true
+              });
+              Set3.prototype.has = function(value) {
+                return this._map.has(value);
+              };
+              Set3.prototype.add = function(value) {
+                return this._map.set(value, value), this;
+              };
+              Set3.prototype.delete = function(value) {
+                return this._map.delete(value);
+              };
+              Set3.prototype.clear = function() {
+                this._map.clear();
+              };
+              Set3.prototype.keys = function() {
+                return this._map.keys();
+              };
+              Set3.prototype.values = function() {
+                return this._map.keys();
+              };
+              Set3.prototype.entries = function() {
+                return this._map.entries();
+              };
+              Set3.prototype["@@iterator"] = function() {
+                return this.keys();
+              };
+              Set3.prototype[iteratorSymbol] = function() {
+                return this.keys();
+              };
+              return Set3;
+            })()
+          );
+          return Set2;
+        }
+        function CreateWeakMapPolyfill() {
+          var UUID_SIZE = 16;
+          var keys = HashMap.create();
+          var rootKey = CreateUniqueKey();
+          return (
+            /** @class */
+            (function() {
+              function WeakMap2() {
+                this._key = CreateUniqueKey();
+              }
+              WeakMap2.prototype.has = function(target) {
+                var table = GetOrCreateWeakMapTable(
+                  target,
+                  /*create*/
+                  false
+                );
+                return table !== void 0 ? HashMap.has(table, this._key) : false;
+              };
+              WeakMap2.prototype.get = function(target) {
+                var table = GetOrCreateWeakMapTable(
+                  target,
+                  /*create*/
+                  false
+                );
+                return table !== void 0 ? HashMap.get(table, this._key) : void 0;
+              };
+              WeakMap2.prototype.set = function(target, value) {
+                var table = GetOrCreateWeakMapTable(
+                  target,
+                  /*create*/
+                  true
+                );
+                table[this._key] = value;
+                return this;
+              };
+              WeakMap2.prototype.delete = function(target) {
+                var table = GetOrCreateWeakMapTable(
+                  target,
+                  /*create*/
+                  false
+                );
+                return table !== void 0 ? delete table[this._key] : false;
+              };
+              WeakMap2.prototype.clear = function() {
+                this._key = CreateUniqueKey();
+              };
+              return WeakMap2;
+            })()
+          );
+          function CreateUniqueKey() {
+            var key;
+            do
+              key = "@@WeakMap@@" + CreateUUID();
+            while (HashMap.has(keys, key));
+            keys[key] = true;
+            return key;
+          }
+          function GetOrCreateWeakMapTable(target, create) {
+            if (!hasOwn.call(target, rootKey)) {
+              if (!create)
+                return void 0;
+              Object.defineProperty(target, rootKey, { value: HashMap.create() });
+            }
+            return target[rootKey];
+          }
+          function FillRandomBytes(buffer, size) {
+            for (var i = 0; i < size; ++i)
+              buffer[i] = Math.random() * 255 | 0;
+            return buffer;
+          }
+          function GenRandomBytes(size) {
+            if (typeof Uint8Array === "function") {
+              var array2 = new Uint8Array(size);
+              if (typeof crypto !== "undefined") {
+                crypto.getRandomValues(array2);
+              } else if (typeof msCrypto !== "undefined") {
+                msCrypto.getRandomValues(array2);
+              } else {
+                FillRandomBytes(array2, size);
+              }
+              return array2;
+            }
+            return FillRandomBytes(new Array(size), size);
+          }
+          function CreateUUID() {
+            var data = GenRandomBytes(UUID_SIZE);
+            data[6] = data[6] & 79 | 64;
+            data[8] = data[8] & 191 | 128;
+            var result = "";
+            for (var offset = 0; offset < UUID_SIZE; ++offset) {
+              var byte = data[offset];
+              if (offset === 4 || offset === 6 || offset === 8)
+                result += "-";
+              if (byte < 16)
+                result += "0";
+              result += byte.toString(16).toLowerCase();
+            }
+            return result;
+          }
+        }
+        function MakeDictionary(obj) {
+          obj.__ = void 0;
+          delete obj.__;
+          return obj;
+        }
+      });
+    })(Reflect2 || (Reflect2 = {}));
+  }
+});
+
+// node_modules/tslib/tslib.es6.mjs
+var tslib_es6_exports = {};
+__export(tslib_es6_exports, {
+  __addDisposableResource: () => __addDisposableResource,
+  __assign: () => __assign,
+  __asyncDelegator: () => __asyncDelegator,
+  __asyncGenerator: () => __asyncGenerator,
+  __asyncValues: () => __asyncValues,
+  __await: () => __await,
+  __awaiter: () => __awaiter,
+  __classPrivateFieldGet: () => __classPrivateFieldGet,
+  __classPrivateFieldIn: () => __classPrivateFieldIn,
+  __classPrivateFieldSet: () => __classPrivateFieldSet,
+  __createBinding: () => __createBinding,
+  __decorate: () => __decorate,
+  __disposeResources: () => __disposeResources,
+  __esDecorate: () => __esDecorate,
+  __exportStar: () => __exportStar,
+  __extends: () => __extends,
+  __generator: () => __generator,
+  __importDefault: () => __importDefault,
+  __importStar: () => __importStar,
+  __makeTemplateObject: () => __makeTemplateObject,
+  __metadata: () => __metadata,
+  __param: () => __param,
+  __propKey: () => __propKey,
+  __read: () => __read,
+  __rest: () => __rest,
+  __rewriteRelativeImportExtension: () => __rewriteRelativeImportExtension,
+  __runInitializers: () => __runInitializers,
+  __setFunctionName: () => __setFunctionName,
+  __spread: () => __spread,
+  __spreadArray: () => __spreadArray,
+  __spreadArrays: () => __spreadArrays,
+  __values: () => __values,
+  default: () => tslib_es6_default
+});
+function __extends(d, b) {
+  if (typeof b !== "function" && b !== null)
+    throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+  extendStatics(d, b);
+  function __() {
+    this.constructor = d;
+  }
+  d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+function __rest(s, e) {
+  var t = {};
+  for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+    t[p] = s[p];
+  if (s != null && typeof Object.getOwnPropertySymbols === "function")
+    for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+      if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+        t[p[i]] = s[p[i]];
+    }
+  return t;
+}
+function __decorate(decorators, target, key, desc) {
+  var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+  if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+  else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+  return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+function __param(paramIndex, decorator) {
+  return function(target, key) {
+    decorator(target, key, paramIndex);
+  };
+}
+function __esDecorate(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+  function accept(f) {
+    if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected");
+    return f;
+  }
+  var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+  var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+  var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+  var _, done = false;
+  for (var i = decorators.length - 1; i >= 0; i--) {
+    var context = {};
+    for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+    for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+    context.addInitializer = function(f) {
+      if (done) throw new TypeError("Cannot add initializers after decoration has completed");
+      extraInitializers.push(accept(f || null));
+    };
+    var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+    if (kind === "accessor") {
+      if (result === void 0) continue;
+      if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+      if (_ = accept(result.get)) descriptor.get = _;
+      if (_ = accept(result.set)) descriptor.set = _;
+      if (_ = accept(result.init)) initializers.unshift(_);
+    } else if (_ = accept(result)) {
+      if (kind === "field") initializers.unshift(_);
+      else descriptor[key] = _;
+    }
+  }
+  if (target) Object.defineProperty(target, contextIn.name, descriptor);
+  done = true;
+}
+function __runInitializers(thisArg, initializers, value) {
+  var useValue = arguments.length > 2;
+  for (var i = 0; i < initializers.length; i++) {
+    value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+  }
+  return useValue ? value : void 0;
+}
+function __propKey(x) {
+  return typeof x === "symbol" ? x : "".concat(x);
+}
+function __setFunctionName(f, name, prefix) {
+  if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
+  return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
+}
+function __metadata(metadataKey, metadataValue) {
+  if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+}
+function __awaiter(thisArg, _arguments, P, generator) {
+  function adopt(value) {
+    return value instanceof P ? value : new P(function(resolve4) {
+      resolve4(value);
+    });
+  }
+  return new (P || (P = Promise))(function(resolve4, reject) {
+    function fulfilled(value) {
+      try {
+        step(generator.next(value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function rejected(value) {
+      try {
+        step(generator["throw"](value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function step(result) {
+      result.done ? resolve4(result.value) : adopt(result.value).then(fulfilled, rejected);
+    }
+    step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
+}
+function __generator(thisArg, body) {
+  var _ = { label: 0, sent: function() {
+    if (t[0] & 1) throw t[1];
+    return t[1];
+  }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+  return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() {
+    return this;
+  }), g;
+  function verb(n) {
+    return function(v) {
+      return step([n, v]);
+    };
+  }
+  function step(op) {
+    if (f) throw new TypeError("Generator is already executing.");
+    while (g && (g = 0, op[0] && (_ = 0)), _) try {
+      if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+      if (y = 0, t) op = [op[0] & 2, t.value];
+      switch (op[0]) {
+        case 0:
+        case 1:
+          t = op;
+          break;
+        case 4:
+          _.label++;
+          return { value: op[1], done: false };
+        case 5:
+          _.label++;
+          y = op[1];
+          op = [0];
+          continue;
+        case 7:
+          op = _.ops.pop();
+          _.trys.pop();
+          continue;
+        default:
+          if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
+            _ = 0;
+            continue;
+          }
+          if (op[0] === 3 && (!t || op[1] > t[0] && op[1] < t[3])) {
+            _.label = op[1];
+            break;
+          }
+          if (op[0] === 6 && _.label < t[1]) {
+            _.label = t[1];
+            t = op;
+            break;
+          }
+          if (t && _.label < t[2]) {
+            _.label = t[2];
+            _.ops.push(op);
+            break;
+          }
+          if (t[2]) _.ops.pop();
+          _.trys.pop();
+          continue;
+      }
+      op = body.call(thisArg, _);
+    } catch (e) {
+      op = [6, e];
+      y = 0;
+    } finally {
+      f = t = 0;
+    }
+    if (op[0] & 5) throw op[1];
+    return { value: op[0] ? op[1] : void 0, done: true };
+  }
+}
+function __exportStar(m, o) {
+  for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(o, p)) __createBinding(o, m, p);
+}
+function __values(o) {
+  var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+  if (m) return m.call(o);
+  if (o && typeof o.length === "number") return {
+    next: function() {
+      if (o && i >= o.length) o = void 0;
+      return { value: o && o[i++], done: !o };
+    }
+  };
+  throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+}
+function __read(o, n) {
+  var m = typeof Symbol === "function" && o[Symbol.iterator];
+  if (!m) return o;
+  var i = m.call(o), r, ar = [], e;
+  try {
+    while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+  } catch (error48) {
+    e = { error: error48 };
+  } finally {
+    try {
+      if (r && !r.done && (m = i["return"])) m.call(i);
+    } finally {
+      if (e) throw e.error;
+    }
+  }
+  return ar;
+}
+function __spread() {
+  for (var ar = [], i = 0; i < arguments.length; i++)
+    ar = ar.concat(__read(arguments[i]));
+  return ar;
+}
+function __spreadArrays() {
+  for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+  for (var r = Array(s), k = 0, i = 0; i < il; i++)
+    for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+      r[k] = a[j];
+  return r;
+}
+function __spreadArray(to, from, pack) {
+  if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+    if (ar || !(i in from)) {
+      if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+      ar[i] = from[i];
+    }
+  }
+  return to.concat(ar || Array.prototype.slice.call(from));
+}
+function __await(v) {
+  return this instanceof __await ? (this.v = v, this) : new __await(v);
+}
+function __asyncGenerator(thisArg, _arguments, generator) {
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+  var g = generator.apply(thisArg, _arguments || []), i, q = [];
+  return i = Object.create((typeof AsyncIterator === "function" ? AsyncIterator : Object).prototype), verb("next"), verb("throw"), verb("return", awaitReturn), i[Symbol.asyncIterator] = function() {
+    return this;
+  }, i;
+  function awaitReturn(f) {
+    return function(v) {
+      return Promise.resolve(v).then(f, reject);
+    };
+  }
+  function verb(n, f) {
+    if (g[n]) {
+      i[n] = function(v) {
+        return new Promise(function(a, b) {
+          q.push([n, v, a, b]) > 1 || resume(n, v);
+        });
+      };
+      if (f) i[n] = f(i[n]);
+    }
+  }
+  function resume(n, v) {
+    try {
+      step(g[n](v));
+    } catch (e) {
+      settle(q[0][3], e);
+    }
+  }
+  function step(r) {
+    r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);
+  }
+  function fulfill(value) {
+    resume("next", value);
+  }
+  function reject(value) {
+    resume("throw", value);
+  }
+  function settle(f, v) {
+    if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]);
+  }
+}
+function __asyncDelegator(o) {
+  var i, p;
+  return i = {}, verb("next"), verb("throw", function(e) {
+    throw e;
+  }), verb("return"), i[Symbol.iterator] = function() {
+    return this;
+  }, i;
+  function verb(n, f) {
+    i[n] = o[n] ? function(v) {
+      return (p = !p) ? { value: __await(o[n](v)), done: false } : f ? f(v) : v;
+    } : f;
+  }
+}
+function __asyncValues(o) {
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+  var m = o[Symbol.asyncIterator], i;
+  return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function() {
+    return this;
+  }, i);
+  function verb(n) {
+    i[n] = o[n] && function(v) {
+      return new Promise(function(resolve4, reject) {
+        v = o[n](v), settle(resolve4, reject, v.done, v.value);
+      });
+    };
+  }
+  function settle(resolve4, reject, d, v) {
+    Promise.resolve(v).then(function(v2) {
+      resolve4({ value: v2, done: d });
+    }, reject);
+  }
+}
+function __makeTemplateObject(cooked, raw) {
+  if (Object.defineProperty) {
+    Object.defineProperty(cooked, "raw", { value: raw });
+  } else {
+    cooked.raw = raw;
+  }
+  return cooked;
+}
+function __importStar(mod) {
+  if (mod && mod.__esModule) return mod;
+  var result = {};
+  if (mod != null) {
+    for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+  }
+  __setModuleDefault(result, mod);
+  return result;
+}
+function __importDefault(mod) {
+  return mod && mod.__esModule ? mod : { default: mod };
+}
+function __classPrivateFieldGet(receiver, state, kind, f) {
+  if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+  return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+}
+function __classPrivateFieldSet(receiver, state, value, kind, f) {
+  if (kind === "m") throw new TypeError("Private method is not writable");
+  if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+  return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
+}
+function __classPrivateFieldIn(state, receiver) {
+  if (receiver === null || typeof receiver !== "object" && typeof receiver !== "function") throw new TypeError("Cannot use 'in' operator on non-object");
+  return typeof state === "function" ? receiver === state : state.has(receiver);
+}
+function __addDisposableResource(env, value, async) {
+  if (value !== null && value !== void 0) {
+    if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
+    var dispose, inner;
+    if (async) {
+      if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
+      dispose = value[Symbol.asyncDispose];
+    }
+    if (dispose === void 0) {
+      if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
+      dispose = value[Symbol.dispose];
+      if (async) inner = dispose;
+    }
+    if (typeof dispose !== "function") throw new TypeError("Object not disposable.");
+    if (inner) dispose = function() {
+      try {
+        inner.call(this);
+      } catch (e) {
+        return Promise.reject(e);
+      }
+    };
+    env.stack.push({ value, dispose, async });
+  } else if (async) {
+    env.stack.push({ async: true });
+  }
+  return value;
+}
+function __disposeResources(env) {
+  function fail(e) {
+    env.error = env.hasError ? new _SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
+    env.hasError = true;
+  }
+  var r, s = 0;
+  function next() {
+    while (r = env.stack.pop()) {
+      try {
+        if (!r.async && s === 1) return s = 0, env.stack.push(r), Promise.resolve().then(next);
+        if (r.dispose) {
+          var result = r.dispose.call(r.value);
+          if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) {
+            fail(e);
+            return next();
+          });
+        } else s |= 1;
+      } catch (e) {
+        fail(e);
+      }
+    }
+    if (s === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
+    if (env.hasError) throw env.error;
+  }
+  return next();
+}
+function __rewriteRelativeImportExtension(path, preserveJsx) {
+  if (typeof path === "string" && /^\.\.?\//.test(path)) {
+    return path.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function(m, tsx, d, ext, cm) {
+      return tsx ? preserveJsx ? ".jsx" : ".js" : d && (!ext || !cm) ? m : d + ext + "." + cm.toLowerCase() + "js";
+    });
+  }
+  return path;
+}
+var extendStatics, __assign, __createBinding, __setModuleDefault, ownKeys, _SuppressedError, tslib_es6_default;
+var init_tslib_es6 = __esm({
+  "node_modules/tslib/tslib.es6.mjs"() {
+    extendStatics = function(d, b) {
+      extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d2, b2) {
+        d2.__proto__ = b2;
+      } || function(d2, b2) {
+        for (var p in b2) if (Object.prototype.hasOwnProperty.call(b2, p)) d2[p] = b2[p];
+      };
+      return extendStatics(d, b);
+    };
+    __assign = function() {
+      __assign = Object.assign || function __assign3(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+          s = arguments[i];
+          for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
+      };
+      return __assign.apply(this, arguments);
+    };
+    __createBinding = Object.create ? (function(o, m, k, k2) {
+      if (k2 === void 0) k2 = k;
+      var desc = Object.getOwnPropertyDescriptor(m, k);
+      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+        desc = { enumerable: true, get: function() {
+          return m[k];
+        } };
+      }
+      Object.defineProperty(o, k2, desc);
+    }) : (function(o, m, k, k2) {
+      if (k2 === void 0) k2 = k;
+      o[k2] = m[k];
+    });
+    __setModuleDefault = Object.create ? (function(o, v) {
+      Object.defineProperty(o, "default", { enumerable: true, value: v });
+    }) : function(o, v) {
+      o["default"] = v;
+    };
+    ownKeys = function(o) {
+      ownKeys = Object.getOwnPropertyNames || function(o2) {
+        var ar = [];
+        for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
+        return ar;
+      };
+      return ownKeys(o);
+    };
+    _SuppressedError = typeof SuppressedError === "function" ? SuppressedError : function(error48, suppressed, message) {
+      var e = new Error(message);
+      return e.name = "SuppressedError", e.error = error48, e.suppressed = suppressed, e;
+    };
+    tslib_es6_default = {
+      __extends,
+      __assign,
+      __rest,
+      __decorate,
+      __param,
+      __esDecorate,
+      __runInitializers,
+      __propKey,
+      __setFunctionName,
+      __metadata,
+      __awaiter,
+      __generator,
+      __createBinding,
+      __exportStar,
+      __values,
+      __read,
+      __spread,
+      __spreadArrays,
+      __spreadArray,
+      __await,
+      __asyncGenerator,
+      __asyncDelegator,
+      __asyncValues,
+      __makeTemplateObject,
+      __importStar,
+      __importDefault,
+      __classPrivateFieldGet,
+      __classPrivateFieldSet,
+      __classPrivateFieldIn,
+      __addDisposableResource,
+      __disposeResources,
+      __rewriteRelativeImportExtension
+    };
+  }
+});
+
+// node_modules/pvtsutils/build/index.js
+var require_build = __commonJS({
+  "node_modules/pvtsutils/build/index.js"(exports2) {
+    "use strict";
+    var ARRAY_BUFFER_NAME = "[object ArrayBuffer]";
+    var BufferSourceConverter = class _BufferSourceConverter {
+      static isArrayBuffer(data) {
+        return Object.prototype.toString.call(data) === ARRAY_BUFFER_NAME;
+      }
+      static toArrayBuffer(data) {
+        if (this.isArrayBuffer(data)) {
+          return data;
+        }
+        if (data.byteLength === data.buffer.byteLength) {
+          return data.buffer;
+        }
+        if (data.byteOffset === 0 && data.byteLength === data.buffer.byteLength) {
+          return data.buffer;
+        }
+        return this.toUint8Array(data.buffer).slice(data.byteOffset, data.byteOffset + data.byteLength).buffer;
+      }
+      static toUint8Array(data) {
+        return this.toView(data, Uint8Array);
+      }
+      static toView(data, type) {
+        if (data.constructor === type) {
+          return data;
+        }
+        if (this.isArrayBuffer(data)) {
+          return new type(data);
+        }
+        if (this.isArrayBufferView(data)) {
+          return new type(data.buffer, data.byteOffset, data.byteLength);
+        }
+        throw new TypeError("The provided value is not of type '(ArrayBuffer or ArrayBufferView)'");
+      }
+      static isBufferSource(data) {
+        return this.isArrayBufferView(data) || this.isArrayBuffer(data);
+      }
+      static isArrayBufferView(data) {
+        return ArrayBuffer.isView(data) || data && this.isArrayBuffer(data.buffer);
+      }
+      static isEqual(a, b) {
+        const aView = _BufferSourceConverter.toUint8Array(a);
+        const bView = _BufferSourceConverter.toUint8Array(b);
+        if (aView.length !== bView.byteLength) {
+          return false;
+        }
+        for (let i = 0; i < aView.length; i++) {
+          if (aView[i] !== bView[i]) {
+            return false;
+          }
+        }
+        return true;
+      }
+      static concat(...args) {
+        let buffers;
+        if (Array.isArray(args[0]) && !(args[1] instanceof Function)) {
+          buffers = args[0];
+        } else if (Array.isArray(args[0]) && args[1] instanceof Function) {
+          buffers = args[0];
+        } else {
+          if (args[args.length - 1] instanceof Function) {
+            buffers = args.slice(0, args.length - 1);
+          } else {
+            buffers = args;
+          }
+        }
+        let size = 0;
+        for (const buffer of buffers) {
+          size += buffer.byteLength;
+        }
+        const res = new Uint8Array(size);
+        let offset = 0;
+        for (const buffer of buffers) {
+          const view = this.toUint8Array(buffer);
+          res.set(view, offset);
+          offset += view.length;
+        }
+        if (args[args.length - 1] instanceof Function) {
+          return this.toView(res, args[args.length - 1]);
+        }
+        return res.buffer;
+      }
+    };
+    var STRING_TYPE = "string";
+    var HEX_REGEX = /^[0-9a-f\s]+$/i;
+    var BASE64_REGEX = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+    var BASE64URL_REGEX = /^[a-zA-Z0-9-_]+$/;
+    var Utf8Converter = class {
+      static fromString(text) {
+        const s = unescape(encodeURIComponent(text));
+        const uintArray = new Uint8Array(s.length);
+        for (let i = 0; i < s.length; i++) {
+          uintArray[i] = s.charCodeAt(i);
+        }
+        return uintArray.buffer;
+      }
+      static toString(buffer) {
+        const buf = BufferSourceConverter.toUint8Array(buffer);
+        let encodedString = "";
+        for (let i = 0; i < buf.length; i++) {
+          encodedString += String.fromCharCode(buf[i]);
+        }
+        const decodedString = decodeURIComponent(escape(encodedString));
+        return decodedString;
+      }
+    };
+    var Utf16Converter = class {
+      static toString(buffer, littleEndian = false) {
+        const arrayBuffer = BufferSourceConverter.toArrayBuffer(buffer);
+        const dataView = new DataView(arrayBuffer);
+        let res = "";
+        for (let i = 0; i < arrayBuffer.byteLength; i += 2) {
+          const code = dataView.getUint16(i, littleEndian);
+          res += String.fromCharCode(code);
+        }
+        return res;
+      }
+      static fromString(text, littleEndian = false) {
+        const res = new ArrayBuffer(text.length * 2);
+        const dataView = new DataView(res);
+        for (let i = 0; i < text.length; i++) {
+          dataView.setUint16(i * 2, text.charCodeAt(i), littleEndian);
+        }
+        return res;
+      }
+    };
+    var Convert = class _Convert {
+      static isHex(data) {
+        return typeof data === STRING_TYPE && HEX_REGEX.test(data);
+      }
+      static isBase64(data) {
+        return typeof data === STRING_TYPE && BASE64_REGEX.test(data);
+      }
+      static isBase64Url(data) {
+        return typeof data === STRING_TYPE && BASE64URL_REGEX.test(data);
+      }
+      static ToString(buffer, enc = "utf8") {
+        const buf = BufferSourceConverter.toUint8Array(buffer);
+        switch (enc.toLowerCase()) {
+          case "utf8":
+            return this.ToUtf8String(buf);
+          case "binary":
+            return this.ToBinary(buf);
+          case "hex":
+            return this.ToHex(buf);
+          case "base64":
+            return this.ToBase64(buf);
+          case "base64url":
+            return this.ToBase64Url(buf);
+          case "utf16le":
+            return Utf16Converter.toString(buf, true);
+          case "utf16":
+          case "utf16be":
+            return Utf16Converter.toString(buf);
+          default:
+            throw new Error(`Unknown type of encoding '${enc}'`);
+        }
+      }
+      static FromString(str, enc = "utf8") {
+        if (!str) {
+          return new ArrayBuffer(0);
+        }
+        switch (enc.toLowerCase()) {
+          case "utf8":
+            return this.FromUtf8String(str);
+          case "binary":
+            return this.FromBinary(str);
+          case "hex":
+            return this.FromHex(str);
+          case "base64":
+            return this.FromBase64(str);
+          case "base64url":
+            return this.FromBase64Url(str);
+          case "utf16le":
+            return Utf16Converter.fromString(str, true);
+          case "utf16":
+          case "utf16be":
+            return Utf16Converter.fromString(str);
+          default:
+            throw new Error(`Unknown type of encoding '${enc}'`);
+        }
+      }
+      static ToBase64(buffer) {
+        const buf = BufferSourceConverter.toUint8Array(buffer);
+        if (typeof btoa !== "undefined") {
+          const binary = this.ToString(buf, "binary");
+          return btoa(binary);
+        } else {
+          return Buffer.from(buf).toString("base64");
+        }
+      }
+      static FromBase64(base643) {
+        const formatted = this.formatString(base643);
+        if (!formatted) {
+          return new ArrayBuffer(0);
+        }
+        if (!_Convert.isBase64(formatted)) {
+          throw new TypeError("Argument 'base64Text' is not Base64 encoded");
+        }
+        if (typeof atob !== "undefined") {
+          return this.FromBinary(atob(formatted));
+        } else {
+          return new Uint8Array(Buffer.from(formatted, "base64")).buffer;
+        }
+      }
+      static FromBase64Url(base64url3) {
+        const formatted = this.formatString(base64url3);
+        if (!formatted) {
+          return new ArrayBuffer(0);
+        }
+        if (!_Convert.isBase64Url(formatted)) {
+          throw new TypeError("Argument 'base64url' is not Base64Url encoded");
+        }
+        return this.FromBase64(this.Base64Padding(formatted.replace(/\-/g, "+").replace(/\_/g, "/")));
+      }
+      static ToBase64Url(data) {
+        return this.ToBase64(data).replace(/\+/g, "-").replace(/\//g, "_").replace(/\=/g, "");
+      }
+      static FromUtf8String(text, encoding = _Convert.DEFAULT_UTF8_ENCODING) {
+        switch (encoding) {
+          case "ascii":
+            return this.FromBinary(text);
+          case "utf8":
+            return Utf8Converter.fromString(text);
+          case "utf16":
+          case "utf16be":
+            return Utf16Converter.fromString(text);
+          case "utf16le":
+          case "usc2":
+            return Utf16Converter.fromString(text, true);
+          default:
+            throw new Error(`Unknown type of encoding '${encoding}'`);
+        }
+      }
+      static ToUtf8String(buffer, encoding = _Convert.DEFAULT_UTF8_ENCODING) {
+        switch (encoding) {
+          case "ascii":
+            return this.ToBinary(buffer);
+          case "utf8":
+            return Utf8Converter.toString(buffer);
+          case "utf16":
+          case "utf16be":
+            return Utf16Converter.toString(buffer);
+          case "utf16le":
+          case "usc2":
+            return Utf16Converter.toString(buffer, true);
+          default:
+            throw new Error(`Unknown type of encoding '${encoding}'`);
+        }
+      }
+      static FromBinary(text) {
+        const stringLength = text.length;
+        const resultView = new Uint8Array(stringLength);
+        for (let i = 0; i < stringLength; i++) {
+          resultView[i] = text.charCodeAt(i);
+        }
+        return resultView.buffer;
+      }
+      static ToBinary(buffer) {
+        const buf = BufferSourceConverter.toUint8Array(buffer);
+        let res = "";
+        for (let i = 0; i < buf.length; i++) {
+          res += String.fromCharCode(buf[i]);
+        }
+        return res;
+      }
+      static ToHex(buffer) {
+        const buf = BufferSourceConverter.toUint8Array(buffer);
+        let result = "";
+        const len = buf.length;
+        for (let i = 0; i < len; i++) {
+          const byte = buf[i];
+          if (byte < 16) {
+            result += "0";
+          }
+          result += byte.toString(16);
+        }
+        return result;
+      }
+      static FromHex(hexString) {
+        let formatted = this.formatString(hexString);
+        if (!formatted) {
+          return new ArrayBuffer(0);
+        }
+        if (!_Convert.isHex(formatted)) {
+          throw new TypeError("Argument 'hexString' is not HEX encoded");
+        }
+        if (formatted.length % 2) {
+          formatted = `0${formatted}`;
+        }
+        const res = new Uint8Array(formatted.length / 2);
+        for (let i = 0; i < formatted.length; i = i + 2) {
+          const c = formatted.slice(i, i + 2);
+          res[i / 2] = parseInt(c, 16);
+        }
+        return res.buffer;
+      }
+      static ToUtf16String(buffer, littleEndian = false) {
+        return Utf16Converter.toString(buffer, littleEndian);
+      }
+      static FromUtf16String(text, littleEndian = false) {
+        return Utf16Converter.fromString(text, littleEndian);
+      }
+      static Base64Padding(base643) {
+        const padCount = 4 - base643.length % 4;
+        if (padCount < 4) {
+          for (let i = 0; i < padCount; i++) {
+            base643 += "=";
+          }
+        }
+        return base643;
+      }
+      static formatString(data) {
+        return (data === null || data === void 0 ? void 0 : data.replace(/[\n\r\t ]/g, "")) || "";
+      }
+    };
+    Convert.DEFAULT_UTF8_ENCODING = "utf8";
+    function assign(target, ...sources) {
+      const res = arguments[0];
+      for (let i = 1; i < arguments.length; i++) {
+        const obj = arguments[i];
+        for (const prop in obj) {
+          res[prop] = obj[prop];
+        }
+      }
+      return res;
+    }
+    function combine(...buf) {
+      const totalByteLength = buf.map((item) => item.byteLength).reduce((prev, cur) => prev + cur);
+      const res = new Uint8Array(totalByteLength);
+      let currentPos = 0;
+      buf.map((item) => new Uint8Array(item)).forEach((arr) => {
+        for (const item2 of arr) {
+          res[currentPos++] = item2;
+        }
+      });
+      return res.buffer;
+    }
+    function isEqual(bytes1, bytes2) {
+      if (!(bytes1 && bytes2)) {
+        return false;
+      }
+      if (bytes1.byteLength !== bytes2.byteLength) {
+        return false;
+      }
+      const b1 = new Uint8Array(bytes1);
+      const b2 = new Uint8Array(bytes2);
+      for (let i = 0; i < bytes1.byteLength; i++) {
+        if (b1[i] !== b2[i]) {
+          return false;
+        }
+      }
+      return true;
+    }
+    exports2.BufferSourceConverter = BufferSourceConverter;
+    exports2.Convert = Convert;
+    exports2.assign = assign;
+    exports2.combine = combine;
+    exports2.isEqual = isEqual;
+  }
+});
+
+// node_modules/pvutils/build/utils.js
+var require_utils2 = __commonJS({
+  "node_modules/pvutils/build/utils.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    function getUTCDate(date5) {
+      return new Date(date5.getTime() + date5.getTimezoneOffset() * 6e4);
+    }
+    function getParametersValue(parameters, name, defaultValue) {
+      var _a2;
+      if (parameters instanceof Object === false) {
+        return defaultValue;
+      }
+      return (_a2 = parameters[name]) !== null && _a2 !== void 0 ? _a2 : defaultValue;
+    }
+    function bufferToHexCodes(inputBuffer, inputOffset = 0, inputLength = inputBuffer.byteLength - inputOffset, insertSpace = false) {
+      let result = "";
+      for (const item of new Uint8Array(inputBuffer, inputOffset, inputLength)) {
+        const str = item.toString(16).toUpperCase();
+        if (str.length === 1) {
+          result += "0";
+        }
+        result += str;
+        if (insertSpace) {
+          result += " ";
+        }
+      }
+      return result.trim();
+    }
+    function checkBufferParams(baseBlock, inputBuffer, inputOffset, inputLength) {
+      if (!(inputBuffer instanceof ArrayBuffer)) {
+        baseBlock.error = 'Wrong parameter: inputBuffer must be "ArrayBuffer"';
+        return false;
+      }
+      if (!inputBuffer.byteLength) {
+        baseBlock.error = "Wrong parameter: inputBuffer has zero length";
+        return false;
+      }
+      if (inputOffset < 0) {
+        baseBlock.error = "Wrong parameter: inputOffset less than zero";
+        return false;
+      }
+      if (inputLength < 0) {
+        baseBlock.error = "Wrong parameter: inputLength less than zero";
+        return false;
+      }
+      if (inputBuffer.byteLength - inputOffset - inputLength < 0) {
+        baseBlock.error = "End of input reached before message was fully decoded (inconsistent offset and length values)";
+        return false;
+      }
+      return true;
+    }
+    function utilFromBase(inputBuffer, inputBase) {
+      let result = 0;
+      if (inputBuffer.length === 1) {
+        return inputBuffer[0];
+      }
+      for (let i = inputBuffer.length - 1; i >= 0; i--) {
+        result += inputBuffer[inputBuffer.length - 1 - i] * Math.pow(2, inputBase * i);
+      }
+      return result;
+    }
+    function utilToBase(value, base, reserved = -1) {
+      const internalReserved = reserved;
+      let internalValue = value;
+      let result = 0;
+      let biggest = Math.pow(2, base);
+      for (let i = 1; i < 8; i++) {
+        if (value < biggest) {
+          let retBuf;
+          if (internalReserved < 0) {
+            retBuf = new ArrayBuffer(i);
+            result = i;
+          } else {
+            if (internalReserved < i) {
+              return new ArrayBuffer(0);
+            }
+            retBuf = new ArrayBuffer(internalReserved);
+            result = internalReserved;
+          }
+          const retView = new Uint8Array(retBuf);
+          for (let j = i - 1; j >= 0; j--) {
+            const basis = Math.pow(2, j * base);
+            retView[result - j - 1] = Math.floor(internalValue / basis);
+            internalValue -= retView[result - j - 1] * basis;
+          }
+          return retBuf;
+        }
+        biggest *= Math.pow(2, base);
+      }
+      return new ArrayBuffer(0);
+    }
+    function utilConcatBuf(...buffers) {
+      let outputLength = 0;
+      let prevLength = 0;
+      for (const buffer of buffers) {
+        outputLength += buffer.byteLength;
+      }
+      const retBuf = new ArrayBuffer(outputLength);
+      const retView = new Uint8Array(retBuf);
+      for (const buffer of buffers) {
+        retView.set(new Uint8Array(buffer), prevLength);
+        prevLength += buffer.byteLength;
+      }
+      return retBuf;
+    }
+    function utilConcatView(...views) {
+      let outputLength = 0;
+      let prevLength = 0;
+      for (const view of views) {
+        outputLength += view.length;
+      }
+      const retBuf = new ArrayBuffer(outputLength);
+      const retView = new Uint8Array(retBuf);
+      for (const view of views) {
+        retView.set(view, prevLength);
+        prevLength += view.length;
+      }
+      return retView;
+    }
+    function utilDecodeTC() {
+      const buf = new Uint8Array(this.valueHex);
+      if (this.valueHex.byteLength >= 2) {
+        const condition1 = buf[0] === 255 && buf[1] & 128;
+        const condition2 = buf[0] === 0 && (buf[1] & 128) === 0;
+        if (condition1 || condition2) {
+          this.warnings.push("Needlessly long format");
+        }
+      }
+      const bigIntBuffer = new ArrayBuffer(this.valueHex.byteLength);
+      const bigIntView = new Uint8Array(bigIntBuffer);
+      for (let i = 0; i < this.valueHex.byteLength; i++) {
+        bigIntView[i] = 0;
+      }
+      bigIntView[0] = buf[0] & 128;
+      const bigInt = utilFromBase(bigIntView, 8);
+      const smallIntBuffer = new ArrayBuffer(this.valueHex.byteLength);
+      const smallIntView = new Uint8Array(smallIntBuffer);
+      for (let j = 0; j < this.valueHex.byteLength; j++) {
+        smallIntView[j] = buf[j];
+      }
+      smallIntView[0] &= 127;
+      const smallInt = utilFromBase(smallIntView, 8);
+      return smallInt - bigInt;
+    }
+    function utilEncodeTC(value) {
+      const modValue = value < 0 ? value * -1 : value;
+      let bigInt = 128;
+      for (let i = 1; i < 8; i++) {
+        if (modValue <= bigInt) {
+          if (value < 0) {
+            const smallInt = bigInt - modValue;
+            const retBuf2 = utilToBase(smallInt, 8, i);
+            const retView2 = new Uint8Array(retBuf2);
+            retView2[0] |= 128;
+            return retBuf2;
+          }
+          let retBuf = utilToBase(modValue, 8, i);
+          let retView = new Uint8Array(retBuf);
+          if (retView[0] & 128) {
+            const tempBuf = retBuf.slice(0);
+            const tempView = new Uint8Array(tempBuf);
+            retBuf = new ArrayBuffer(retBuf.byteLength + 1);
+            retView = new Uint8Array(retBuf);
+            for (let k = 0; k < tempBuf.byteLength; k++) {
+              retView[k + 1] = tempView[k];
+            }
+            retView[0] = 0;
+          }
+          return retBuf;
+        }
+        bigInt *= Math.pow(2, 8);
+      }
+      return new ArrayBuffer(0);
+    }
+    function isEqualBuffer(inputBuffer1, inputBuffer2) {
+      if (inputBuffer1.byteLength !== inputBuffer2.byteLength) {
+        return false;
+      }
+      const view1 = new Uint8Array(inputBuffer1);
+      const view2 = new Uint8Array(inputBuffer2);
+      for (let i = 0; i < view1.length; i++) {
+        if (view1[i] !== view2[i]) {
+          return false;
+        }
+      }
+      return true;
+    }
+    function padNumber(inputNumber, fullLength) {
+      const str = inputNumber.toString(10);
+      if (fullLength < str.length) {
+        return "";
+      }
+      const dif = fullLength - str.length;
+      const padding = Array.from({ length: dif });
+      for (let i = 0; i < dif; i++) {
+        padding[i] = "0";
+      }
+      const paddingString = padding.join("");
+      return paddingString.concat(str);
+    }
+    var base64Template = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    var base64UrlTemplate = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_=";
+    function toBase64(input, useUrlTemplate = false, skipPadding = false, skipLeadingZeros = false) {
+      let i = 0;
+      let flag1 = 0;
+      let flag2 = 0;
+      let output = "";
+      const template = useUrlTemplate ? base64UrlTemplate : base64Template;
+      if (skipLeadingZeros) {
+        let nonZeroPosition = 0;
+        for (let i2 = 0; i2 < input.length; i2++) {
+          if (input.charCodeAt(i2) !== 0) {
+            nonZeroPosition = i2;
+            break;
+          }
+        }
+        input = input.slice(nonZeroPosition);
+      }
+      while (i < input.length) {
+        const chr1 = input.charCodeAt(i++);
+        if (i >= input.length) {
+          flag1 = 1;
+        }
+        const chr2 = input.charCodeAt(i++);
+        if (i >= input.length) {
+          flag2 = 1;
+        }
+        const chr3 = input.charCodeAt(i++);
+        const enc1 = chr1 >> 2;
+        const enc2 = (chr1 & 3) << 4 | chr2 >> 4;
+        let enc3 = (chr2 & 15) << 2 | chr3 >> 6;
+        let enc4 = chr3 & 63;
+        if (flag1 === 1) {
+          enc3 = enc4 = 64;
+        } else {
+          if (flag2 === 1) {
+            enc4 = 64;
+          }
+        }
+        if (skipPadding) {
+          if (enc3 === 64) {
+            output += `${template.charAt(enc1)}${template.charAt(enc2)}`;
+          } else {
+            if (enc4 === 64) {
+              output += `${template.charAt(enc1)}${template.charAt(enc2)}${template.charAt(enc3)}`;
+            } else {
+              output += `${template.charAt(enc1)}${template.charAt(enc2)}${template.charAt(enc3)}${template.charAt(enc4)}`;
+            }
+          }
+        } else {
+          output += `${template.charAt(enc1)}${template.charAt(enc2)}${template.charAt(enc3)}${template.charAt(enc4)}`;
+        }
+      }
+      return output;
+    }
+    function fromBase64(input, useUrlTemplate = false, cutTailZeros = false) {
+      const template = useUrlTemplate ? base64UrlTemplate : base64Template;
+      function indexOf(toSearch) {
+        for (let i2 = 0; i2 < 64; i2++) {
+          if (template.charAt(i2) === toSearch)
+            return i2;
+        }
+        return 64;
+      }
+      function test(incoming) {
+        return incoming === 64 ? 0 : incoming;
+      }
+      let i = 0;
+      let output = "";
+      while (i < input.length) {
+        const enc1 = indexOf(input.charAt(i++));
+        const enc2 = i >= input.length ? 0 : indexOf(input.charAt(i++));
+        const enc3 = i >= input.length ? 0 : indexOf(input.charAt(i++));
+        const enc4 = i >= input.length ? 0 : indexOf(input.charAt(i++));
+        const chr1 = test(enc1) << 2 | test(enc2) >> 4;
+        const chr2 = (test(enc2) & 15) << 4 | test(enc3) >> 2;
+        const chr3 = (test(enc3) & 3) << 6 | test(enc4);
+        output += String.fromCharCode(chr1);
+        if (enc3 !== 64) {
+          output += String.fromCharCode(chr2);
+        }
+        if (enc4 !== 64) {
+          output += String.fromCharCode(chr3);
+        }
+      }
+      if (cutTailZeros) {
+        const outputLength = output.length;
+        let nonZeroStart = -1;
+        for (let i2 = outputLength - 1; i2 >= 0; i2--) {
+          if (output.charCodeAt(i2) !== 0) {
+            nonZeroStart = i2;
+            break;
+          }
+        }
+        if (nonZeroStart !== -1) {
+          output = output.slice(0, nonZeroStart + 1);
+        } else {
+          output = "";
+        }
+      }
+      return output;
+    }
+    function arrayBufferToString(buffer) {
+      let resultString = "";
+      const view = new Uint8Array(buffer);
+      for (const element of view) {
+        resultString += String.fromCharCode(element);
+      }
+      return resultString;
+    }
+    function stringToArrayBuffer(str) {
+      const stringLength = str.length;
+      const resultBuffer = new ArrayBuffer(stringLength);
+      const resultView = new Uint8Array(resultBuffer);
+      for (let i = 0; i < stringLength; i++) {
+        resultView[i] = str.charCodeAt(i);
+      }
+      return resultBuffer;
+    }
+    var log2 = Math.log(2);
+    function nearestPowerOf2(length) {
+      const base = Math.log(length) / log2;
+      const floor = Math.floor(base);
+      const round = Math.round(base);
+      return floor === round ? floor : round;
+    }
+    function clearProps(object3, propsArray) {
+      for (const prop of propsArray) {
+        delete object3[prop];
+      }
+    }
+    exports2.arrayBufferToString = arrayBufferToString;
+    exports2.bufferToHexCodes = bufferToHexCodes;
+    exports2.checkBufferParams = checkBufferParams;
+    exports2.clearProps = clearProps;
+    exports2.fromBase64 = fromBase64;
+    exports2.getParametersValue = getParametersValue;
+    exports2.getUTCDate = getUTCDate;
+    exports2.isEqualBuffer = isEqualBuffer;
+    exports2.nearestPowerOf2 = nearestPowerOf2;
+    exports2.padNumber = padNumber;
+    exports2.stringToArrayBuffer = stringToArrayBuffer;
+    exports2.toBase64 = toBase64;
+    exports2.utilConcatBuf = utilConcatBuf;
+    exports2.utilConcatView = utilConcatView;
+    exports2.utilDecodeTC = utilDecodeTC;
+    exports2.utilEncodeTC = utilEncodeTC;
+    exports2.utilFromBase = utilFromBase;
+    exports2.utilToBase = utilToBase;
+  }
+});
+
+// node_modules/asn1js/build/index.js
+var require_build2 = __commonJS({
+  "node_modules/asn1js/build/index.js"(exports2) {
+    "use strict";
+    var pvtsutils = require_build();
+    var pvutils = require_utils2();
+    function _interopNamespaceDefault(e) {
+      var n = /* @__PURE__ */ Object.create(null);
+      if (e) {
+        Object.keys(e).forEach(function(k) {
+          if (k !== "default") {
+            var d = Object.getOwnPropertyDescriptor(e, k);
+            Object.defineProperty(n, k, d.get ? d : {
+              enumerable: true,
+              get: function() {
+                return e[k];
+              }
+            });
+          }
+        });
+      }
+      n.default = e;
+      return Object.freeze(n);
+    }
+    var pvtsutils__namespace = /* @__PURE__ */ _interopNamespaceDefault(pvtsutils);
+    var pvutils__namespace = /* @__PURE__ */ _interopNamespaceDefault(pvutils);
+    function assertBigInt() {
+      if (typeof BigInt === "undefined") {
+        throw new Error("BigInt is not defined. Your environment doesn't implement BigInt.");
+      }
+    }
+    function concat(buffers) {
+      let outputLength = 0;
+      let prevLength = 0;
+      for (let i = 0; i < buffers.length; i++) {
+        const buffer = buffers[i];
+        outputLength += buffer.byteLength;
+      }
+      const retView = new Uint8Array(outputLength);
+      for (let i = 0; i < buffers.length; i++) {
+        const buffer = buffers[i];
+        retView.set(buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer), prevLength);
+        prevLength += buffer.byteLength;
+      }
+      return retView.buffer;
+    }
+    function checkBufferParams(baseBlock, inputBuffer, inputOffset, inputLength) {
+      if (!(inputBuffer instanceof Uint8Array)) {
+        baseBlock.error = "Wrong parameter: inputBuffer must be 'Uint8Array'";
+        return false;
+      }
+      if (!inputBuffer.byteLength) {
+        baseBlock.error = "Wrong parameter: inputBuffer has zero length";
+        return false;
+      }
+      if (inputOffset < 0) {
+        baseBlock.error = "Wrong parameter: inputOffset less than zero";
+        return false;
+      }
+      if (inputLength < 0) {
+        baseBlock.error = "Wrong parameter: inputLength less than zero";
+        return false;
+      }
+      if (inputBuffer.byteLength - inputOffset - inputLength < 0) {
+        baseBlock.error = "End of input reached before message was fully decoded (inconsistent offset and length values)";
+        return false;
+      }
+      return true;
+    }
+    var ViewWriter = class {
+      constructor() {
+        this.items = [];
+      }
+      write(buf) {
+        this.items.push(buf instanceof ArrayBuffer ? buf : concat([buf]));
+      }
+      final() {
+        return concat(this.items);
+      }
+    };
+    var ORIGINAL_VIEW_WRITER_WRITE = ViewWriter.prototype.write;
+    var ORIGINAL_VIEW_WRITER_FINAL = ViewWriter.prototype.final;
+    var NAME = "name";
+    var VALUE_HEX_VIEW = "valueHexView";
+    var IS_HEX_ONLY = "isHexOnly";
+    var ID_BLOCK = "idBlock";
+    var TAG_CLASS = "tagClass";
+    var TAG_NUMBER = "tagNumber";
+    var IS_CONSTRUCTED = "isConstructed";
+    var FROM_BER = "fromBER";
+    var TO_BER = "toBER";
+    var LOCAL = "local";
+    var EMPTY_STRING = "";
+    var EMPTY_BUFFER = new ArrayBuffer(0);
+    var EMPTY_VIEW = new Uint8Array(0);
+    var END_OF_CONTENT_NAME = "EndOfContent";
+    var OCTET_STRING_NAME = "OCTET STRING";
+    var BIT_STRING_NAME = "BIT STRING";
+    function HexBlock(BaseClass) {
+      var _a3;
+      return _a3 = class Some extends BaseClass {
+        get valueHex() {
+          return this.valueHexView.slice().buffer;
+        }
+        set valueHex(value) {
+          this.valueHexView = new Uint8Array(value);
+        }
+        constructor(...args) {
+          var _b2;
+          super(...args);
+          const params = args[0] || {};
+          this.isHexOnly = (_b2 = params.isHexOnly) !== null && _b2 !== void 0 ? _b2 : false;
+          this.valueHexView = params.valueHex ? pvtsutils__namespace.BufferSourceConverter.toUint8Array(params.valueHex) : EMPTY_VIEW;
+        }
+        fromBER(inputBuffer, inputOffset, inputLength, _context) {
+          const view = inputBuffer instanceof ArrayBuffer ? new Uint8Array(inputBuffer) : inputBuffer;
+          if (!checkBufferParams(this, view, inputOffset, inputLength)) {
+            return -1;
+          }
+          const endLength = inputOffset + inputLength;
+          this.valueHexView = view.subarray(inputOffset, endLength);
+          if (!this.valueHexView.length) {
+            this.warnings.push("Zero buffer length");
+            return inputOffset;
+          }
+          this.blockLength = inputLength;
+          return endLength;
+        }
+        toBER(sizeOnly = false) {
+          if (!this.isHexOnly) {
+            this.error = "Flag 'isHexOnly' is not set, abort";
+            return EMPTY_BUFFER;
+          }
+          if (sizeOnly) {
+            return new ArrayBuffer(this.valueHexView.byteLength);
+          }
+          if (this.valueHexView.buffer instanceof ArrayBuffer && this.valueHexView.byteLength === this.valueHexView.buffer.byteLength) {
+            return this.valueHexView.buffer;
+          }
+          return pvtsutils__namespace.BufferSourceConverter.toArrayBuffer(this.valueHexView);
+        }
+        toJSON() {
+          return {
+            ...super.toJSON(),
+            isHexOnly: this.isHexOnly,
+            valueHex: pvtsutils__namespace.Convert.ToHex(this.valueHexView)
+          };
+        }
+      }, _a3.NAME = "hexBlock", _a3;
+    }
+    var LocalBaseBlock = class {
+      static blockName() {
+        return this.NAME;
+      }
+      get valueBeforeDecode() {
+        return this.valueBeforeDecodeView.slice().buffer;
+      }
+      set valueBeforeDecode(value) {
+        this.valueBeforeDecodeView = new Uint8Array(value);
+      }
+      constructor({ blockLength = 0, error: error48 = EMPTY_STRING, warnings = [], valueBeforeDecode = EMPTY_VIEW } = {}) {
+        this.blockLength = blockLength;
+        this.error = error48;
+        this.warnings = warnings;
+        this.valueBeforeDecodeView = pvtsutils__namespace.BufferSourceConverter.toUint8Array(valueBeforeDecode);
+      }
+      toJSON() {
+        return {
+          blockName: this.constructor.NAME,
+          blockLength: this.blockLength,
+          error: this.error,
+          warnings: this.warnings,
+          valueBeforeDecode: pvtsutils__namespace.Convert.ToHex(this.valueBeforeDecodeView)
+        };
+      }
+    };
+    LocalBaseBlock.NAME = "baseBlock";
+    var ValueBlock = class extends LocalBaseBlock {
+      fromBER(_inputBuffer, _inputOffset, _inputLength, _context) {
+        throw TypeError("User need to make a specific function in a class which extends 'ValueBlock'");
+      }
+      toBER(_sizeOnly, _writer) {
+        throw TypeError("User need to make a specific function in a class which extends 'ValueBlock'");
+      }
+    };
+    ValueBlock.NAME = "valueBlock";
+    var LocalIdentificationBlock = class extends HexBlock(LocalBaseBlock) {
+      constructor({ idBlock = {} } = {}) {
+        var _a3, _b2, _c2, _d;
+        super();
+        if (idBlock) {
+          this.isHexOnly = (_a3 = idBlock.isHexOnly) !== null && _a3 !== void 0 ? _a3 : false;
+          this.valueHexView = idBlock.valueHex ? pvtsutils__namespace.BufferSourceConverter.toUint8Array(idBlock.valueHex) : EMPTY_VIEW;
+          this.tagClass = (_b2 = idBlock.tagClass) !== null && _b2 !== void 0 ? _b2 : -1;
+          this.tagNumber = (_c2 = idBlock.tagNumber) !== null && _c2 !== void 0 ? _c2 : -1;
+          this.isConstructed = (_d = idBlock.isConstructed) !== null && _d !== void 0 ? _d : false;
+        } else {
+          this.tagClass = -1;
+          this.tagNumber = -1;
+          this.isConstructed = false;
+        }
+      }
+      toBER(sizeOnly = false) {
+        let firstOctet = 0;
+        switch (this.tagClass) {
+          case 1:
+            firstOctet |= 0;
+            break;
+          case 2:
+            firstOctet |= 64;
+            break;
+          case 3:
+            firstOctet |= 128;
+            break;
+          case 4:
+            firstOctet |= 192;
+            break;
+          default:
+            this.error = "Unknown tag class";
+            return EMPTY_BUFFER;
+        }
+        if (this.isConstructed)
+          firstOctet |= 32;
+        if (this.tagNumber < 31 && !this.isHexOnly) {
+          const retView2 = new Uint8Array(1);
+          if (!sizeOnly) {
+            let number4 = this.tagNumber;
+            number4 &= 31;
+            firstOctet |= number4;
+            retView2[0] = firstOctet;
+          }
+          return retView2.buffer;
+        }
+        if (!this.isHexOnly) {
+          const encodedBuf = pvutils__namespace.utilToBase(this.tagNumber, 7);
+          const encodedView = new Uint8Array(encodedBuf);
+          const size = encodedBuf.byteLength;
+          const retView2 = new Uint8Array(size + 1);
+          retView2[0] = firstOctet | 31;
+          if (!sizeOnly) {
+            for (let i = 0; i < size - 1; i++)
+              retView2[i + 1] = encodedView[i] | 128;
+            retView2[size] = encodedView[size - 1];
+          }
+          return retView2.buffer;
+        }
+        const retView = new Uint8Array(this.valueHexView.byteLength + 1);
+        retView[0] = firstOctet | 31;
+        if (!sizeOnly) {
+          const curView = this.valueHexView;
+          for (let i = 0; i < curView.length - 1; i++)
+            retView[i + 1] = curView[i] | 128;
+          retView[this.valueHexView.byteLength] = curView[curView.length - 1];
+        }
+        return retView.buffer;
+      }
+      fromBER(inputBuffer, inputOffset, inputLength) {
+        const inputView = pvtsutils__namespace.BufferSourceConverter.toUint8Array(inputBuffer);
+        if (!checkBufferParams(this, inputView, inputOffset, inputLength)) {
+          return -1;
+        }
+        const fastArgs = Number.isInteger(inputOffset) && Number.isInteger(inputLength);
+        const intBuffer = fastArgs ? inputView : inputView.subarray(inputOffset, inputOffset + inputLength);
+        const baseIndex = fastArgs ? inputOffset : 0;
+        const bufferLength = fastArgs ? inputLength : intBuffer.length;
+        if (bufferLength === 0) {
+          this.error = "Zero buffer length";
+          return -1;
+        }
+        const tagClassMask = intBuffer[baseIndex] & 192;
+        switch (tagClassMask) {
+          case 0:
+            this.tagClass = 1;
+            break;
+          case 64:
+            this.tagClass = 2;
+            break;
+          case 128:
+            this.tagClass = 3;
+            break;
+          case 192:
+            this.tagClass = 4;
+            break;
+          default:
+            this.error = "Unknown tag class";
+            return -1;
+        }
+        this.isConstructed = (intBuffer[baseIndex] & 32) === 32;
+        this.isHexOnly = false;
+        const tagNumberMask = intBuffer[baseIndex] & 31;
+        if (tagNumberMask !== 31) {
+          this.tagNumber = tagNumberMask;
+          this.blockLength = 1;
+        } else {
+          let count = 0;
+          while (true) {
+            const tagByteIndex = count + 1;
+            if (tagByteIndex >= bufferLength) {
+              this.error = "End of input reached before message was fully decoded";
+              return -1;
+            }
+            count++;
+            if ((intBuffer[baseIndex + tagByteIndex] & 128) === 0)
+              break;
+          }
+          this.blockLength = count + 1;
+          const intTagNumberBuffer = this.valueHexView = new Uint8Array(count);
+          for (let i = 0; i < count; i++)
+            intTagNumberBuffer[i] = intBuffer[baseIndex + i + 1] & 127;
+          if (this.blockLength <= 9)
+            this.tagNumber = pvutils__namespace.utilFromBase(intTagNumberBuffer, 7);
+          else {
+            this.isHexOnly = true;
+            this.warnings.push("Tag too long, represented as hex-coded");
+          }
+        }
+        if (this.tagClass === 1 && this.isConstructed) {
+          switch (this.tagNumber) {
+            case 1:
+            case 2:
+            case 5:
+            case 6:
+            case 9:
+            case 13:
+            case 14:
+            case 23:
+            case 24:
+            case 31:
+            case 32:
+            case 33:
+            case 34:
+              this.error = "Constructed encoding used for primitive type";
+              return -1;
+          }
+        }
+        return inputOffset + this.blockLength;
+      }
+      toJSON() {
+        return {
+          ...super.toJSON(),
+          tagClass: this.tagClass,
+          tagNumber: this.tagNumber,
+          isConstructed: this.isConstructed
+        };
+      }
+    };
+    LocalIdentificationBlock.NAME = "identificationBlock";
+    var ORIGINAL_LOCAL_IDENTIFICATION_TO_BER = LocalIdentificationBlock.prototype.toBER;
+    var ORIGINAL_LOCAL_IDENTIFICATION_FROM_BER = LocalIdentificationBlock.prototype.fromBER;
+    var LocalLengthBlock = class extends LocalBaseBlock {
+      constructor({ lenBlock = {} } = {}) {
+        var _a3, _b2, _c2;
+        super();
+        this.isIndefiniteForm = (_a3 = lenBlock.isIndefiniteForm) !== null && _a3 !== void 0 ? _a3 : false;
+        this.longFormUsed = (_b2 = lenBlock.longFormUsed) !== null && _b2 !== void 0 ? _b2 : false;
+        this.length = (_c2 = lenBlock.length) !== null && _c2 !== void 0 ? _c2 : 0;
+      }
+      fromBER(inputBuffer, inputOffset, inputLength) {
+        const view = pvtsutils__namespace.BufferSourceConverter.toUint8Array(inputBuffer);
+        if (!checkBufferParams(this, view, inputOffset, inputLength)) {
+          return -1;
+        }
+        const fastArgs = Number.isInteger(inputOffset) && Number.isInteger(inputLength);
+        const intBuffer = fastArgs ? view : view.subarray(inputOffset, inputOffset + inputLength);
+        const baseIndex = fastArgs ? inputOffset : 0;
+        const bufferLength = fastArgs ? inputLength : intBuffer.length;
+        if (bufferLength === 0) {
+          this.error = "Zero buffer length";
+          return -1;
+        }
+        if (intBuffer[baseIndex] === 255) {
+          this.error = "Length block 0xFF is reserved by standard";
+          return -1;
+        }
+        this.isIndefiniteForm = intBuffer[baseIndex] === 128;
+        if (this.isIndefiniteForm) {
+          this.blockLength = 1;
+          return inputOffset + this.blockLength;
+        }
+        this.longFormUsed = !!(intBuffer[baseIndex] & 128);
+        if (this.longFormUsed === false) {
+          this.length = intBuffer[baseIndex];
+          this.blockLength = 1;
+          return inputOffset + this.blockLength;
+        }
+        const count = intBuffer[baseIndex] & 127;
+        if (count > 8) {
+          this.error = "Too big integer";
+          return -1;
+        }
+        if (count + 1 > bufferLength) {
+          this.error = "End of input reached before message was fully decoded";
+          return -1;
+        }
+        const lenOffset = inputOffset + 1;
+        const lengthBufferView = view.subarray(lenOffset, lenOffset + count);
+        if (lengthBufferView[count - 1] === 0)
+          this.warnings.push("Needlessly long encoded length");
+        this.length = pvutils__namespace.utilFromBase(lengthBufferView, 8);
+        if (this.longFormUsed && this.length <= 127)
+          this.warnings.push("Unnecessary usage of long length form");
+        this.blockLength = count + 1;
+        return inputOffset + this.blockLength;
+      }
+      toBER(sizeOnly = false) {
+        let retBuf;
+        let retView;
+        if (this.length > 127)
+          this.longFormUsed = true;
+        if (this.isIndefiniteForm) {
+          retBuf = new ArrayBuffer(1);
+          if (sizeOnly === false) {
+            retView = new Uint8Array(retBuf);
+            retView[0] = 128;
+          }
+          return retBuf;
+        }
+        if (this.longFormUsed) {
+          const encodedBuf = pvutils__namespace.utilToBase(this.length, 8);
+          if (encodedBuf.byteLength > 127) {
+            this.error = "Too big length";
+            return EMPTY_BUFFER;
+          }
+          retBuf = new ArrayBuffer(encodedBuf.byteLength + 1);
+          if (sizeOnly)
+            return retBuf;
+          const encodedView = new Uint8Array(encodedBuf);
+          retView = new Uint8Array(retBuf);
+          retView[0] = encodedBuf.byteLength | 128;
+          for (let i = 0; i < encodedBuf.byteLength; i++)
+            retView[i + 1] = encodedView[i];
+          return retBuf;
+        }
+        retBuf = new ArrayBuffer(1);
+        if (sizeOnly === false) {
+          retView = new Uint8Array(retBuf);
+          retView[0] = this.length;
+        }
+        return retBuf;
+      }
+      toJSON() {
+        return {
+          ...super.toJSON(),
+          isIndefiniteForm: this.isIndefiniteForm,
+          longFormUsed: this.longFormUsed,
+          length: this.length
+        };
+      }
+    };
+    LocalLengthBlock.NAME = "lengthBlock";
+    var ORIGINAL_LOCAL_LENGTH_TO_BER = LocalLengthBlock.prototype.toBER;
+    var ORIGINAL_LOCAL_LENGTH_FROM_BER = LocalLengthBlock.prototype.fromBER;
+    var typeStore = {};
+    var _a$y;
+    var _b;
+    var _c;
+    var originalUint8ArraySliceInfo = findMethod(Uint8Array.prototype, "slice");
+    var originalUint8ArrayConstructor = (_a$y = Object.getOwnPropertyDescriptor(Uint8Array.prototype, "constructor")) === null || _a$y === void 0 ? void 0 : _a$y.value;
+    var originalArrayIterator = (_b = Object.getOwnPropertyDescriptor(Array.prototype, Symbol.iterator)) === null || _b === void 0 ? void 0 : _b.value;
+    var intrinsicTypedArrayByteLength = (_c = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype), "byteLength")) === null || _c === void 0 ? void 0 : _c.get;
+    var BUILTIN_DISPATCH_PAYLOAD_THRESHOLD = 16384;
+    var BUILTIN_DISPATCH_MAX_DEPTH = 64;
+    var builtinRegistry;
+    function registerBuiltinEncoder(builtinConstructors, internals) {
+      const current = builtinRegistry;
+      const nextInternals = internals || current;
+      if (!nextInternals) {
+        builtinRegistry = void 0;
+        return;
+      }
+      builtinRegistry = { ...nextInternals, ...builtinConstructors };
+    }
+    function dataProperty(object3, name) {
+      const descriptor = Object.getOwnPropertyDescriptor(object3, name);
+      if (!descriptor || !("value" in descriptor))
+        return void 0;
+      return descriptor.value;
+    }
+    function intrinsicPayloadByteLength(value) {
+      if (!intrinsicTypedArrayByteLength || !value || typeof value !== "object")
+        return void 0;
+      try {
+        const byteLength = intrinsicTypedArrayByteLength.call(value);
+        return typeof byteLength === "number" ? byteLength : void 0;
+      } catch {
+        return void 0;
+      }
+    }
+    function largePayloadOrChain(block, depth) {
+      if (depth > BUILTIN_DISPATCH_MAX_DEPTH || !block || typeof block !== "object")
+        return false;
+      const valueBlockDescriptor = Object.getOwnPropertyDescriptor(block, "valueBlock");
+      if (!valueBlockDescriptor || !("value" in valueBlockDescriptor))
+        return false;
+      const valueBlock = valueBlockDescriptor.value;
+      if (!valueBlock || typeof valueBlock !== "object")
+        return false;
+      const payloadDescriptor = Object.getOwnPropertyDescriptor(valueBlock, "valueHexView");
+      if (payloadDescriptor) {
+        if (!("value" in payloadDescriptor))
+          return false;
+        const byteLength = intrinsicPayloadByteLength(payloadDescriptor.value);
+        return byteLength !== void 0 && byteLength >= BUILTIN_DISPATCH_PAYLOAD_THRESHOLD;
+      }
+      const valuesDescriptor = Object.getOwnPropertyDescriptor(valueBlock, "value");
+      if (!valuesDescriptor || !("value" in valuesDescriptor) || !Array.isArray(valuesDescriptor.value))
+        return false;
+      const values = valuesDescriptor.value;
+      const lengthDescriptor = Object.getOwnPropertyDescriptor(values, "length");
+      if (!lengthDescriptor || !("value" in lengthDescriptor) || lengthDescriptor.value !== 1)
+        return false;
+      const indexDescriptor = Object.getOwnPropertyDescriptor(values, "0");
+      if (!indexDescriptor || !("value" in indexDescriptor))
+        return false;
+      return largePayloadOrChain(indexDescriptor.value, depth + 1);
+    }
+    function shouldUseBuiltinEncoder(block) {
+      try {
+        return largePayloadOrChain(block, 0);
+      } catch {
+        return false;
+      }
+    }
+    function sameDataMethod(current, original) {
+      return !!current && "value" in current && current.value === original && current.writable === true && current.enumerable === false && current.configurable === true;
+    }
+    function writerMethodsStable(registry2) {
+      return sameDataMethod(Object.getOwnPropertyDescriptor(registry2.ViewWriter.prototype, "write"), registry2.originalWriterWrite) && sameDataMethod(Object.getOwnPropertyDescriptor(registry2.ViewWriter.prototype, "final"), registry2.originalWriterFinal);
+    }
+    function findMethod(prototype, name) {
+      let current = prototype;
+      while (current) {
+        const descriptor = Object.getOwnPropertyDescriptor(current, name);
+        if (descriptor) {
+          if ("value" in descriptor && typeof descriptor.value === "function") {
+            return { declaringPrototype: current, method: descriptor.value };
+          }
+          return void 0;
+        }
+        current = Object.getPrototypeOf(current);
+      }
+      return void 0;
+    }
+    function stableInheritedMethod(prototype, name, original) {
+      if (!original)
+        return false;
+      let current = prototype;
+      while (current) {
+        const descriptor = Object.getOwnPropertyDescriptor(current, name);
+        if (current === original.declaringPrototype) {
+          return !!descriptor && "value" in descriptor && descriptor.value === original.method;
+        }
+        if (descriptor)
+          return false;
+        current = Object.getPrototypeOf(current);
+      }
+      return false;
+    }
+    function prototypeMethod(object3, prototype, name, expected) {
+      if (Object.prototype.hasOwnProperty.call(object3, name))
+        return false;
+      if (Object.getPrototypeOf(object3) !== prototype)
+        return false;
+      const descriptor = Object.getOwnPropertyDescriptor(prototype, name);
+      return !!descriptor && "value" in descriptor && descriptor.value === expected;
+    }
+    function inheritedMethod(object3, name, expected, primitiveConstructor) {
+      if (Object.prototype.hasOwnProperty.call(object3, name))
+        return false;
+      const prototype = Object.getPrototypeOf(object3);
+      const originalPrimitiveValuePrototype = Object.getPrototypeOf(primitiveConstructor.prototype);
+      if (prototype !== primitiveConstructor.prototype || Object.getPrototypeOf(prototype) !== originalPrimitiveValuePrototype) {
+        return false;
+      }
+      const descriptor = prototype && Object.getOwnPropertyDescriptor(prototype, name);
+      if (descriptor)
+        return false;
+      const parentDescriptor = Object.getOwnPropertyDescriptor(originalPrimitiveValuePrototype, name);
+      return !!parentDescriptor && "value" in parentDescriptor && parentDescriptor.value === expected;
+    }
+    function plainPayload(value, allowEmpty = false) {
+      if (!(value instanceof Uint8Array) || Object.getPrototypeOf(value) !== Uint8Array.prototype)
+        return void 0;
+      for (const name of ["buffer", "byteOffset", "byteLength", "length", "slice", "constructor"]) {
+        if (Object.prototype.hasOwnProperty.call(value, name))
+          return void 0;
+      }
+      const constructorDescriptor = Object.getOwnPropertyDescriptor(Uint8Array.prototype, "constructor");
+      if (!constructorDescriptor || !("value" in constructorDescriptor) || constructorDescriptor.value !== originalUint8ArrayConstructor)
+        return void 0;
+      if (!stableInheritedMethod(Uint8Array.prototype, "slice", originalUint8ArraySliceInfo))
+        return void 0;
+      try {
+        const buffer = value.buffer;
+        if (!(buffer instanceof ArrayBuffer) || Object.getPrototypeOf(buffer) !== ArrayBuffer.prototype)
+          return void 0;
+        if (Object.prototype.hasOwnProperty.call(buffer, "byteLength"))
+          return void 0;
+        if (value.byteLength !== value.length || !allowEmpty && value.byteLength === 0)
+          return void 0;
+        if (value.byteOffset < 0 || value.byteOffset + value.byteLength > buffer.byteLength)
+          return void 0;
+      } catch {
+        return void 0;
+      }
+      return value;
+    }
+    function validIdBlock(block, constructed, registry2) {
+      if (Object.getPrototypeOf(block) !== registry2.LocalIdentificationBlock.prototype)
+        return false;
+      if (!prototypeMethod(block, registry2.LocalIdentificationBlock.prototype, "toBER", registry2.originalIdentificationToBER))
+        return false;
+      const tagClass = dataProperty(block, "tagClass");
+      const tagNumber = dataProperty(block, "tagNumber");
+      const isConstructed2 = dataProperty(block, "isConstructed");
+      const isHexOnly = dataProperty(block, "isHexOnly");
+      const valueHexView = dataProperty(block, "valueHexView");
+      if (typeof tagClass !== "number" || !Number.isInteger(tagClass) || tagClass < 1 || tagClass > 4)
+        return false;
+      if (typeof tagNumber !== "number" || !Number.isInteger(tagNumber) || tagNumber < 0)
+        return false;
+      if (isConstructed2 !== constructed || typeof isHexOnly !== "boolean")
+        return false;
+      if (isHexOnly)
+        return !!plainPayload(valueHexView);
+      return Number.isSafeInteger(tagNumber);
+    }
+    function validLengthBlock(block, allowIndefinite, registry2) {
+      if (Object.getPrototypeOf(block) !== registry2.LocalLengthBlock.prototype)
+        return false;
+      if (!prototypeMethod(block, registry2.LocalLengthBlock.prototype, "toBER", registry2.originalLengthToBER))
+        return false;
+      const indefinite = dataProperty(block, "isIndefiniteForm");
+      const longForm = dataProperty(block, "longFormUsed");
+      const lengthDescriptor = Object.getOwnPropertyDescriptor(block, "length");
+      const length = lengthDescriptor && "value" in lengthDescriptor ? lengthDescriptor.value : void 0;
+      const longFormDescriptor = Object.getOwnPropertyDescriptor(block, "longFormUsed");
+      return typeof indefinite === "boolean" && (indefinite === false || allowIndefinite) && typeof longForm === "boolean" && !!longFormDescriptor && "value" in longFormDescriptor && longFormDescriptor.writable === true && !!lengthDescriptor && "value" in lengthDescriptor && lengthDescriptor.writable === true && typeof length === "number" && Number.isSafeInteger(length) && length >= 0;
+    }
+    function validBaseBlock(block, isConstructed2, registry2) {
+      const idBlock = dataProperty(block, "idBlock");
+      const lenBlock = dataProperty(block, "lenBlock");
+      return !!idBlock && !!lenBlock && validIdBlock(idBlock, isConstructed2, registry2) && validLengthBlock(lenBlock, isConstructed2, registry2);
+    }
+    function constructedChild(block, registry2) {
+      const valueBlock = dataProperty(block, "valueBlock");
+      if (!valueBlock || Object.getPrototypeOf(valueBlock) !== registry2.LocalConstructedValueBlock.prototype)
+        return void 0;
+      if (!prototypeMethod(valueBlock, registry2.LocalConstructedValueBlock.prototype, "toBER", registry2.originalConstructedToBER))
+        return void 0;
+      const values = dataProperty(valueBlock, "value");
+      if (!Array.isArray(values) || Object.getPrototypeOf(values) !== Array.prototype)
+        return void 0;
+      const lengthDescriptor = Object.getOwnPropertyDescriptor(values, "length");
+      if (!lengthDescriptor || !("value" in lengthDescriptor) || lengthDescriptor.value !== 1)
+        return void 0;
+      if (Object.prototype.hasOwnProperty.call(values, Symbol.iterator))
+        return void 0;
+      const iteratorDescriptor = Object.getOwnPropertyDescriptor(Array.prototype, Symbol.iterator);
+      if (!iteratorDescriptor || !("value" in iteratorDescriptor) || iteratorDescriptor.value !== originalArrayIterator)
+        return void 0;
+      const indexDescriptor = Object.getOwnPropertyDescriptor(values, "0");
+      if (!indexDescriptor || !("value" in indexDescriptor))
+        return void 0;
+      if (Object.getOwnPropertyNames(values).length !== 2)
+        return void 0;
+      return indexDescriptor.value;
+    }
+    function bitPayload(block, registry2) {
+      const valueBlock = dataProperty(block, "valueBlock");
+      if (!valueBlock || Object.getPrototypeOf(valueBlock) !== registry2.LocalBitStringValueBlock.prototype)
+        return void 0;
+      if (!prototypeMethod(valueBlock, registry2.LocalBitStringValueBlock.prototype, "toBER", registry2.originalBitStringToBER))
+        return void 0;
+      if (dataProperty(valueBlock, "isConstructed") !== false)
+        return void 0;
+      const unusedBits = dataProperty(valueBlock, "unusedBits");
+      if (typeof unusedBits !== "number" || !Number.isInteger(unusedBits) || unusedBits < 0 || unusedBits > 7)
+        return void 0;
+      const payload = plainPayload(dataProperty(valueBlock, "valueHexView"), true);
+      if (!payload)
+        return void 0;
+      return { payload, prefix: Uint8Array.of(payload.byteLength ? unusedBits : 0) };
+    }
+    function primitivePayload(block, kind, registry2) {
+      const valueBlock = dataProperty(block, "valueBlock");
+      if (!valueBlock)
+        return void 0;
+      if (kind === "integer") {
+        if (Object.getPrototypeOf(valueBlock) !== registry2.LocalIntegerValueBlock.prototype)
+          return void 0;
+        if (!prototypeMethod(valueBlock, registry2.LocalIntegerValueBlock.prototype, "toBER", registry2.originalIntegerToBER))
+          return void 0;
+      } else if (kind === "octet") {
+        if (Object.getPrototypeOf(valueBlock) !== registry2.LocalOctetStringValueBlock.prototype)
+          return void 0;
+        if (!prototypeMethod(valueBlock, registry2.LocalOctetStringValueBlock.prototype, "toBER", registry2.originalOctetStringToBER))
+          return void 0;
+        if (dataProperty(valueBlock, "isConstructed") !== false)
+          return void 0;
+      } else {
+        if (Object.getPrototypeOf(valueBlock) !== registry2.LocalPrimitiveValueBlock.prototype)
+          return void 0;
+        if (!inheritedMethod(valueBlock, "toBER", registry2.originalPrimitiveToBER, registry2.LocalPrimitiveValueBlock))
+          return void 0;
+      }
+      if (kind === "primitive" && dataProperty(valueBlock, "isHexOnly") !== true)
+        return void 0;
+      if (typeof dataProperty(valueBlock, "isHexOnly") !== "boolean")
+        return void 0;
+      return plainPayload(dataProperty(valueBlock, "valueHexView"));
+    }
+    function validOuterMethod(block, registry2) {
+      if (Object.prototype.hasOwnProperty.call(block, "toBER"))
+        return false;
+      let prototype = block;
+      while (prototype) {
+        const descriptor = Object.getOwnPropertyDescriptor(prototype, "toBER");
+        if (descriptor)
+          return "value" in descriptor && descriptor.value === registry2.originalBaseBlockToBER;
+        prototype = Object.getPrototypeOf(prototype);
+      }
+      return false;
+    }
+    function isPrimitive(block, type, registry2) {
+      const constructor = registry2[type];
+      return !!constructor && Object.getPrototypeOf(block) === constructor.prototype;
+    }
+    function isConstructed(block, registry2) {
+      return Object.getPrototypeOf(block) === registry2.Sequence.prototype || Object.getPrototypeOf(block) === registry2.Set.prototype || Object.getPrototypeOf(block) === registry2.Constructed.prototype;
+    }
+    function inspectNode(block, depth, registry2) {
+      if (depth > BUILTIN_DISPATCH_MAX_DEPTH || !block || typeof block !== "object")
+        return void 0;
+      try {
+        if (!validOuterMethod(block, registry2))
+          return void 0;
+        const primitiveKind = isPrimitive(block, "BitString", registry2) ? "bit" : isPrimitive(block, "Integer", registry2) ? "integer" : isPrimitive(block, "OctetString", registry2) ? "octet" : isPrimitive(block, "Primitive", registry2) ? "primitive" : void 0;
+        const constructed = primitiveKind === void 0 && isConstructed(block, registry2);
+        if (!primitiveKind && !constructed)
+          return void 0;
+        if (!validBaseBlock(block, constructed, registry2))
+          return void 0;
+        const idBlock = dataProperty(block, "idBlock");
+        const lenBlock = dataProperty(block, "lenBlock");
+        if (!idBlock || !lenBlock)
+          return void 0;
+        if (primitiveKind) {
+          const bit = primitiveKind === "bit" ? bitPayload(block, registry2) : void 0;
+          const payload = primitiveKind === "bit" ? bit === null || bit === void 0 ? void 0 : bit.payload : primitivePayload(block, primitiveKind, registry2);
+          return payload ? { block, kind: primitiveKind, idBlock, lenBlock, indefinite: false, payload, prefix: bit === null || bit === void 0 ? void 0 : bit.prefix } : void 0;
+        }
+        const child = constructedChild(block, registry2);
+        const validatedChild = child && inspectNode(child, depth + 1, registry2);
+        const indefinite = dataProperty(lenBlock, "isIndefiniteForm");
+        return validatedChild ? { block, kind: "constructed", idBlock, lenBlock, indefinite: indefinite === true, child: validatedChild } : void 0;
+      } catch {
+        return void 0;
+      }
+    }
+    function buildNode(node, sizeOnly, registry2) {
+      var _a3, _b2;
+      const id = Reflect.apply(registry2.originalIdentificationToBER, node.idBlock, [sizeOnly]);
+      if (!(id instanceof ArrayBuffer) || id.byteLength === 0)
+        throw TypeError("Built-in identifier encoding failed");
+      let payload;
+      if (node.kind === "constructed") {
+        payload = buildNode(node.child, sizeOnly, registry2);
+      } else {
+        payload = node.payload;
+      }
+      const length = (payload instanceof Uint8Array ? payload.byteLength : payload.total) + ((_b2 = (_a3 = node.prefix) === null || _a3 === void 0 ? void 0 : _a3.byteLength) !== null && _b2 !== void 0 ? _b2 : 0);
+      let len;
+      if (node.indefinite) {
+        len = Uint8Array.of(128).buffer;
+      } else {
+        node.lenBlock.length = length;
+        len = Reflect.apply(registry2.originalLengthToBER, node.lenBlock, [sizeOnly]);
+        if (!(len instanceof ArrayBuffer) || len.byteLength === 0)
+          throw TypeError("Built-in length encoding failed");
+      }
+      const total = id.byteLength + len.byteLength + length + (node.indefinite ? 2 : 0);
+      if (!Number.isSafeInteger(total))
+        throw RangeError("Built-in encoding is too large");
+      return { id, len, payload, length, total, indefinite: node.indefinite, prefix: node.prefix };
+    }
+    function flatten(node, output, offset, sizeOnly) {
+      output.set(new Uint8Array(node.id), offset);
+      offset += node.id.byteLength;
+      output.set(new Uint8Array(node.len), offset);
+      offset += node.len.byteLength;
+      if (node.prefix) {
+        if (!sizeOnly)
+          output.set(node.prefix, offset);
+        offset += node.prefix.byteLength;
+      }
+      if (node.payload instanceof Uint8Array) {
+        if (!sizeOnly)
+          output.set(node.payload, offset);
+        offset += node.payload.byteLength;
+      } else {
+        offset = flatten(node.payload, output, offset, sizeOnly);
+      }
+      if (node.indefinite)
+        offset += 2;
+      return offset;
+    }
+    function tryEncodeBuiltin(block, sizeOnly = false) {
+      const registry2 = builtinRegistry;
+      if (!registry2 || !writerMethodsStable(registry2))
+        return void 0;
+      const validated = inspectNode(block, 0, registry2);
+      if (!validated)
+        return void 0;
+      const node = buildNode(validated, sizeOnly, registry2);
+      const output = new Uint8Array(node.total);
+      flatten(node, output, 0, sizeOnly);
+      return output.buffer;
+    }
+    var BaseBlock = class extends LocalBaseBlock {
+      constructor({ name = EMPTY_STRING, optional: optional2 = false, primitiveSchema, ...parameters } = {}, valueBlockType) {
+        super(parameters);
+        this.name = name;
+        this.optional = optional2;
+        if (primitiveSchema) {
+          this.primitiveSchema = primitiveSchema;
+        }
+        this.idBlock = new LocalIdentificationBlock(parameters);
+        this.lenBlock = new LocalLengthBlock(parameters);
+        this.valueBlock = valueBlockType ? new valueBlockType(parameters) : new ValueBlock(parameters);
+      }
+      fromBER(inputBuffer, inputOffset, inputLength, context) {
+        const resultOffset = this.valueBlock.fromBER(inputBuffer, inputOffset, this.lenBlock.isIndefiniteForm ? inputLength : this.lenBlock.length, context);
+        if (resultOffset === -1) {
+          this.error = this.valueBlock.error;
+          return resultOffset;
+        }
+        if (!this.idBlock.error.length)
+          this.blockLength += this.idBlock.blockLength;
+        if (!this.lenBlock.error.length)
+          this.blockLength += this.lenBlock.blockLength;
+        if (!this.valueBlock.error.length)
+          this.blockLength += this.valueBlock.blockLength;
+        return resultOffset;
+      }
+      toBER(sizeOnly, writer) {
+        const _writer = writer || new ViewWriter();
+        if (!writer) {
+          prepareIndefiniteForm(this);
+          if (sizeOnly === true || sizeOnly === false || sizeOnly === void 0) {
+            if (shouldUseBuiltinEncoder(this)) {
+              const encoded = tryEncodeBuiltin(this, sizeOnly === true);
+              if (encoded)
+                return encoded;
+            }
+          }
+        }
+        const idBlockBuf = this.idBlock.toBER(sizeOnly);
+        _writer.write(idBlockBuf);
+        if (this.lenBlock.isIndefiniteForm) {
+          _writer.write(new Uint8Array([128]).buffer);
+          this.valueBlock.toBER(sizeOnly, _writer);
+          _writer.write(new ArrayBuffer(2));
+        } else {
+          const valueBlockBuf = this.valueBlock.toBER(sizeOnly);
+          this.lenBlock.length = valueBlockBuf.byteLength;
+          const lenBlockBuf = this.lenBlock.toBER(sizeOnly);
+          _writer.write(lenBlockBuf);
+          _writer.write(valueBlockBuf);
+        }
+        if (!writer) {
+          return _writer.final();
+        }
+        return EMPTY_BUFFER;
+      }
+      toJSON() {
+        const object3 = {
+          ...super.toJSON(),
+          idBlock: this.idBlock.toJSON(),
+          lenBlock: this.lenBlock.toJSON(),
+          valueBlock: this.valueBlock.toJSON(),
+          name: this.name,
+          optional: this.optional
+        };
+        if (this.primitiveSchema)
+          object3.primitiveSchema = this.primitiveSchema.toJSON();
+        return object3;
+      }
+      toString(encoding = "ascii") {
+        if (encoding === "ascii") {
+          return this.onAsciiEncoding();
+        }
+        return pvtsutils__namespace.Convert.ToHex(this.toBER());
+      }
+      onAsciiEncoding() {
+        const name = this.constructor.NAME;
+        const value = pvtsutils__namespace.Convert.ToHex(this.valueBlock.valueBeforeDecodeView);
+        return `${name} : ${value}`;
+      }
+      isEqual(other) {
+        if (this === other) {
+          return true;
+        }
+        if (!(other instanceof this.constructor)) {
+          return false;
+        }
+        const thisRaw = this.toBER();
+        const otherRaw = other.toBER();
+        return pvutils__namespace.isEqualBuffer(thisRaw, otherRaw);
+      }
+    };
+    BaseBlock.NAME = "BaseBlock";
+    var ORIGINAL_BASE_BLOCK_TO_BER = BaseBlock.prototype.toBER;
+    function prepareIndefiniteForm(baseBlock) {
+      var _a3;
+      if (baseBlock instanceof typeStore.Constructed) {
+        for (const value of baseBlock.valueBlock.value) {
+          if (prepareIndefiniteForm(value)) {
+            baseBlock.lenBlock.isIndefiniteForm = true;
+          }
+        }
+      }
+      return !!((_a3 = baseBlock.lenBlock) === null || _a3 === void 0 ? void 0 : _a3.isIndefiniteForm);
+    }
+    var BaseStringBlock = class extends BaseBlock {
+      getValue() {
+        return this.valueBlock.value;
+      }
+      setValue(value) {
+        this.valueBlock.value = value;
+      }
+      constructor({ value = EMPTY_STRING, ...parameters } = {}, stringValueBlockType) {
+        super(parameters, stringValueBlockType);
+        if (value) {
+          this.fromString(value);
+        }
+      }
+      fromBER(inputBuffer, inputOffset, inputLength) {
+        const resultOffset = this.valueBlock.fromBER(inputBuffer, inputOffset, this.lenBlock.isIndefiniteForm ? inputLength : this.lenBlock.length);
+        if (resultOffset === -1) {
+          this.error = this.valueBlock.error;
+          return resultOffset;
+        }
+        this.fromBuffer(this.valueBlock.valueHexView);
+        if (!this.idBlock.error.length)
+          this.blockLength += this.idBlock.blockLength;
+        if (!this.lenBlock.error.length)
+          this.blockLength += this.lenBlock.blockLength;
+        if (!this.valueBlock.error.length)
+          this.blockLength += this.valueBlock.blockLength;
+        return resultOffset;
+      }
+      onAsciiEncoding() {
+        return `${this.constructor.NAME} : '${this.valueBlock.value}'`;
+      }
+    };
+    BaseStringBlock.NAME = "BaseStringBlock";
+    var _a$x;
+    var LocalPrimitiveValueBlock = class extends HexBlock(ValueBlock) {
+      constructor({ isHexOnly = true, ...parameters } = {}) {
+        super(parameters);
+        this.isHexOnly = isHexOnly;
+      }
+    };
+    LocalPrimitiveValueBlock.NAME = "PrimitiveValueBlock";
+    var ORIGINAL_LOCAL_PRIMITIVE_TO_BER = (_a$x = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(LocalPrimitiveValueBlock.prototype), "toBER")) === null || _a$x === void 0 ? void 0 : _a$x.value;
+    var _a$w;
+    var Primitive = class extends BaseBlock {
+      constructor(parameters = {}) {
+        super(parameters, LocalPrimitiveValueBlock);
+        this.idBlock.isConstructed = false;
+      }
+    };
+    _a$w = Primitive;
+    (() => {
+      typeStore.Primitive = _a$w;
+    })();
+    Primitive.NAME = "PRIMITIVE";
+    var fastParserRegistry;
+    function registerFastParser(constructors) {
+      fastParserRegistry = {
+        Integer: constructors.Integer,
+        Null: constructors.Null,
+        Sequence: constructors.Sequence
+      };
+    }
+    function fastParserContext(context) {
+      const nodes = Object.getOwnPropertyDescriptor(context, "nodesCount");
+      const maxNodes = Object.getOwnPropertyDescriptor(context, "maxNodes");
+      const maxContentLength = Object.getOwnPropertyDescriptor(context, "maxContentLength");
+      if (!nodes || !("value" in nodes) || nodes.writable !== true)
+        return false;
+      if (!maxNodes || !("value" in maxNodes) || !maxContentLength || !("value" in maxContentLength))
+        return false;
+      return typeof nodes.value === "number" && Number.isSafeInteger(nodes.value) && nodes.value >= 0 && typeof maxNodes.value === "number" && Number.isSafeInteger(maxNodes.value) && maxNodes.value >= 0 && typeof maxContentLength.value === "number" && Number.isSafeInteger(maxContentLength.value) && maxContentLength.value >= 0 && nodes.value < maxNodes.value;
+    }
+    function fastParserType(store, name, value) {
+      const descriptor = Object.getOwnPropertyDescriptor(store, name);
+      return !!descriptor && "value" in descriptor && descriptor.value === value;
+    }
+    function tryFastFromBER(inputBuffer, inputOffset, inputLength, context) {
+      const registry2 = fastParserRegistry;
+      if (!registry2)
+        return void 0;
+      let Constructor;
+      let length = 0;
+      try {
+        if (Object.getPrototypeOf(inputBuffer) !== Uint8Array.prototype)
+          return void 0;
+        if (!Number.isSafeInteger(inputOffset) || inputOffset < 0 || !Number.isSafeInteger(inputLength) || inputLength < 2) {
+          return void 0;
+        }
+        if (inputOffset > inputBuffer.byteLength || inputLength > inputBuffer.byteLength - inputOffset)
+          return void 0;
+        const tag = inputBuffer[inputOffset];
+        if (tag !== 2 && tag !== 5 && tag !== 48)
+          return void 0;
+        length = inputBuffer[inputOffset + 1];
+        if (length >= 128 || length > inputLength - 2)
+          return void 0;
+        if (tag === 5 && length !== 0)
+          return void 0;
+        if (!fastParserContext(context))
+          return void 0;
+        if (length > Object.getOwnPropertyDescriptor(context, "maxContentLength").value) {
+          return void 0;
+        }
+        const constructorName = tag === 2 ? "Integer" : tag === 5 ? "Null" : "Sequence";
+        Constructor = registry2[constructorName];
+        if (!fastParserType(typeStore, constructorName, Constructor))
+          return void 0;
+        const identificationFromBER = Object.getOwnPropertyDescriptor(LocalIdentificationBlock.prototype, "fromBER");
+        const lengthFromBER = Object.getOwnPropertyDescriptor(LocalLengthBlock.prototype, "fromBER");
+        if (!identificationFromBER || !("value" in identificationFromBER) || identificationFromBER.value !== ORIGINAL_LOCAL_IDENTIFICATION_FROM_BER || !lengthFromBER || !("value" in lengthFromBER) || lengthFromBER.value !== ORIGINAL_LOCAL_LENGTH_FROM_BER)
+          return void 0;
+      } catch {
+        return void 0;
+      }
+      if (!Constructor)
+        return void 0;
+      const result = new Constructor();
+      result.idBlock.tagClass = 1;
+      result.idBlock.tagNumber = inputBuffer[inputOffset] & 31;
+      result.idBlock.isConstructed = inputBuffer[inputOffset] === 48;
+      result.idBlock.isHexOnly = false;
+      result.idBlock.blockLength = 1;
+      result.lenBlock.isIndefiniteForm = false;
+      result.lenBlock.longFormUsed = false;
+      result.lenBlock.length = length;
+      result.lenBlock.blockLength = 1;
+      context.nodesCount += 1;
+      const resultOffset = result.fromBER(inputBuffer, inputOffset + 2, length, context);
+      result.valueBeforeDecodeView = inputBuffer.subarray(inputOffset, inputOffset + result.blockLength);
+      return { offset: resultOffset, result };
+    }
+    var DEFAULT_MAX_DEPTH = 100;
+    var DEFAULT_MAX_NODES = 1e4;
+    var DEFAULT_MAX_CONTENT_LENGTH = 16 * 1024 * 1024;
+    var MAX_DEPTH_EXCEEDED_ERROR = "Maximum ASN.1 nesting depth exceeded";
+    var MAX_NODES_EXCEEDED_ERROR = "Maximum ASN.1 node count exceeded";
+    var MAX_CONTENT_LENGTH_EXCEEDED_ERROR = "Maximum ASN.1 content length exceeded";
+    function createFromBerContext(options = {}) {
+      var _a3, _b2, _c2, _d;
+      return {
+        depth: 0,
+        maxDepth: (_a3 = options.maxDepth) !== null && _a3 !== void 0 ? _a3 : DEFAULT_MAX_DEPTH,
+        nodesCount: 0,
+        maxNodes: (_b2 = options.maxNodes) !== null && _b2 !== void 0 ? _b2 : DEFAULT_MAX_NODES,
+        maxContentLength: (_c2 = options.maxContentLength) !== null && _c2 !== void 0 ? _c2 : DEFAULT_MAX_CONTENT_LENGTH,
+        parseEmbedded: (_d = options.parseEmbedded) !== null && _d !== void 0 ? _d : true
+      };
+    }
+    function createErrorResult(error48) {
+      const result = new BaseBlock({}, ValueBlock);
+      result.error = error48;
+      return {
+        offset: -1,
+        result
+      };
+    }
+    function checkNodesLimit(context) {
+      context.nodesCount += 1;
+      if (context.nodesCount > context.maxNodes) {
+        return MAX_NODES_EXCEEDED_ERROR;
+      }
+      return void 0;
+    }
+    function checkContentLengthLimit(inputLength, context) {
+      if (inputLength > context.maxContentLength) {
+        return MAX_CONTENT_LENGTH_EXCEEDED_ERROR;
+      }
+      return void 0;
+    }
+    function localFromBERWithChildContext(inputBuffer, inputOffset, inputLength, context) {
+      const childDepth = context.depth + 1;
+      if (childDepth > context.maxDepth) {
+        return createErrorResult(MAX_DEPTH_EXCEEDED_ERROR);
+      }
+      context.depth = childDepth;
+      try {
+        return localFromBER(inputBuffer, inputOffset, inputLength, context);
+      } finally {
+        context.depth -= 1;
+      }
+    }
+    function localChangeType(inputObject, newType) {
+      if (inputObject instanceof newType) {
+        return inputObject;
+      }
+      const newObject = new newType();
+      newObject.idBlock = inputObject.idBlock;
+      newObject.lenBlock = inputObject.lenBlock;
+      newObject.warnings = inputObject.warnings;
+      newObject.valueBeforeDecodeView = inputObject.valueBeforeDecodeView;
+      return newObject;
+    }
+    function localFromBER(inputBuffer, inputOffset = 0, inputLength = inputBuffer.length, context = createFromBerContext()) {
+      const fastResult = tryFastFromBER(inputBuffer, inputOffset, inputLength, context);
+      if (fastResult)
+        return fastResult;
+      const incomingOffset = inputOffset;
+      let returnObject = new BaseBlock({}, ValueBlock);
+      if (!checkBufferParams(returnObject, inputBuffer, inputOffset, inputLength)) {
+        return {
+          offset: -1,
+          result: returnObject
+        };
+      }
+      const fastArgs = Number.isInteger(inputOffset) && Number.isInteger(inputLength);
+      if (fastArgs ? inputLength === 0 : inputBuffer.subarray(inputOffset, inputOffset + inputLength).length === 0) {
+        returnObject.error = "Zero buffer length";
+        return {
+          offset: -1,
+          result: returnObject
+        };
+      }
+      const nodesLimitError = checkNodesLimit(context);
+      if (nodesLimitError) {
+        returnObject.error = nodesLimitError;
+        return {
+          offset: -1,
+          result: returnObject
+        };
+      }
+      let resultOffset = returnObject.idBlock.fromBER(inputBuffer, inputOffset, inputLength);
+      if (returnObject.idBlock.warnings.length) {
+        returnObject.warnings.concat(returnObject.idBlock.warnings);
+      }
+      if (resultOffset === -1) {
+        returnObject.error = returnObject.idBlock.error;
+        return {
+          offset: -1,
+          result: returnObject
+        };
+      }
+      inputOffset = resultOffset;
+      inputLength -= returnObject.idBlock.blockLength;
+      resultOffset = returnObject.lenBlock.fromBER(inputBuffer, inputOffset, inputLength);
+      if (returnObject.lenBlock.warnings.length) {
+        returnObject.warnings.concat(returnObject.lenBlock.warnings);
+      }
+      if (resultOffset === -1) {
+        returnObject.error = returnObject.lenBlock.error;
+        return {
+          offset: -1,
+          result: returnObject
+        };
+      }
+      inputOffset = resultOffset;
+      inputLength -= returnObject.lenBlock.blockLength;
+      const valueLength = returnObject.lenBlock.isIndefiniteForm ? inputLength : returnObject.lenBlock.length;
+      const contentLengthError = checkContentLengthLimit(valueLength, context);
+      if (contentLengthError) {
+        returnObject.error = contentLengthError;
+        return {
+          offset: -1,
+          result: returnObject
+        };
+      }
+      if (!returnObject.idBlock.isConstructed && returnObject.lenBlock.isIndefiniteForm) {
+        returnObject.error = "Indefinite length form used for primitive encoding form";
+        return {
+          offset: -1,
+          result: returnObject
+        };
+      }
+      let newASN1Type = BaseBlock;
+      switch (returnObject.idBlock.tagClass) {
+        case 1:
+          if (returnObject.idBlock.tagNumber >= 37 && returnObject.idBlock.isHexOnly === false) {
+            returnObject.error = "UNIVERSAL 37 and upper tags are reserved by ASN.1 standard";
+            return {
+              offset: -1,
+              result: returnObject
+            };
+          }
+          switch (returnObject.idBlock.tagNumber) {
+            case 0:
+              if (returnObject.idBlock.isConstructed && returnObject.lenBlock.length > 0) {
+                returnObject.error = "Type [UNIVERSAL 0] is reserved";
+                return {
+                  offset: -1,
+                  result: returnObject
+                };
+              }
+              newASN1Type = typeStore.EndOfContent;
+              break;
+            case 1:
+              newASN1Type = typeStore.Boolean;
+              break;
+            case 2:
+              newASN1Type = typeStore.Integer;
+              break;
+            case 3:
+              newASN1Type = typeStore.BitString;
+              break;
+            case 4:
+              newASN1Type = typeStore.OctetString;
+              break;
+            case 5:
+              newASN1Type = typeStore.Null;
+              break;
+            case 6:
+              newASN1Type = typeStore.ObjectIdentifier;
+              break;
+            case 10:
+              newASN1Type = typeStore.Enumerated;
+              break;
+            case 12:
+              newASN1Type = typeStore.Utf8String;
+              break;
+            case 13:
+              newASN1Type = typeStore.RelativeObjectIdentifier;
+              break;
+            case 14:
+              newASN1Type = typeStore.TIME;
+              break;
+            case 15:
+              returnObject.error = "[UNIVERSAL 15] is reserved by ASN.1 standard";
+              return {
+                offset: -1,
+                result: returnObject
+              };
+            case 16:
+              newASN1Type = typeStore.Sequence;
+              break;
+            case 17:
+              newASN1Type = typeStore.Set;
+              break;
+            case 18:
+              newASN1Type = typeStore.NumericString;
+              break;
+            case 19:
+              newASN1Type = typeStore.PrintableString;
+              break;
+            case 20:
+              newASN1Type = typeStore.TeletexString;
+              break;
+            case 21:
+              newASN1Type = typeStore.VideotexString;
+              break;
+            case 22:
+              newASN1Type = typeStore.IA5String;
+              break;
+            case 23:
+              newASN1Type = typeStore.UTCTime;
+              break;
+            case 24:
+              newASN1Type = typeStore.GeneralizedTime;
+              break;
+            case 25:
+              newASN1Type = typeStore.GraphicString;
+              break;
+            case 26:
+              newASN1Type = typeStore.VisibleString;
+              break;
+            case 27:
+              newASN1Type = typeStore.GeneralString;
+              break;
+            case 28:
+              newASN1Type = typeStore.UniversalString;
+              break;
+            case 29:
+              newASN1Type = typeStore.CharacterString;
+              break;
+            case 30:
+              newASN1Type = typeStore.BmpString;
+              break;
+            case 31:
+              newASN1Type = typeStore.DATE;
+              break;
+            case 32:
+              newASN1Type = typeStore.TimeOfDay;
+              break;
+            case 33:
+              newASN1Type = typeStore.DateTime;
+              break;
+            case 34:
+              newASN1Type = typeStore.Duration;
+              break;
+            default: {
+              const newObject = returnObject.idBlock.isConstructed ? new typeStore.Constructed() : new typeStore.Primitive();
+              newObject.idBlock = returnObject.idBlock;
+              newObject.lenBlock = returnObject.lenBlock;
+              newObject.warnings = returnObject.warnings;
+              returnObject = newObject;
+            }
+          }
+          break;
+        case 2:
+        case 3:
+        case 4:
+        default: {
+          newASN1Type = returnObject.idBlock.isConstructed ? typeStore.Constructed : typeStore.Primitive;
+        }
+      }
+      returnObject = localChangeType(returnObject, newASN1Type);
+      resultOffset = returnObject.fromBER(inputBuffer, inputOffset, valueLength, context);
+      returnObject.valueBeforeDecodeView = inputBuffer.subarray(incomingOffset, incomingOffset + returnObject.blockLength);
+      return {
+        offset: resultOffset,
+        result: returnObject
+      };
+    }
+    function fromBER(inputBuffer, options = {}) {
+      if (!inputBuffer.byteLength) {
+        const result = new BaseBlock({}, ValueBlock);
+        result.error = "Input buffer has zero length";
+        return {
+          offset: -1,
+          result
+        };
+      }
+      const inputView = pvtsutils__namespace.BufferSourceConverter.toUint8Array(inputBuffer);
+      const normalizedInput = options.copyInput === false ? inputView : inputView.slice();
+      return localFromBER(normalizedInput, 0, inputBuffer.byteLength, createFromBerContext(options));
+    }
+    function checkLen(indefiniteLength, length) {
+      if (indefiniteLength) {
+        return 1;
+      }
+      return length;
+    }
+    var LocalConstructedValueBlock = class extends ValueBlock {
+      constructor({ value = [], isIndefiniteForm = false, ...parameters } = {}) {
+        super(parameters);
+        this.value = value;
+        this.isIndefiniteForm = isIndefiniteForm;
+      }
+      fromBER(inputBuffer, inputOffset, inputLength, context) {
+        const view = pvtsutils__namespace.BufferSourceConverter.toUint8Array(inputBuffer);
+        const parseContext = context !== null && context !== void 0 ? context : createFromBerContext();
+        if (!checkBufferParams(this, view, inputOffset, inputLength)) {
+          return -1;
+        }
+        this.valueBeforeDecodeView = view.subarray(inputOffset, inputOffset + inputLength);
+        if (this.valueBeforeDecodeView.length === 0) {
+          this.warnings.push("Zero buffer length");
+          return inputOffset;
+        }
+        let currentOffset = inputOffset;
+        while (checkLen(this.isIndefiniteForm, inputLength) > 0) {
+          const returnObject = localFromBERWithChildContext(view, currentOffset, inputLength, parseContext);
+          if (returnObject.offset === -1) {
+            this.error = returnObject.result.error;
+            this.warnings.concat(returnObject.result.warnings);
+            return -1;
+          }
+          currentOffset = returnObject.offset;
+          this.blockLength += returnObject.result.blockLength;
+          inputLength -= returnObject.result.blockLength;
+          this.value.push(returnObject.result);
+          if (this.isIndefiniteForm && returnObject.result.constructor.NAME === END_OF_CONTENT_NAME) {
+            break;
+          }
+        }
+        if (this.isIndefiniteForm) {
+          if (this.value[this.value.length - 1].constructor.NAME === END_OF_CONTENT_NAME) {
+            this.value.pop();
+          } else {
+            this.warnings.push("No EndOfContent block encoded");
+          }
+        }
+        return currentOffset;
+      }
+      toBER(sizeOnly, writer) {
+        const _writer = writer || new ViewWriter();
+        for (let i = 0; i < this.value.length; i++) {
+          this.value[i].toBER(sizeOnly, _writer);
+        }
+        if (!writer) {
+          return _writer.final();
+        }
+        return EMPTY_BUFFER;
+      }
+      toJSON() {
+        const object3 = {
+          ...super.toJSON(),
+          isIndefiniteForm: this.isIndefiniteForm,
+          value: []
+        };
+        for (const value of this.value) {
+          object3.value.push(value.toJSON());
+        }
+        return object3;
+      }
+    };
+    LocalConstructedValueBlock.NAME = "ConstructedValueBlock";
+    var ORIGINAL_LOCAL_CONSTRUCTED_TO_BER = LocalConstructedValueBlock.prototype.toBER;
+    var _a$v;
+    var Constructed = class extends BaseBlock {
+      constructor(parameters = {}) {
+        super(parameters, LocalConstructedValueBlock);
+        this.idBlock.isConstructed = true;
+      }
+      fromBER(inputBuffer, inputOffset, inputLength, context) {
+        this.valueBlock.isIndefiniteForm = this.lenBlock.isIndefiniteForm;
+        const resultOffset = this.valueBlock.fromBER(inputBuffer, inputOffset, this.lenBlock.isIndefiniteForm ? inputLength : this.lenBlock.length, context);
+        if (resultOffset === -1) {
+          this.error = this.valueBlock.error;
+          return resultOffset;
+        }
+        if (!this.idBlock.error.length)
+          this.blockLength += this.idBlock.blockLength;
+        if (!this.lenBlock.error.length)
+          this.blockLength += this.lenBlock.blockLength;
+        if (!this.valueBlock.error.length)
+          this.blockLength += this.valueBlock.blockLength;
+        return resultOffset;
+      }
+      onAsciiEncoding() {
+        const values = [];
+        for (const value of this.valueBlock.value) {
+          values.push(value.toString("ascii").split("\n").map((o) => `  ${o}`).join("\n"));
+        }
+        const blockName = this.idBlock.tagClass === 3 ? `[${this.idBlock.tagNumber}]` : this.constructor.NAME;
+        return values.length ? `${blockName} :
+${values.join("\n")}` : `${blockName} :`;
+      }
+    };
+    _a$v = Constructed;
+    (() => {
+      typeStore.Constructed = _a$v;
+    })();
+    Constructed.NAME = "CONSTRUCTED";
+    var LocalEndOfContentValueBlock = class extends ValueBlock {
+      fromBER(inputBuffer, inputOffset, _inputLength) {
+        return inputOffset;
+      }
+      toBER(_sizeOnly) {
+        return EMPTY_BUFFER;
+      }
+    };
+    LocalEndOfContentValueBlock.override = "EndOfContentValueBlock";
+    var _a$u;
+    var EndOfContent = class extends BaseBlock {
+      constructor(parameters = {}) {
+        super(parameters, LocalEndOfContentValueBlock);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 0;
+      }
+    };
+    _a$u = EndOfContent;
+    (() => {
+      typeStore.EndOfContent = _a$u;
+    })();
+    EndOfContent.NAME = END_OF_CONTENT_NAME;
+    var _a$t;
+    var Null = class extends BaseBlock {
+      constructor(parameters = {}) {
+        super(parameters, ValueBlock);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 5;
+      }
+      fromBER(inputBuffer, inputOffset, inputLength) {
+        if (this.lenBlock.length > 0)
+          this.warnings.push("Non-zero length of value block for Null type");
+        if (!this.idBlock.error.length)
+          this.blockLength += this.idBlock.blockLength;
+        if (!this.lenBlock.error.length)
+          this.blockLength += this.lenBlock.blockLength;
+        this.blockLength += inputLength;
+        if (inputOffset + inputLength > inputBuffer.byteLength) {
+          this.error = "End of input reached before message was fully decoded (inconsistent offset and length values)";
+          return -1;
+        }
+        return inputOffset + inputLength;
+      }
+      toBER(sizeOnly, writer) {
+        const retBuf = new ArrayBuffer(2);
+        if (!sizeOnly) {
+          const retView = new Uint8Array(retBuf);
+          retView[0] = 5;
+          retView[1] = 0;
+        }
+        if (writer) {
+          writer.write(retBuf);
+        }
+        return retBuf;
+      }
+      onAsciiEncoding() {
+        return `${this.constructor.NAME}`;
+      }
+    };
+    _a$t = Null;
+    (() => {
+      typeStore.Null = _a$t;
+    })();
+    Null.NAME = "NULL";
+    var LocalBooleanValueBlock = class extends HexBlock(ValueBlock) {
+      get value() {
+        for (const octet of this.valueHexView) {
+          if (octet > 0) {
+            return true;
+          }
+        }
+        return false;
+      }
+      set value(value) {
+        this.valueHexView[0] = value ? 255 : 0;
+      }
+      constructor({ value, ...parameters } = {}) {
+        super(parameters);
+        if (parameters.valueHex) {
+          this.valueHexView = pvtsutils__namespace.BufferSourceConverter.toUint8Array(parameters.valueHex);
+        } else {
+          this.valueHexView = new Uint8Array(1);
+        }
+        if (value) {
+          this.value = value;
+        }
+      }
+      fromBER(inputBuffer, inputOffset, inputLength) {
+        const inputView = pvtsutils__namespace.BufferSourceConverter.toUint8Array(inputBuffer);
+        if (!checkBufferParams(this, inputView, inputOffset, inputLength)) {
+          return -1;
+        }
+        this.valueHexView = inputView.subarray(inputOffset, inputOffset + inputLength);
+        if (inputLength > 1)
+          this.warnings.push("Boolean value encoded in more then 1 octet");
+        this.isHexOnly = true;
+        pvutils__namespace.utilDecodeTC.call(this);
+        this.blockLength = inputLength;
+        return inputOffset + inputLength;
+      }
+      toBER() {
+        return this.valueHexView.slice().buffer;
+      }
+      toJSON() {
+        return {
+          ...super.toJSON(),
+          value: this.value
+        };
+      }
+    };
+    LocalBooleanValueBlock.NAME = "BooleanValueBlock";
+    var _a$s;
+    var Boolean2 = class extends BaseBlock {
+      getValue() {
+        return this.valueBlock.value;
+      }
+      setValue(value) {
+        this.valueBlock.value = value;
+      }
+      constructor(parameters = {}) {
+        super(parameters, LocalBooleanValueBlock);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 1;
+      }
+      onAsciiEncoding() {
+        return `${this.constructor.NAME} : ${this.getValue}`;
+      }
+    };
+    _a$s = Boolean2;
+    (() => {
+      typeStore.Boolean = _a$s;
+    })();
+    Boolean2.NAME = "BOOLEAN";
+    var LocalOctetStringValueBlock = class extends HexBlock(LocalConstructedValueBlock) {
+      constructor({ isConstructed: isConstructed2 = false, ...parameters } = {}) {
+        super(parameters);
+        this.isConstructed = isConstructed2;
+      }
+      fromBER(inputBuffer, inputOffset, inputLength, context) {
+        let resultOffset = 0;
+        if (this.isConstructed) {
+          this.isHexOnly = false;
+          resultOffset = LocalConstructedValueBlock.prototype.fromBER.call(this, inputBuffer, inputOffset, inputLength, context);
+          if (resultOffset === -1)
+            return resultOffset;
+          for (let i = 0; i < this.value.length; i++) {
+            const currentBlockName = this.value[i].constructor.NAME;
+            if (currentBlockName === END_OF_CONTENT_NAME) {
+              if (this.isIndefiniteForm)
+                break;
+              else {
+                this.error = "EndOfContent is unexpected, OCTET STRING may consists of OCTET STRINGs only";
+                return -1;
+              }
+            }
+            if (currentBlockName !== OCTET_STRING_NAME) {
+              this.error = "OCTET STRING may consists of OCTET STRINGs only";
+              return -1;
+            }
+          }
+        } else {
+          this.isHexOnly = true;
+          resultOffset = super.fromBER(inputBuffer, inputOffset, inputLength);
+          this.blockLength = inputLength;
+        }
+        return resultOffset;
+      }
+      toBER(sizeOnly, writer) {
+        if (this.isConstructed)
+          return LocalConstructedValueBlock.prototype.toBER.call(this, sizeOnly, writer);
+        return sizeOnly ? new ArrayBuffer(this.valueHexView.byteLength) : this.valueHexView.slice().buffer;
+      }
+      toJSON() {
+        return {
+          ...super.toJSON(),
+          isConstructed: this.isConstructed
+        };
+      }
+    };
+    LocalOctetStringValueBlock.NAME = "OctetStringValueBlock";
+    var ORIGINAL_LOCAL_OCTET_STRING_TO_BER = LocalOctetStringValueBlock.prototype.toBER;
+    var _a$r;
+    var OctetString = class extends BaseBlock {
+      constructor({ idBlock = {}, lenBlock = {}, ...parameters } = {}) {
+        var _b2, _c2;
+        (_b2 = parameters.isConstructed) !== null && _b2 !== void 0 ? _b2 : parameters.isConstructed = !!((_c2 = parameters.value) === null || _c2 === void 0 ? void 0 : _c2.length);
+        super({
+          idBlock: {
+            isConstructed: parameters.isConstructed,
+            ...idBlock
+          },
+          lenBlock: {
+            ...lenBlock,
+            isIndefiniteForm: !!parameters.isIndefiniteForm
+          },
+          ...parameters
+        }, LocalOctetStringValueBlock);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 4;
+      }
+      fromBER(inputBuffer, inputOffset, inputLength, context) {
+        this.valueBlock.isConstructed = this.idBlock.isConstructed;
+        this.valueBlock.isIndefiniteForm = this.lenBlock.isIndefiniteForm;
+        if (inputLength === 0) {
+          if (this.idBlock.error.length === 0)
+            this.blockLength += this.idBlock.blockLength;
+          if (this.lenBlock.error.length === 0)
+            this.blockLength += this.lenBlock.blockLength;
+          return inputOffset;
+        }
+        if (!this.valueBlock.isConstructed && (context === null || context === void 0 ? void 0 : context.parseEmbedded) !== false) {
+          const view = inputBuffer instanceof ArrayBuffer ? new Uint8Array(inputBuffer) : inputBuffer;
+          const buf = view.subarray(inputOffset, inputOffset + inputLength);
+          try {
+            if (buf.byteLength) {
+              const parseContext = context !== null && context !== void 0 ? context : createFromBerContext();
+              const asn = localFromBERWithChildContext(buf, 0, buf.byteLength, parseContext);
+              if (asn.offset !== -1 && asn.offset === inputLength) {
+                this.valueBlock.value = [asn.result];
+              }
+            }
+          } catch {
+          }
+        }
+        return super.fromBER(inputBuffer, inputOffset, inputLength, context);
+      }
+      onAsciiEncoding() {
+        if (this.valueBlock.isConstructed || this.valueBlock.value && this.valueBlock.value.length) {
+          return Constructed.prototype.onAsciiEncoding.call(this);
+        }
+        const name = this.constructor.NAME;
+        const value = pvtsutils__namespace.Convert.ToHex(this.valueBlock.valueHexView);
+        return `${name} : ${value}`;
+      }
+      getValue() {
+        if (!this.idBlock.isConstructed) {
+          return this.valueBlock.valueHexView.slice().buffer;
+        }
+        const array2 = [];
+        for (const content of this.valueBlock.value) {
+          if (content instanceof _a$r) {
+            array2.push(content.valueBlock.valueHexView);
+          }
+        }
+        return pvtsutils__namespace.BufferSourceConverter.concat(array2);
+      }
+    };
+    _a$r = OctetString;
+    (() => {
+      typeStore.OctetString = _a$r;
+    })();
+    OctetString.NAME = OCTET_STRING_NAME;
+    var LocalBitStringValueBlock = class extends HexBlock(LocalConstructedValueBlock) {
+      constructor({ unusedBits = 0, isConstructed: isConstructed2 = false, ...parameters } = {}) {
+        super(parameters);
+        this.unusedBits = unusedBits;
+        this.isConstructed = isConstructed2;
+        this.blockLength = this.valueHexView.byteLength;
+      }
+      fromBER(inputBuffer, inputOffset, inputLength, context) {
+        if (!inputLength) {
+          return inputOffset;
+        }
+        let resultOffset = -1;
+        if (this.isConstructed) {
+          resultOffset = LocalConstructedValueBlock.prototype.fromBER.call(this, inputBuffer, inputOffset, inputLength, context);
+          if (resultOffset === -1)
+            return resultOffset;
+          for (const value of this.value) {
+            const currentBlockName = value.constructor.NAME;
+            if (currentBlockName === END_OF_CONTENT_NAME) {
+              if (this.isIndefiniteForm)
+                break;
+              else {
+                this.error = "EndOfContent is unexpected, BIT STRING may consists of BIT STRINGs only";
+                return -1;
+              }
+            }
+            if (currentBlockName !== BIT_STRING_NAME) {
+              this.error = "BIT STRING may consists of BIT STRINGs only";
+              return -1;
+            }
+            const valueBlock = value.valueBlock;
+            if (this.unusedBits > 0 && valueBlock.unusedBits > 0) {
+              this.error = 'Using of "unused bits" inside constructive BIT STRING allowed for least one only';
+              return -1;
+            }
+            this.unusedBits = valueBlock.unusedBits;
+          }
+          return resultOffset;
+        }
+        const inputView = pvtsutils__namespace.BufferSourceConverter.toUint8Array(inputBuffer);
+        if (!checkBufferParams(this, inputView, inputOffset, inputLength)) {
+          return -1;
+        }
+        const intBuffer = inputView.subarray(inputOffset, inputOffset + inputLength);
+        this.unusedBits = intBuffer[0];
+        if (this.unusedBits > 7) {
+          this.error = "Unused bits for BitString must be in range 0-7";
+          return -1;
+        }
+        if (!this.unusedBits && (context === null || context === void 0 ? void 0 : context.parseEmbedded) !== false) {
+          const buf = intBuffer.subarray(1);
+          try {
+            if (buf.byteLength) {
+              const parseContext = context !== null && context !== void 0 ? context : createFromBerContext();
+              const asn = localFromBERWithChildContext(buf, 0, buf.byteLength, parseContext);
+              if (asn.offset !== -1 && asn.offset === inputLength - 1) {
+                this.value = [asn.result];
+              }
+            }
+          } catch {
+          }
+        }
+        this.valueHexView = intBuffer.subarray(1);
+        this.blockLength = intBuffer.length;
+        return inputOffset + inputLength;
+      }
+      toBER(sizeOnly, writer) {
+        if (this.isConstructed) {
+          return LocalConstructedValueBlock.prototype.toBER.call(this, sizeOnly, writer);
+        }
+        if (sizeOnly) {
+          return new ArrayBuffer(this.valueHexView.byteLength + 1);
+        }
+        if (!this.valueHexView.byteLength) {
+          const empty = new Uint8Array(1);
+          empty[0] = 0;
+          return empty.buffer;
+        }
+        const retView = new Uint8Array(this.valueHexView.length + 1);
+        retView[0] = this.unusedBits;
+        retView.set(this.valueHexView, 1);
+        return retView.buffer;
+      }
+      toJSON() {
+        return {
+          ...super.toJSON(),
+          unusedBits: this.unusedBits,
+          isConstructed: this.isConstructed
+        };
+      }
+    };
+    LocalBitStringValueBlock.NAME = "BitStringValueBlock";
+    var ORIGINAL_LOCAL_BIT_STRING_TO_BER = LocalBitStringValueBlock.prototype.toBER;
+    var _a$q;
+    var BitString = class extends BaseBlock {
+      constructor({ idBlock = {}, lenBlock = {}, ...parameters } = {}) {
+        var _b2, _c2;
+        (_b2 = parameters.isConstructed) !== null && _b2 !== void 0 ? _b2 : parameters.isConstructed = !!((_c2 = parameters.value) === null || _c2 === void 0 ? void 0 : _c2.length);
+        super({
+          idBlock: {
+            isConstructed: parameters.isConstructed,
+            ...idBlock
+          },
+          lenBlock: {
+            ...lenBlock,
+            isIndefiniteForm: !!parameters.isIndefiniteForm
+          },
+          ...parameters
+        }, LocalBitStringValueBlock);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 3;
+      }
+      fromBER(inputBuffer, inputOffset, inputLength, context) {
+        this.valueBlock.isConstructed = this.idBlock.isConstructed;
+        this.valueBlock.isIndefiniteForm = this.lenBlock.isIndefiniteForm;
+        return super.fromBER(inputBuffer, inputOffset, inputLength, context);
+      }
+      onAsciiEncoding() {
+        if (this.valueBlock.isConstructed || this.valueBlock.value && this.valueBlock.value.length) {
+          return Constructed.prototype.onAsciiEncoding.call(this);
+        } else {
+          const bits = [];
+          const valueHex = this.valueBlock.valueHexView;
+          for (const byte of valueHex) {
+            bits.push(byte.toString(2).padStart(8, "0"));
+          }
+          const bitsStr = bits.join("");
+          const name = this.constructor.NAME;
+          const value = bitsStr.substring(0, bitsStr.length - this.valueBlock.unusedBits);
+          return `${name} : ${value}`;
+        }
+      }
+    };
+    _a$q = BitString;
+    (() => {
+      typeStore.BitString = _a$q;
+    })();
+    BitString.NAME = BIT_STRING_NAME;
+    function bytesToSignedBigInt(view) {
+      if (!view.byteLength)
+        return BigInt(0);
+      const value = BigInt(`0x${pvtsutils__namespace.Convert.ToHex(view)}`);
+      if (view[0] & 128)
+        return value - (BigInt(1) << BigInt(view.byteLength * 8));
+      return value;
+    }
+    function bytesToSignedDecimal(view) {
+      if (typeof BigInt !== "undefined")
+        return bytesToSignedBigInt(view).toString(10);
+      const BASE = 1e7;
+      const DECIMAL_DIGITS = 7;
+      if (!view.byteLength)
+        return "0";
+      const negative = !!(view[0] & 128);
+      let magnitude = view;
+      if (negative) {
+        magnitude = new Uint8Array(view.length);
+        let carry = 1;
+        for (let i = view.length - 1; i >= 0; i--) {
+          const value = (view[i] ^ 255) + carry;
+          magnitude[i] = value & 255;
+          carry = value >> 8;
+        }
+      }
+      const limbs = [0];
+      for (let index = 0; index < magnitude.length; index++) {
+        let carry = magnitude[index];
+        for (let i = 0; i < limbs.length; i++) {
+          const value = limbs[i] * 256 + carry;
+          limbs[i] = value % BASE;
+          carry = Math.floor(value / BASE);
+        }
+        if (carry)
+          limbs.push(carry);
+      }
+      let top = limbs.length - 1;
+      while (top > 0 && limbs[top] === 0)
+        top--;
+      let result = String(limbs[top]);
+      for (let i = top - 1; i >= 0; i--)
+        result += String(limbs[i]).padStart(DECIMAL_DIGITS, "0");
+      return negative && result !== "0" ? `-${result}` : result;
+    }
+    var _a$p;
+    var LocalIntegerValueBlock = class extends HexBlock(ValueBlock) {
+      setValueHex() {
+        if (this.valueHexView.length >= 4) {
+          this.warnings.push("Too big Integer for decoding, hex only");
+          this.isHexOnly = true;
+          this._valueDec = 0;
+        } else {
+          this.isHexOnly = false;
+          if (this.valueHexView.length > 0) {
+            this._valueDec = pvutils__namespace.utilDecodeTC.call(this);
+          }
+        }
+      }
+      constructor({ value, ...parameters } = {}) {
+        super(parameters);
+        this._valueDec = 0;
+        if (parameters.valueHex) {
+          this.setValueHex();
+        }
+        if (value !== void 0) {
+          this.valueDec = value;
+        }
+      }
+      set valueDec(v) {
+        this._valueDec = v;
+        this.isHexOnly = false;
+        this.valueHexView = new Uint8Array(pvutils__namespace.utilEncodeTC(v));
+      }
+      get valueDec() {
+        return this._valueDec;
+      }
+      fromDER(inputBuffer, inputOffset, inputLength, expectedLength = 0) {
+        const offset = this.fromBER(inputBuffer, inputOffset, inputLength);
+        if (offset === -1)
+          return offset;
+        const view = this.valueHexView;
+        if (view[0] === 0 && (view[1] & 128) !== 0) {
+          this.valueHexView = view.subarray(1);
+        } else {
+          if (expectedLength !== 0) {
+            if (view.length < expectedLength) {
+              if (expectedLength - view.length > 1)
+                expectedLength = view.length + 1;
+              this.valueHexView = view.subarray(expectedLength - view.length);
+            }
+          }
+        }
+        return offset;
+      }
+      toDER(sizeOnly = false) {
+        const view = this.valueHexView;
+        switch (true) {
+          case (view[0] & 128) !== 0:
+            {
+              const updatedView = new Uint8Array(this.valueHexView.length + 1);
+              updatedView[0] = 0;
+              updatedView.set(view, 1);
+              this.valueHexView = updatedView;
+            }
+            break;
+          case (view[0] === 0 && (view[1] & 128) === 0):
+            {
+              this.valueHexView = this.valueHexView.subarray(1);
+            }
+            break;
+        }
+        return this.toBER(sizeOnly);
+      }
+      fromBER(inputBuffer, inputOffset, inputLength) {
+        const resultOffset = super.fromBER(inputBuffer, inputOffset, inputLength);
+        if (resultOffset === -1) {
+          return resultOffset;
+        }
+        this.setValueHex();
+        return resultOffset;
+      }
+      toBER(sizeOnly) {
+        return sizeOnly ? new ArrayBuffer(this.valueHexView.length) : this.valueHexView.slice().buffer;
+      }
+      toJSON() {
+        return {
+          ...super.toJSON(),
+          valueDec: this.valueDec
+        };
+      }
+      toString() {
+        return bytesToSignedDecimal(this.valueHexView);
+      }
+    };
+    _a$p = LocalIntegerValueBlock;
+    LocalIntegerValueBlock.NAME = "IntegerValueBlock";
+    (() => {
+      Object.defineProperty(_a$p.prototype, "valueHex", {
+        set: function(v) {
+          this.valueHexView = new Uint8Array(v);
+          this.setValueHex();
+        },
+        get: function() {
+          return this.valueHexView.slice().buffer;
+        }
+      });
+    })();
+    var ORIGINAL_LOCAL_INTEGER_TO_BER = LocalIntegerValueBlock.prototype.toBER;
+    var ORIGINAL_LOCAL_INTEGER_TO_STRING = LocalIntegerValueBlock.prototype.toString;
+    var _a$o;
+    var Integer = class extends BaseBlock {
+      constructor(parameters = {}) {
+        super(parameters, LocalIntegerValueBlock);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 2;
+      }
+      toBigInt() {
+        assertBigInt();
+        const valueBlock = this.valueBlock;
+        const toString = valueBlock.toString;
+        if (toString === ORIGINAL_LOCAL_INTEGER_TO_STRING)
+          return bytesToSignedBigInt(valueBlock.valueHexView);
+        return BigInt(Reflect.apply(toString, valueBlock, []));
+      }
+      static fromBigInt(value) {
+        assertBigInt();
+        const bigIntValue = BigInt(value);
+        const writer = new ViewWriter();
+        const hex3 = bigIntValue.toString(16).replace(/^-/, "");
+        const view = new Uint8Array(pvtsutils__namespace.Convert.FromHex(hex3));
+        if (bigIntValue < 0) {
+          const first = new Uint8Array(view.length + (view[0] & 128 ? 1 : 0));
+          first[0] |= 128;
+          const firstInt = BigInt(`0x${pvtsutils__namespace.Convert.ToHex(first)}`);
+          const secondInt = firstInt + bigIntValue;
+          const second = pvtsutils__namespace.BufferSourceConverter.toUint8Array(pvtsutils__namespace.Convert.FromHex(secondInt.toString(16)));
+          second[0] |= 128;
+          writer.write(second);
+        } else {
+          if (view[0] & 128) {
+            writer.write(new Uint8Array([0]));
+          }
+          writer.write(view);
+        }
+        const res = new _a$o({ valueHex: writer.final() });
+        return res;
+      }
+      convertToDER() {
+        const integer2 = new _a$o({ valueHex: this.valueBlock.valueHexView });
+        integer2.valueBlock.toDER();
+        return integer2;
+      }
+      convertFromDER() {
+        return new _a$o({
+          valueHex: this.valueBlock.valueHexView[0] === 0 ? this.valueBlock.valueHexView.subarray(1) : this.valueBlock.valueHexView
+        });
+      }
+      onAsciiEncoding() {
+        return `${this.constructor.NAME} : ${this.valueBlock.toString()}`;
+      }
+    };
+    _a$o = Integer;
+    (() => {
+      typeStore.Integer = _a$o;
+    })();
+    Integer.NAME = "INTEGER";
+    var _a$n;
+    var Enumerated = class extends Integer {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 10;
+      }
+    };
+    _a$n = Enumerated;
+    (() => {
+      typeStore.Enumerated = _a$n;
+    })();
+    Enumerated.NAME = "ENUMERATED";
+    var LocalSidValueBlock = class extends HexBlock(ValueBlock) {
+      constructor({ valueDec = -1, isFirstSid = false, ...parameters } = {}) {
+        super(parameters);
+        this.valueDec = valueDec;
+        this.isFirstSid = isFirstSid;
+      }
+      fromBER(inputBuffer, inputOffset, inputLength) {
+        if (!inputLength) {
+          return inputOffset;
+        }
+        const inputView = pvtsutils__namespace.BufferSourceConverter.toUint8Array(inputBuffer);
+        if (!checkBufferParams(this, inputView, inputOffset, inputLength)) {
+          return -1;
+        }
+        const intBuffer = inputView.subarray(inputOffset, inputOffset + inputLength);
+        const fastPath = this.blockLength === 0 && Number.isInteger(inputOffset) && Number.isInteger(inputLength);
+        if (fastPath) {
+          let sidLength = 0;
+          while (sidLength < inputLength) {
+            const octet = intBuffer[sidLength];
+            sidLength++;
+            if ((octet & 128) === 0)
+              break;
+          }
+          this.blockLength = sidLength;
+          this.valueHexView = new Uint8Array(sidLength);
+          for (let i = 0; i < sidLength; i++)
+            this.valueHexView[i] = intBuffer[i] & 127;
+        } else {
+          this.valueHexView = new Uint8Array(inputLength);
+          for (let i = 0; i < inputLength; i++) {
+            this.valueHexView[i] = intBuffer[i] & 127;
+            this.blockLength++;
+            if ((intBuffer[i] & 128) === 0)
+              break;
+          }
+          const tempView = new Uint8Array(this.blockLength);
+          for (let i = 0; i < this.blockLength; i++) {
+            tempView[i] = this.valueHexView[i];
+          }
+          this.valueHexView = tempView;
+        }
+        if ((intBuffer[this.blockLength - 1] & 128) !== 0) {
+          this.error = "End of input reached before message was fully decoded";
+          return -1;
+        }
+        if (this.valueHexView[0] === 0)
+          this.warnings.push("Needlessly long format of SID encoding");
+        if (this.blockLength <= 8)
+          this.valueDec = pvutils__namespace.utilFromBase(this.valueHexView, 7);
+        else {
+          this.isHexOnly = true;
+          this.warnings.push("Too big SID for decoding, hex only");
+        }
+        return inputOffset + this.blockLength;
+      }
+      set valueBigInt(value) {
+        assertBigInt();
+        let bits = BigInt(value).toString(2);
+        while (bits.length % 7) {
+          bits = "0" + bits;
+        }
+        const bytes = new Uint8Array(bits.length / 7);
+        for (let i = 0; i < bytes.length; i++) {
+          bytes[i] = parseInt(bits.slice(i * 7, i * 7 + 7), 2) + (i + 1 < bytes.length ? 128 : 0);
+        }
+        this.fromBER(bytes.buffer, 0, bytes.length);
+      }
+      toBER(sizeOnly) {
+        if (this.isHexOnly) {
+          if (sizeOnly)
+            return new ArrayBuffer(this.valueHexView.byteLength);
+          const curView = this.valueHexView;
+          const retView2 = new Uint8Array(this.blockLength);
+          for (let i = 0; i < this.blockLength - 1; i++)
+            retView2[i] = curView[i] | 128;
+          retView2[this.blockLength - 1] = curView[this.blockLength - 1];
+          return pvtsutils__namespace.BufferSourceConverter.toArrayBuffer(retView2);
+        }
+        const encodedBuf = pvutils__namespace.utilToBase(this.valueDec, 7);
+        if (encodedBuf.byteLength === 0) {
+          this.error = "Error during encoding SID value";
+          return EMPTY_BUFFER;
+        }
+        const retView = new Uint8Array(encodedBuf.byteLength);
+        if (!sizeOnly) {
+          const encodedView = new Uint8Array(encodedBuf);
+          const len = encodedBuf.byteLength - 1;
+          for (let i = 0; i < len; i++)
+            retView[i] = encodedView[i] | 128;
+          retView[len] = encodedView[len];
+        }
+        return pvtsutils__namespace.BufferSourceConverter.toArrayBuffer(retView);
+      }
+      toString() {
+        let result = "";
+        if (this.isHexOnly)
+          result = pvtsutils__namespace.Convert.ToHex(this.valueHexView);
+        else {
+          if (this.isFirstSid) {
+            let sidValue = this.valueDec;
+            if (this.valueDec <= 39)
+              result = "0.";
+            else {
+              if (this.valueDec <= 79) {
+                result = "1.";
+                sidValue -= 40;
+              } else {
+                result = "2.";
+                sidValue -= 80;
+              }
+            }
+            result += sidValue.toString();
+          } else
+            result = this.valueDec.toString();
+        }
+        return result;
+      }
+      toJSON() {
+        return {
+          ...super.toJSON(),
+          valueDec: this.valueDec,
+          isFirstSid: this.isFirstSid
+        };
+      }
+    };
+    LocalSidValueBlock.NAME = "sidBlock";
+    var LocalObjectIdentifierValueBlock = class extends ValueBlock {
+      constructor({ value = EMPTY_STRING, ...parameters } = {}) {
+        super(parameters);
+        this.value = [];
+        if (value) {
+          this.fromString(value);
+        }
+      }
+      fromBER(inputBuffer, inputOffset, inputLength) {
+        let resultOffset = inputOffset;
+        while (inputLength > 0) {
+          const sidBlock = new LocalSidValueBlock();
+          resultOffset = sidBlock.fromBER(inputBuffer, resultOffset, inputLength);
+          if (resultOffset === -1) {
+            this.blockLength = 0;
+            this.error = sidBlock.error;
+            return resultOffset;
+          }
+          if (this.value.length === 0)
+            sidBlock.isFirstSid = true;
+          this.blockLength += sidBlock.blockLength;
+          inputLength -= sidBlock.blockLength;
+          this.value.push(sidBlock);
+        }
+        return resultOffset;
+      }
+      toBER(sizeOnly) {
+        const retBuffers = [];
+        for (let i = 0; i < this.value.length; i++) {
+          const valueBuf = this.value[i].toBER(sizeOnly);
+          if (valueBuf.byteLength === 0) {
+            this.error = this.value[i].error;
+            return EMPTY_BUFFER;
+          }
+          retBuffers.push(valueBuf);
+        }
+        return concat(retBuffers);
+      }
+      fromString(string4) {
+        this.value = [];
+        let pos1 = 0;
+        let pos2 = 0;
+        let sid = "";
+        let flag = false;
+        do {
+          pos2 = string4.indexOf(".", pos1);
+          if (pos2 === -1)
+            sid = string4.substring(pos1);
+          else
+            sid = string4.substring(pos1, pos2);
+          pos1 = pos2 + 1;
+          if (flag) {
+            const sidBlock = this.value[0];
+            let plus = 0;
+            switch (sidBlock.valueDec) {
+              case 0:
+                break;
+              case 1:
+                plus = 40;
+                break;
+              case 2:
+                plus = 80;
+                break;
+              default:
+                this.value = [];
+                return;
+            }
+            const parsedSID = parseInt(sid, 10);
+            if (isNaN(parsedSID))
+              return;
+            sidBlock.valueDec = parsedSID + plus;
+            flag = false;
+          } else {
+            const sidBlock = new LocalSidValueBlock();
+            if (sid > Number.MAX_SAFE_INTEGER) {
+              assertBigInt();
+              const sidValue = BigInt(sid);
+              sidBlock.valueBigInt = sidValue;
+            } else {
+              sidBlock.valueDec = parseInt(sid, 10);
+              if (isNaN(sidBlock.valueDec))
+                return;
+            }
+            if (!this.value.length) {
+              sidBlock.isFirstSid = true;
+              flag = true;
+            }
+            this.value.push(sidBlock);
+          }
+        } while (pos2 !== -1);
+      }
+      toString() {
+        let result = "";
+        let isHexOnly = false;
+        for (let i = 0; i < this.value.length; i++) {
+          isHexOnly = this.value[i].isHexOnly;
+          let sidStr = this.value[i].toString();
+          if (i !== 0)
+            result = `${result}.`;
+          if (isHexOnly) {
+            sidStr = `{${sidStr}}`;
+            if (this.value[i].isFirstSid)
+              result = `2.{${sidStr} - 80}`;
+            else
+              result += sidStr;
+          } else
+            result += sidStr;
+        }
+        return result;
+      }
+      toJSON() {
+        const object3 = {
+          ...super.toJSON(),
+          value: this.toString(),
+          sidArray: []
+        };
+        for (let i = 0; i < this.value.length; i++) {
+          object3.sidArray.push(this.value[i].toJSON());
+        }
+        return object3;
+      }
+    };
+    LocalObjectIdentifierValueBlock.NAME = "ObjectIdentifierValueBlock";
+    var _a$m;
+    var ObjectIdentifier = class extends BaseBlock {
+      getValue() {
+        return this.valueBlock.toString();
+      }
+      setValue(value) {
+        this.valueBlock.fromString(value);
+      }
+      constructor(parameters = {}) {
+        super(parameters, LocalObjectIdentifierValueBlock);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 6;
+      }
+      onAsciiEncoding() {
+        return `${this.constructor.NAME} : ${this.valueBlock.toString() || "empty"}`;
+      }
+      toJSON() {
+        return {
+          ...super.toJSON(),
+          value: this.getValue()
+        };
+      }
+    };
+    _a$m = ObjectIdentifier;
+    (() => {
+      typeStore.ObjectIdentifier = _a$m;
+    })();
+    ObjectIdentifier.NAME = "OBJECT IDENTIFIER";
+    var LocalRelativeSidValueBlock = class extends HexBlock(LocalBaseBlock) {
+      constructor({ valueDec = 0, ...parameters } = {}) {
+        super(parameters);
+        this.valueDec = valueDec;
+      }
+      fromBER(inputBuffer, inputOffset, inputLength) {
+        if (inputLength === 0)
+          return inputOffset;
+        const inputView = pvtsutils__namespace.BufferSourceConverter.toUint8Array(inputBuffer);
+        if (!checkBufferParams(this, inputView, inputOffset, inputLength))
+          return -1;
+        const intBuffer = inputView.subarray(inputOffset, inputOffset + inputLength);
+        const fastPath = this.blockLength === 0 && Number.isInteger(inputOffset) && Number.isInteger(inputLength);
+        if (fastPath) {
+          let sidLength = 0;
+          while (sidLength < inputLength) {
+            const octet = intBuffer[sidLength];
+            sidLength++;
+            if ((octet & 128) === 0)
+              break;
+          }
+          this.blockLength = sidLength;
+          this.valueHexView = new Uint8Array(sidLength);
+          for (let i = 0; i < sidLength; i++)
+            this.valueHexView[i] = intBuffer[i] & 127;
+        } else {
+          this.valueHexView = new Uint8Array(inputLength);
+          for (let i = 0; i < inputLength; i++) {
+            this.valueHexView[i] = intBuffer[i] & 127;
+            this.blockLength++;
+            if ((intBuffer[i] & 128) === 0)
+              break;
+          }
+          const tempView = new Uint8Array(this.blockLength);
+          for (let i = 0; i < this.blockLength; i++)
+            tempView[i] = this.valueHexView[i];
+          this.valueHexView = tempView;
+        }
+        if ((intBuffer[this.blockLength - 1] & 128) !== 0) {
+          this.error = "End of input reached before message was fully decoded";
+          return -1;
+        }
+        if (this.valueHexView[0] === 0)
+          this.warnings.push("Needlessly long format of SID encoding");
+        if (this.blockLength <= 8)
+          this.valueDec = pvutils__namespace.utilFromBase(this.valueHexView, 7);
+        else {
+          this.isHexOnly = true;
+          this.warnings.push("Too big SID for decoding, hex only");
+        }
+        return inputOffset + this.blockLength;
+      }
+      toBER(sizeOnly) {
+        if (this.isHexOnly) {
+          if (sizeOnly)
+            return new ArrayBuffer(this.valueHexView.byteLength);
+          const curView = this.valueHexView;
+          const retView2 = new Uint8Array(this.blockLength);
+          for (let i = 0; i < this.blockLength - 1; i++)
+            retView2[i] = curView[i] | 128;
+          retView2[this.blockLength - 1] = curView[this.blockLength - 1];
+          return retView2.buffer;
+        }
+        const encodedBuf = pvutils__namespace.utilToBase(this.valueDec, 7);
+        if (encodedBuf.byteLength === 0) {
+          this.error = "Error during encoding SID value";
+          return EMPTY_BUFFER;
+        }
+        const retView = new Uint8Array(encodedBuf.byteLength);
+        if (!sizeOnly) {
+          const encodedView = new Uint8Array(encodedBuf);
+          const len = encodedBuf.byteLength - 1;
+          for (let i = 0; i < len; i++)
+            retView[i] = encodedView[i] | 128;
+          retView[len] = encodedView[len];
+        }
+        return retView.buffer;
+      }
+      toString() {
+        let result = "";
+        if (this.isHexOnly)
+          result = pvtsutils__namespace.Convert.ToHex(this.valueHexView);
+        else {
+          result = this.valueDec.toString();
+        }
+        return result;
+      }
+      toJSON() {
+        return {
+          ...super.toJSON(),
+          valueDec: this.valueDec
+        };
+      }
+    };
+    LocalRelativeSidValueBlock.NAME = "relativeSidBlock";
+    var LocalRelativeObjectIdentifierValueBlock = class extends ValueBlock {
+      constructor({ value = EMPTY_STRING, ...parameters } = {}) {
+        super(parameters);
+        this.value = [];
+        if (value) {
+          this.fromString(value);
+        }
+      }
+      fromBER(inputBuffer, inputOffset, inputLength) {
+        let resultOffset = inputOffset;
+        while (inputLength > 0) {
+          const sidBlock = new LocalRelativeSidValueBlock();
+          resultOffset = sidBlock.fromBER(inputBuffer, resultOffset, inputLength);
+          if (resultOffset === -1) {
+            this.blockLength = 0;
+            this.error = sidBlock.error;
+            return resultOffset;
+          }
+          this.blockLength += sidBlock.blockLength;
+          inputLength -= sidBlock.blockLength;
+          this.value.push(sidBlock);
+        }
+        return resultOffset;
+      }
+      toBER(sizeOnly, _writer) {
+        const retBuffers = [];
+        for (let i = 0; i < this.value.length; i++) {
+          const valueBuf = this.value[i].toBER(sizeOnly);
+          if (valueBuf.byteLength === 0) {
+            this.error = this.value[i].error;
+            return EMPTY_BUFFER;
+          }
+          retBuffers.push(valueBuf);
+        }
+        return concat(retBuffers);
+      }
+      fromString(string4) {
+        this.value = [];
+        let pos1 = 0;
+        let pos2 = 0;
+        let sid = "";
+        do {
+          pos2 = string4.indexOf(".", pos1);
+          if (pos2 === -1)
+            sid = string4.substring(pos1);
+          else
+            sid = string4.substring(pos1, pos2);
+          pos1 = pos2 + 1;
+          const sidBlock = new LocalRelativeSidValueBlock();
+          sidBlock.valueDec = parseInt(sid, 10);
+          if (isNaN(sidBlock.valueDec))
+            return true;
+          this.value.push(sidBlock);
+        } while (pos2 !== -1);
+        return true;
+      }
+      toString() {
+        let result = "";
+        let isHexOnly = false;
+        for (let i = 0; i < this.value.length; i++) {
+          isHexOnly = this.value[i].isHexOnly;
+          let sidStr = this.value[i].toString();
+          if (i !== 0)
+            result = `${result}.`;
+          if (isHexOnly) {
+            sidStr = `{${sidStr}}`;
+            result += sidStr;
+          } else
+            result += sidStr;
+        }
+        return result;
+      }
+      toJSON() {
+        const object3 = {
+          ...super.toJSON(),
+          value: this.toString(),
+          sidArray: []
+        };
+        for (let i = 0; i < this.value.length; i++)
+          object3.sidArray.push(this.value[i].toJSON());
+        return object3;
+      }
+    };
+    LocalRelativeObjectIdentifierValueBlock.NAME = "RelativeObjectIdentifierValueBlock";
+    var _a$l;
+    var RelativeObjectIdentifier = class extends BaseBlock {
+      getValue() {
+        return this.valueBlock.toString();
+      }
+      setValue(value) {
+        this.valueBlock.fromString(value);
+      }
+      constructor(parameters = {}) {
+        super(parameters, LocalRelativeObjectIdentifierValueBlock);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 13;
+      }
+      onAsciiEncoding() {
+        return `${this.constructor.NAME} : ${this.valueBlock.toString() || "empty"}`;
+      }
+      toJSON() {
+        return {
+          ...super.toJSON(),
+          value: this.getValue()
+        };
+      }
+    };
+    _a$l = RelativeObjectIdentifier;
+    (() => {
+      typeStore.RelativeObjectIdentifier = _a$l;
+    })();
+    RelativeObjectIdentifier.NAME = "RelativeObjectIdentifier";
+    var _a$k;
+    var Sequence = class extends Constructed {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 16;
+      }
+    };
+    _a$k = Sequence;
+    (() => {
+      typeStore.Sequence = _a$k;
+    })();
+    Sequence.NAME = "SEQUENCE";
+    var _a$j;
+    var Set2 = class extends Constructed {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 17;
+      }
+    };
+    _a$j = Set2;
+    (() => {
+      typeStore.Set = _a$j;
+    })();
+    Set2.NAME = "SET";
+    var LocalStringValueBlock = class extends HexBlock(ValueBlock) {
+      constructor({ ...parameters } = {}) {
+        super(parameters);
+        this.isHexOnly = true;
+        this.value = EMPTY_STRING;
+      }
+      toJSON() {
+        return {
+          ...super.toJSON(),
+          value: this.value
+        };
+      }
+    };
+    LocalStringValueBlock.NAME = "StringValueBlock";
+    var LocalSimpleStringValueBlock = class extends LocalStringValueBlock {
+    };
+    LocalSimpleStringValueBlock.NAME = "SimpleStringValueBlock";
+    var LocalSimpleStringBlock = class extends BaseStringBlock {
+      constructor({ ...parameters } = {}) {
+        super(parameters, LocalSimpleStringValueBlock);
+      }
+      fromBuffer(inputBuffer) {
+        this.valueBlock.value = String.fromCharCode.apply(null, pvtsutils__namespace.BufferSourceConverter.toUint8Array(inputBuffer));
+      }
+      fromString(inputString) {
+        const strLen = inputString.length;
+        const view = this.valueBlock.valueHexView = new Uint8Array(strLen);
+        for (let i = 0; i < strLen; i++)
+          view[i] = inputString.charCodeAt(i);
+        this.valueBlock.value = inputString;
+      }
+    };
+    LocalSimpleStringBlock.NAME = "SIMPLE STRING";
+    var LocalUtf8StringValueBlock = class extends LocalSimpleStringBlock {
+      fromBuffer(inputBuffer) {
+        this.valueBlock.valueHexView = pvtsutils__namespace.BufferSourceConverter.toUint8Array(inputBuffer);
+        try {
+          this.valueBlock.value = pvtsutils__namespace.Convert.ToUtf8String(inputBuffer);
+        } catch (ex) {
+          this.warnings.push(`Error during "decodeURIComponent": ${ex}, using raw string`);
+          this.valueBlock.value = pvtsutils__namespace.Convert.ToBinary(inputBuffer);
+        }
+      }
+      fromString(inputString) {
+        this.valueBlock.valueHexView = new Uint8Array(pvtsutils__namespace.Convert.FromUtf8String(inputString));
+        this.valueBlock.value = inputString;
+      }
+    };
+    LocalUtf8StringValueBlock.NAME = "Utf8StringValueBlock";
+    var _a$i;
+    var Utf8String = class extends LocalUtf8StringValueBlock {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 12;
+      }
+    };
+    _a$i = Utf8String;
+    (() => {
+      typeStore.Utf8String = _a$i;
+    })();
+    Utf8String.NAME = "UTF8String";
+    var LocalBmpStringValueBlock = class extends LocalSimpleStringBlock {
+      fromBuffer(inputBuffer) {
+        this.valueBlock.value = pvtsutils__namespace.Convert.ToUtf16String(inputBuffer);
+        this.valueBlock.valueHexView = pvtsutils__namespace.BufferSourceConverter.toUint8Array(inputBuffer);
+      }
+      fromString(inputString) {
+        this.valueBlock.value = inputString;
+        this.valueBlock.valueHexView = new Uint8Array(pvtsutils__namespace.Convert.FromUtf16String(inputString));
+      }
+    };
+    LocalBmpStringValueBlock.NAME = "BmpStringValueBlock";
+    var _a$h;
+    var BmpString = class extends LocalBmpStringValueBlock {
+      constructor({ ...parameters } = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 30;
+      }
+    };
+    _a$h = BmpString;
+    (() => {
+      typeStore.BmpString = _a$h;
+    })();
+    BmpString.NAME = "BMPString";
+    var LocalUniversalStringValueBlock = class extends LocalSimpleStringBlock {
+      fromBuffer(inputBuffer) {
+        const copyBuffer = ArrayBuffer.isView(inputBuffer) ? inputBuffer.slice().buffer : inputBuffer.slice(0);
+        const valueView = new Uint8Array(copyBuffer);
+        for (let i = 0; i < valueView.length; i += 4) {
+          valueView[i] = valueView[i + 3];
+          valueView[i + 1] = valueView[i + 2];
+          valueView[i + 2] = 0;
+          valueView[i + 3] = 0;
+        }
+        this.valueBlock.value = String.fromCharCode.apply(null, new Uint32Array(copyBuffer));
+      }
+      fromString(inputString) {
+        const strLength = inputString.length;
+        const valueHexView = this.valueBlock.valueHexView = new Uint8Array(strLength * 4);
+        for (let i = 0; i < strLength; i++) {
+          const codeBuf = pvutils__namespace.utilToBase(inputString.charCodeAt(i), 8);
+          const codeView = new Uint8Array(codeBuf);
+          if (codeView.length > 4)
+            continue;
+          const dif = 4 - codeView.length;
+          for (let j = codeView.length - 1; j >= 0; j--)
+            valueHexView[i * 4 + j + dif] = codeView[j];
+        }
+        this.valueBlock.value = inputString;
+      }
+    };
+    LocalUniversalStringValueBlock.NAME = "UniversalStringValueBlock";
+    var _a$g;
+    var UniversalString = class extends LocalUniversalStringValueBlock {
+      constructor({ ...parameters } = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 28;
+      }
+    };
+    _a$g = UniversalString;
+    (() => {
+      typeStore.UniversalString = _a$g;
+    })();
+    UniversalString.NAME = "UniversalString";
+    var _a$f;
+    var NumericString = class extends LocalSimpleStringBlock {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 18;
+      }
+    };
+    _a$f = NumericString;
+    (() => {
+      typeStore.NumericString = _a$f;
+    })();
+    NumericString.NAME = "NumericString";
+    var _a$e;
+    var PrintableString = class extends LocalSimpleStringBlock {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 19;
+      }
+    };
+    _a$e = PrintableString;
+    (() => {
+      typeStore.PrintableString = _a$e;
+    })();
+    PrintableString.NAME = "PrintableString";
+    var _a$d;
+    var TeletexString = class extends LocalSimpleStringBlock {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 20;
+      }
+    };
+    _a$d = TeletexString;
+    (() => {
+      typeStore.TeletexString = _a$d;
+    })();
+    TeletexString.NAME = "TeletexString";
+    var _a$c;
+    var VideotexString = class extends LocalSimpleStringBlock {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 21;
+      }
+    };
+    _a$c = VideotexString;
+    (() => {
+      typeStore.VideotexString = _a$c;
+    })();
+    VideotexString.NAME = "VideotexString";
+    var _a$b;
+    var IA5String = class extends LocalSimpleStringBlock {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 22;
+      }
+    };
+    _a$b = IA5String;
+    (() => {
+      typeStore.IA5String = _a$b;
+    })();
+    IA5String.NAME = "IA5String";
+    var _a$a;
+    var GraphicString = class extends LocalSimpleStringBlock {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 25;
+      }
+    };
+    _a$a = GraphicString;
+    (() => {
+      typeStore.GraphicString = _a$a;
+    })();
+    GraphicString.NAME = "GraphicString";
+    var _a$9;
+    var VisibleString = class extends LocalSimpleStringBlock {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 26;
+      }
+    };
+    _a$9 = VisibleString;
+    (() => {
+      typeStore.VisibleString = _a$9;
+    })();
+    VisibleString.NAME = "VisibleString";
+    var _a$8;
+    var GeneralString = class extends LocalSimpleStringBlock {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 27;
+      }
+    };
+    _a$8 = GeneralString;
+    (() => {
+      typeStore.GeneralString = _a$8;
+    })();
+    GeneralString.NAME = "GeneralString";
+    var _a$7;
+    var CharacterString = class extends LocalSimpleStringBlock {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 29;
+      }
+    };
+    _a$7 = CharacterString;
+    (() => {
+      typeStore.CharacterString = _a$7;
+    })();
+    CharacterString.NAME = "CharacterString";
+    var _a$6;
+    var UTCTime = class extends VisibleString {
+      constructor({ value, valueDate, ...parameters } = {}) {
+        super(parameters);
+        this.year = 0;
+        this.month = 0;
+        this.day = 0;
+        this.hour = 0;
+        this.minute = 0;
+        this.second = 0;
+        if (value) {
+          this.fromString(value);
+          this.valueBlock.valueHexView = new Uint8Array(value.length);
+          for (let i = 0; i < value.length; i++)
+            this.valueBlock.valueHexView[i] = value.charCodeAt(i);
+        }
+        if (valueDate) {
+          this.fromDate(valueDate);
+          this.valueBlock.valueHexView = new Uint8Array(this.toBuffer());
+        }
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 23;
+      }
+      fromBuffer(inputBuffer) {
+        this.fromString(String.fromCharCode.apply(null, pvtsutils__namespace.BufferSourceConverter.toUint8Array(inputBuffer)));
+      }
+      toBuffer() {
+        const str = this.toString();
+        const buffer = new ArrayBuffer(str.length);
+        const view = new Uint8Array(buffer);
+        for (let i = 0; i < str.length; i++)
+          view[i] = str.charCodeAt(i);
+        return buffer;
+      }
+      fromDate(inputDate) {
+        this.year = inputDate.getUTCFullYear();
+        this.month = inputDate.getUTCMonth() + 1;
+        this.day = inputDate.getUTCDate();
+        this.hour = inputDate.getUTCHours();
+        this.minute = inputDate.getUTCMinutes();
+        this.second = inputDate.getUTCSeconds();
+      }
+      toDate() {
+        return new Date(Date.UTC(this.year, this.month - 1, this.day, this.hour, this.minute, this.second));
+      }
+      fromString(inputString) {
+        const parser = /(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})Z/gi;
+        const parserArray = parser.exec(inputString);
+        if (parserArray === null) {
+          this.error = "Wrong input string for conversion";
+          return;
+        }
+        const year = parseInt(parserArray[1], 10);
+        if (year >= 50)
+          this.year = 1900 + year;
+        else
+          this.year = 2e3 + year;
+        this.month = parseInt(parserArray[2], 10);
+        this.day = parseInt(parserArray[3], 10);
+        this.hour = parseInt(parserArray[4], 10);
+        this.minute = parseInt(parserArray[5], 10);
+        this.second = parseInt(parserArray[6], 10);
+      }
+      toString(encoding = "iso") {
+        if (encoding === "iso") {
+          const outputArray = Array.from({ length: 7 });
+          outputArray[0] = pvutils__namespace.padNumber(this.year < 2e3 ? this.year - 1900 : this.year - 2e3, 2);
+          outputArray[1] = pvutils__namespace.padNumber(this.month, 2);
+          outputArray[2] = pvutils__namespace.padNumber(this.day, 2);
+          outputArray[3] = pvutils__namespace.padNumber(this.hour, 2);
+          outputArray[4] = pvutils__namespace.padNumber(this.minute, 2);
+          outputArray[5] = pvutils__namespace.padNumber(this.second, 2);
+          outputArray[6] = "Z";
+          return outputArray.join("");
+        }
+        return super.toString(encoding);
+      }
+      onAsciiEncoding() {
+        return `${this.constructor.NAME} : ${this.toDate().toISOString()}`;
+      }
+      toJSON() {
+        return {
+          ...super.toJSON(),
+          year: this.year,
+          month: this.month,
+          day: this.day,
+          hour: this.hour,
+          minute: this.minute,
+          second: this.second
+        };
+      }
+    };
+    _a$6 = UTCTime;
+    (() => {
+      typeStore.UTCTime = _a$6;
+    })();
+    UTCTime.NAME = "UTCTime";
+    var _a$5;
+    var GeneralizedTime = class extends UTCTime {
+      constructor(parameters = {}) {
+        var _b2;
+        super(parameters);
+        (_b2 = this.millisecond) !== null && _b2 !== void 0 ? _b2 : this.millisecond = 0;
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 24;
+      }
+      fromDate(inputDate) {
+        super.fromDate(inputDate);
+        this.millisecond = inputDate.getUTCMilliseconds();
+      }
+      toDate() {
+        const utcDate = Date.UTC(this.year, this.month - 1, this.day, this.hour, this.minute, this.second, this.millisecond);
+        return new Date(utcDate);
+      }
+      fromString(inputString) {
+        let isUTC = false;
+        let timeString = "";
+        let dateTimeString = "";
+        let fractionPart = 0;
+        let parser;
+        let hourDifference = 0;
+        let minuteDifference = 0;
+        if (inputString[inputString.length - 1] === "Z") {
+          timeString = inputString.substring(0, inputString.length - 1);
+          isUTC = true;
+        } else {
+          const number4 = new Number(inputString[inputString.length - 1]);
+          if (isNaN(number4.valueOf()))
+            throw new Error("Wrong input string for conversion");
+          timeString = inputString;
+        }
+        if (isUTC) {
+          if (timeString.indexOf("+") !== -1)
+            throw new Error("Wrong input string for conversion");
+          if (timeString.indexOf("-") !== -1)
+            throw new Error("Wrong input string for conversion");
+        } else {
+          let multiplier = 1;
+          let differencePosition = timeString.indexOf("+");
+          let differenceString = "";
+          if (differencePosition === -1) {
+            differencePosition = timeString.indexOf("-");
+            multiplier = -1;
+          }
+          if (differencePosition !== -1) {
+            differenceString = timeString.substring(differencePosition + 1);
+            timeString = timeString.substring(0, differencePosition);
+            if (differenceString.length !== 2 && differenceString.length !== 4)
+              throw new Error("Wrong input string for conversion");
+            let number4 = parseInt(differenceString.substring(0, 2), 10);
+            if (isNaN(number4.valueOf()))
+              throw new Error("Wrong input string for conversion");
+            hourDifference = multiplier * number4;
+            if (differenceString.length === 4) {
+              number4 = parseInt(differenceString.substring(2, 4), 10);
+              if (isNaN(number4.valueOf()))
+                throw new Error("Wrong input string for conversion");
+              minuteDifference = multiplier * number4;
+            }
+          }
+        }
+        let fractionPointPosition = timeString.indexOf(".");
+        if (fractionPointPosition === -1)
+          fractionPointPosition = timeString.indexOf(",");
+        if (fractionPointPosition !== -1) {
+          const fractionPartCheck = new Number(`0${timeString.substring(fractionPointPosition)}`);
+          if (isNaN(fractionPartCheck.valueOf()))
+            throw new Error("Wrong input string for conversion");
+          fractionPart = fractionPartCheck.valueOf();
+          dateTimeString = timeString.substring(0, fractionPointPosition);
+        } else
+          dateTimeString = timeString;
+        switch (true) {
+          case dateTimeString.length === 8:
+            parser = /(\d{4})(\d{2})(\d{2})/gi;
+            if (fractionPointPosition !== -1)
+              throw new Error("Wrong input string for conversion");
+            break;
+          case dateTimeString.length === 10:
+            parser = /(\d{4})(\d{2})(\d{2})(\d{2})/gi;
+            if (fractionPointPosition !== -1) {
+              let fractionResult = 60 * fractionPart;
+              this.minute = Math.floor(fractionResult);
+              fractionResult = 60 * (fractionResult - this.minute);
+              this.second = Math.floor(fractionResult);
+              fractionResult = 1e3 * (fractionResult - this.second);
+              this.millisecond = Math.floor(fractionResult);
+            }
+            break;
+          case dateTimeString.length === 12:
+            parser = /(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})/gi;
+            if (fractionPointPosition !== -1) {
+              let fractionResult = 60 * fractionPart;
+              this.second = Math.floor(fractionResult);
+              fractionResult = 1e3 * (fractionResult - this.second);
+              this.millisecond = Math.floor(fractionResult);
+            }
+            break;
+          case dateTimeString.length === 14:
+            parser = /(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/gi;
+            if (fractionPointPosition !== -1) {
+              const fractionResult = 1e3 * fractionPart;
+              this.millisecond = Math.floor(fractionResult);
+            }
+            break;
+          default:
+            throw new Error("Wrong input string for conversion");
+        }
+        const parserArray = parser.exec(dateTimeString);
+        if (parserArray === null)
+          throw new Error("Wrong input string for conversion");
+        for (let j = 1; j < parserArray.length; j++) {
+          switch (j) {
+            case 1:
+              this.year = parseInt(parserArray[j], 10);
+              break;
+            case 2:
+              this.month = parseInt(parserArray[j], 10);
+              break;
+            case 3:
+              this.day = parseInt(parserArray[j], 10);
+              break;
+            case 4:
+              this.hour = parseInt(parserArray[j], 10) + hourDifference;
+              break;
+            case 5:
+              this.minute = parseInt(parserArray[j], 10) + minuteDifference;
+              break;
+            case 6:
+              this.second = parseInt(parserArray[j], 10);
+              break;
+            default:
+              throw new Error("Wrong input string for conversion");
+          }
+        }
+        if (isUTC === false) {
+          const tempDate = new Date(this.year, this.month, this.day, this.hour, this.minute, this.second, this.millisecond);
+          this.year = tempDate.getUTCFullYear();
+          this.month = tempDate.getUTCMonth();
+          this.day = tempDate.getUTCDay();
+          this.hour = tempDate.getUTCHours();
+          this.minute = tempDate.getUTCMinutes();
+          this.second = tempDate.getUTCSeconds();
+          this.millisecond = tempDate.getUTCMilliseconds();
+        }
+      }
+      toString(encoding = "iso") {
+        if (encoding === "iso") {
+          const outputArray = [];
+          outputArray.push(pvutils__namespace.padNumber(this.year, 4));
+          outputArray.push(pvutils__namespace.padNumber(this.month, 2));
+          outputArray.push(pvutils__namespace.padNumber(this.day, 2));
+          outputArray.push(pvutils__namespace.padNumber(this.hour, 2));
+          outputArray.push(pvutils__namespace.padNumber(this.minute, 2));
+          outputArray.push(pvutils__namespace.padNumber(this.second, 2));
+          if (this.millisecond !== 0) {
+            outputArray.push(".");
+            outputArray.push(pvutils__namespace.padNumber(this.millisecond, 3).replace(/0+$/, ""));
+          }
+          outputArray.push("Z");
+          return outputArray.join("");
+        }
+        return super.toString(encoding);
+      }
+      toJSON() {
+        return {
+          ...super.toJSON(),
+          millisecond: this.millisecond
+        };
+      }
+    };
+    _a$5 = GeneralizedTime;
+    (() => {
+      typeStore.GeneralizedTime = _a$5;
+    })();
+    GeneralizedTime.NAME = "GeneralizedTime";
+    var _a$4;
+    var DATE = class extends Utf8String {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 31;
+      }
+    };
+    _a$4 = DATE;
+    (() => {
+      typeStore.DATE = _a$4;
+    })();
+    DATE.NAME = "DATE";
+    var _a$3;
+    var TimeOfDay = class extends Utf8String {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 32;
+      }
+    };
+    _a$3 = TimeOfDay;
+    (() => {
+      typeStore.TimeOfDay = _a$3;
+    })();
+    TimeOfDay.NAME = "TimeOfDay";
+    var _a$2;
+    var DateTime = class extends Utf8String {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 33;
+      }
+    };
+    _a$2 = DateTime;
+    (() => {
+      typeStore.DateTime = _a$2;
+    })();
+    DateTime.NAME = "DateTime";
+    var _a$1;
+    var Duration = class extends Utf8String {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 34;
+      }
+    };
+    _a$1 = Duration;
+    (() => {
+      typeStore.Duration = _a$1;
+    })();
+    Duration.NAME = "Duration";
+    var _a2;
+    var TIME = class extends Utf8String {
+      constructor(parameters = {}) {
+        super(parameters);
+        this.idBlock.tagClass = 1;
+        this.idBlock.tagNumber = 14;
+      }
+    };
+    _a2 = TIME;
+    (() => {
+      typeStore.TIME = _a2;
+    })();
+    TIME.NAME = "TIME";
+    var Any = class {
+      constructor({ name = EMPTY_STRING, optional: optional2 = false } = {}) {
+        this.name = name;
+        this.optional = optional2;
+      }
+    };
+    var Choice = class extends Any {
+      constructor({ value = [], ...parameters } = {}) {
+        super(parameters);
+        this.value = value;
+      }
+    };
+    var Repeated = class extends Any {
+      constructor({ value = new Any(), local = false, ...parameters } = {}) {
+        super(parameters);
+        this.value = value;
+        this.local = local;
+      }
+    };
+    var RawData = class {
+      get data() {
+        return this.dataView.slice().buffer;
+      }
+      set data(value) {
+        this.dataView = pvtsutils__namespace.BufferSourceConverter.toUint8Array(value);
+      }
+      constructor({ data = EMPTY_VIEW } = {}) {
+        this.dataView = pvtsutils__namespace.BufferSourceConverter.toUint8Array(data);
+      }
+      fromBER(inputBuffer, inputOffset, inputLength) {
+        const endLength = inputOffset + inputLength;
+        this.dataView = pvtsutils__namespace.BufferSourceConverter.toUint8Array(inputBuffer).subarray(inputOffset, endLength);
+        return endLength;
+      }
+      toBER(_sizeOnly) {
+        return this.dataView.slice().buffer;
+      }
+    };
+    function compareSchema(root, inputData, inputSchema) {
+      if (inputSchema instanceof Choice) {
+        for (const element of inputSchema.value) {
+          const result = compareSchema(root, inputData, element);
+          if (result.verified) {
+            return {
+              verified: true,
+              result: root
+            };
+          }
+        }
+        {
+          const _result = {
+            verified: false,
+            result: { error: "Wrong values for Choice type" }
+          };
+          if (inputSchema.hasOwnProperty(NAME))
+            _result.name = inputSchema.name;
+          return _result;
+        }
+      }
+      if (inputSchema instanceof Any) {
+        if (inputSchema.hasOwnProperty(NAME))
+          root[inputSchema.name] = inputData;
+        return {
+          verified: true,
+          result: root
+        };
+      }
+      if (root instanceof Object === false) {
+        return {
+          verified: false,
+          result: { error: "Wrong root object" }
+        };
+      }
+      if (inputData instanceof Object === false) {
+        return {
+          verified: false,
+          result: { error: "Wrong ASN.1 data" }
+        };
+      }
+      if (inputSchema instanceof Object === false) {
+        return {
+          verified: false,
+          result: { error: "Wrong ASN.1 schema" }
+        };
+      }
+      if (ID_BLOCK in inputSchema === false) {
+        return {
+          verified: false,
+          result: { error: "Wrong ASN.1 schema" }
+        };
+      }
+      if (FROM_BER in inputSchema.idBlock === false) {
+        return {
+          verified: false,
+          result: { error: "Wrong ASN.1 schema" }
+        };
+      }
+      if (TO_BER in inputSchema.idBlock === false) {
+        return {
+          verified: false,
+          result: { error: "Wrong ASN.1 schema" }
+        };
+      }
+      const encodedId = inputSchema.idBlock.toBER(false);
+      if (encodedId.byteLength === 0) {
+        return {
+          verified: false,
+          result: { error: "Error encoding idBlock for ASN.1 schema" }
+        };
+      }
+      const decodedOffset = inputSchema.idBlock.fromBER(encodedId, 0, encodedId.byteLength);
+      if (decodedOffset === -1) {
+        return {
+          verified: false,
+          result: { error: "Error decoding idBlock for ASN.1 schema" }
+        };
+      }
+      if (inputSchema.idBlock.hasOwnProperty(TAG_CLASS) === false) {
+        return {
+          verified: false,
+          result: { error: "Wrong ASN.1 schema" }
+        };
+      }
+      if (inputSchema.idBlock.tagClass !== inputData.idBlock.tagClass) {
+        return {
+          verified: false,
+          result: root
+        };
+      }
+      if (inputSchema.idBlock.hasOwnProperty(TAG_NUMBER) === false) {
+        return {
+          verified: false,
+          result: { error: "Wrong ASN.1 schema" }
+        };
+      }
+      if (inputSchema.idBlock.tagNumber !== inputData.idBlock.tagNumber) {
+        return {
+          verified: false,
+          result: root
+        };
+      }
+      if (inputSchema.idBlock.hasOwnProperty(IS_CONSTRUCTED) === false) {
+        return {
+          verified: false,
+          result: { error: "Wrong ASN.1 schema" }
+        };
+      }
+      if (inputSchema.idBlock.isConstructed !== inputData.idBlock.isConstructed) {
+        return {
+          verified: false,
+          result: root
+        };
+      }
+      if (!(IS_HEX_ONLY in inputSchema.idBlock)) {
+        return {
+          verified: false,
+          result: { error: "Wrong ASN.1 schema" }
+        };
+      }
+      if (inputSchema.idBlock.isHexOnly !== inputData.idBlock.isHexOnly) {
+        return {
+          verified: false,
+          result: root
+        };
+      }
+      if (inputSchema.idBlock.isHexOnly) {
+        if (VALUE_HEX_VIEW in inputSchema.idBlock === false) {
+          return {
+            verified: false,
+            result: { error: "Wrong ASN.1 schema" }
+          };
+        }
+        const schemaView = inputSchema.idBlock.valueHexView;
+        const asn1View = inputData.idBlock.valueHexView;
+        if (schemaView.length !== asn1View.length) {
+          return {
+            verified: false,
+            result: root
+          };
+        }
+        for (let i = 0; i < schemaView.length; i++) {
+          if (schemaView[i] !== asn1View[1]) {
+            return {
+              verified: false,
+              result: root
+            };
+          }
+        }
+      }
+      if (inputSchema.name) {
+        inputSchema.name = inputSchema.name.replace(/^\s+|\s+$/g, EMPTY_STRING);
+        if (inputSchema.name)
+          root[inputSchema.name] = inputData;
+      }
+      if (inputSchema instanceof typeStore.Constructed) {
+        let admission = 0;
+        let result = {
+          verified: false,
+          result: { error: "Unknown error" }
+        };
+        let maxLength = inputSchema.valueBlock.value.length;
+        if (maxLength > 0) {
+          if (inputSchema.valueBlock.value[0] instanceof Repeated) {
+            maxLength = inputData.valueBlock.value.length;
+          }
+        }
+        if (maxLength === 0) {
+          return {
+            verified: true,
+            result: root
+          };
+        }
+        if (inputData.valueBlock.value.length === 0 && inputSchema.valueBlock.value.length !== 0) {
+          let _optional2 = true;
+          for (let i = 0; i < inputSchema.valueBlock.value.length; i++)
+            _optional2 = _optional2 && (inputSchema.valueBlock.value[i].optional || false);
+          if (_optional2) {
+            return {
+              verified: true,
+              result: root
+            };
+          }
+          if (inputSchema.name) {
+            inputSchema.name = inputSchema.name.replace(/^\s+|\s+$/g, EMPTY_STRING);
+            if (inputSchema.name)
+              delete root[inputSchema.name];
+          }
+          root.error = "Inconsistent object length";
+          return {
+            verified: false,
+            result: root
+          };
+        }
+        for (let i = 0; i < maxLength; i++) {
+          if (i - admission >= inputData.valueBlock.value.length) {
+            if (inputSchema.valueBlock.value[i].optional === false) {
+              const _result = {
+                verified: false,
+                result: root
+              };
+              root.error = "Inconsistent length between ASN.1 data and schema";
+              if (inputSchema.name) {
+                inputSchema.name = inputSchema.name.replace(/^\s+|\s+$/g, EMPTY_STRING);
+                if (inputSchema.name) {
+                  delete root[inputSchema.name];
+                  _result.name = inputSchema.name;
+                }
+              }
+              return _result;
+            }
+          } else {
+            if (inputSchema.valueBlock.value[0] instanceof Repeated) {
+              result = compareSchema(root, inputData.valueBlock.value[i], inputSchema.valueBlock.value[0].value);
+              if (result.verified === false) {
+                if (inputSchema.valueBlock.value[0].optional)
+                  admission++;
+                else {
+                  if (inputSchema.name) {
+                    inputSchema.name = inputSchema.name.replace(/^\s+|\s+$/g, EMPTY_STRING);
+                    if (inputSchema.name)
+                      delete root[inputSchema.name];
+                  }
+                  return result;
+                }
+              }
+              if (NAME in inputSchema.valueBlock.value[0] && inputSchema.valueBlock.value[0].name.length > 0) {
+                let arrayRoot = {};
+                if (LOCAL in inputSchema.valueBlock.value[0] && inputSchema.valueBlock.value[0].local)
+                  arrayRoot = inputData;
+                else
+                  arrayRoot = root;
+                if (typeof arrayRoot[inputSchema.valueBlock.value[0].name] === "undefined")
+                  arrayRoot[inputSchema.valueBlock.value[0].name] = [];
+                arrayRoot[inputSchema.valueBlock.value[0].name].push(inputData.valueBlock.value[i]);
+              }
+            } else {
+              result = compareSchema(root, inputData.valueBlock.value[i - admission], inputSchema.valueBlock.value[i]);
+              if (result.verified === false) {
+                if (inputSchema.valueBlock.value[i].optional)
+                  admission++;
+                else {
+                  if (inputSchema.name) {
+                    inputSchema.name = inputSchema.name.replace(/^\s+|\s+$/g, EMPTY_STRING);
+                    if (inputSchema.name)
+                      delete root[inputSchema.name];
+                  }
+                  return result;
+                }
+              }
+            }
+          }
+        }
+        if (result.verified === false) {
+          const _result = {
+            verified: false,
+            result: root
+          };
+          if (inputSchema.name) {
+            inputSchema.name = inputSchema.name.replace(/^\s+|\s+$/g, EMPTY_STRING);
+            if (inputSchema.name) {
+              delete root[inputSchema.name];
+              _result.name = inputSchema.name;
+            }
+          }
+          return _result;
+        }
+        return {
+          verified: true,
+          result: root
+        };
+      }
+      if (inputSchema.primitiveSchema && VALUE_HEX_VIEW in inputData.valueBlock) {
+        const asn1 = localFromBER(inputData.valueBlock.valueHexView);
+        if (asn1.offset === -1) {
+          const _result = {
+            verified: false,
+            result: asn1.result
+          };
+          if (inputSchema.name) {
+            inputSchema.name = inputSchema.name.replace(/^\s+|\s+$/g, EMPTY_STRING);
+            if (inputSchema.name) {
+              delete root[inputSchema.name];
+              _result.name = inputSchema.name;
+            }
+          }
+          return _result;
+        }
+        return compareSchema(root, asn1.result, inputSchema.primitiveSchema);
+      }
+      return {
+        verified: true,
+        result: root
+      };
+    }
+    function verifySchema(inputBuffer, inputSchema) {
+      if (inputSchema instanceof Object === false) {
+        return {
+          verified: false,
+          result: { error: "Wrong ASN.1 schema type" }
+        };
+      }
+      const asn1 = localFromBER(pvtsutils__namespace.BufferSourceConverter.toUint8Array(inputBuffer));
+      if (asn1.offset === -1) {
+        return {
+          verified: false,
+          result: asn1.result
+        };
+      }
+      return compareSchema(asn1.result, asn1.result, inputSchema);
+    }
+    registerBuiltinEncoder({ BitString, Integer, OctetString, Primitive, Constructed, Sequence, Set: Set2 }, {
+      BaseBlock,
+      ViewWriter,
+      LocalIdentificationBlock,
+      LocalLengthBlock,
+      LocalIntegerValueBlock,
+      LocalOctetStringValueBlock,
+      LocalConstructedValueBlock,
+      LocalBitStringValueBlock,
+      LocalPrimitiveValueBlock,
+      originalBaseBlockToBER: ORIGINAL_BASE_BLOCK_TO_BER,
+      originalWriterWrite: ORIGINAL_VIEW_WRITER_WRITE,
+      originalWriterFinal: ORIGINAL_VIEW_WRITER_FINAL,
+      originalIdentificationToBER: ORIGINAL_LOCAL_IDENTIFICATION_TO_BER,
+      originalLengthToBER: ORIGINAL_LOCAL_LENGTH_TO_BER,
+      originalIntegerToBER: ORIGINAL_LOCAL_INTEGER_TO_BER,
+      originalOctetStringToBER: ORIGINAL_LOCAL_OCTET_STRING_TO_BER,
+      originalBitStringToBER: ORIGINAL_LOCAL_BIT_STRING_TO_BER,
+      originalConstructedToBER: ORIGINAL_LOCAL_CONSTRUCTED_TO_BER,
+      originalPrimitiveToBER: ORIGINAL_LOCAL_PRIMITIVE_TO_BER
+    });
+    registerFastParser({ Integer, Null, Sequence });
+    exports2.Any = Any;
+    exports2.BaseBlock = BaseBlock;
+    exports2.BaseStringBlock = BaseStringBlock;
+    exports2.BitString = BitString;
+    exports2.BmpString = BmpString;
+    exports2.Boolean = Boolean2;
+    exports2.CharacterString = CharacterString;
+    exports2.Choice = Choice;
+    exports2.Constructed = Constructed;
+    exports2.DATE = DATE;
+    exports2.DEFAULT_MAX_CONTENT_LENGTH = DEFAULT_MAX_CONTENT_LENGTH;
+    exports2.DEFAULT_MAX_DEPTH = DEFAULT_MAX_DEPTH;
+    exports2.DEFAULT_MAX_NODES = DEFAULT_MAX_NODES;
+    exports2.DateTime = DateTime;
+    exports2.Duration = Duration;
+    exports2.EndOfContent = EndOfContent;
+    exports2.Enumerated = Enumerated;
+    exports2.GeneralString = GeneralString;
+    exports2.GeneralizedTime = GeneralizedTime;
+    exports2.GraphicString = GraphicString;
+    exports2.HexBlock = HexBlock;
+    exports2.IA5String = IA5String;
+    exports2.Integer = Integer;
+    exports2.Null = Null;
+    exports2.NumericString = NumericString;
+    exports2.ObjectIdentifier = ObjectIdentifier;
+    exports2.OctetString = OctetString;
+    exports2.Primitive = Primitive;
+    exports2.PrintableString = PrintableString;
+    exports2.RawData = RawData;
+    exports2.RelativeObjectIdentifier = RelativeObjectIdentifier;
+    exports2.Repeated = Repeated;
+    exports2.Sequence = Sequence;
+    exports2.Set = Set2;
+    exports2.TIME = TIME;
+    exports2.TeletexString = TeletexString;
+    exports2.TimeOfDay = TimeOfDay;
+    exports2.UTCTime = UTCTime;
+    exports2.UniversalString = UniversalString;
+    exports2.Utf8String = Utf8String;
+    exports2.ValueBlock = ValueBlock;
+    exports2.VideotexString = VideotexString;
+    exports2.ViewWriter = ViewWriter;
+    exports2.VisibleString = VisibleString;
+    exports2.compareSchema = compareSchema;
+    exports2.fromBER = fromBER;
+    exports2.verifySchema = verifySchema;
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/bytes/buffer-source.js
+var require_buffer_source = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/bytes/buffer-source.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.isArrayBuffer = isArrayBuffer;
+    exports2.isSharedArrayBuffer = isSharedArrayBuffer;
+    exports2.isArrayBufferLike = isArrayBufferLike;
+    exports2.isArrayBufferView = isArrayBufferView;
+    exports2.isBufferSource = isBufferSource;
+    exports2.assertBufferSource = assertBufferSource;
+    exports2.toUint8Array = toUint8Array;
+    exports2.toUint8ArrayCopy = toUint8ArrayCopy;
+    exports2.toArrayBuffer = toArrayBuffer2;
+    exports2.toArrayBufferLike = toArrayBufferLike;
+    exports2.toView = toView;
+    exports2.toViewCopy = toViewCopy;
+    var ARRAY_BUFFER_TAG = "[object ArrayBuffer]";
+    var SHARED_ARRAY_BUFFER_TAG = "[object SharedArrayBuffer]";
+    function tagOf(value) {
+      return Object.prototype.toString.call(value);
+    }
+    function isDataViewConstructor(type) {
+      return type === DataView || type.prototype instanceof DataView;
+    }
+    function bytesPerElement(type) {
+      if (isDataViewConstructor(type)) {
+        return 1;
+      }
+      const value = type.BYTES_PER_ELEMENT;
+      return value ?? 1;
+    }
+    function isArrayBufferViewLike(value) {
+      if (ArrayBuffer.isView(value)) {
+        return true;
+      }
+      if (!value || typeof value !== "object") {
+        return false;
+      }
+      const view = value;
+      return typeof view.byteOffset === "number" && typeof view.byteLength === "number" && isArrayBufferLike(view.buffer);
+    }
+    function copyBytes(data) {
+      const view = toUint8Array(data);
+      const copy = new Uint8Array(view.byteLength);
+      copy.set(view);
+      return copy;
+    }
+    function isArrayBuffer(value) {
+      return tagOf(value) === ARRAY_BUFFER_TAG;
+    }
+    function isSharedArrayBuffer(value) {
+      return typeof SharedArrayBuffer !== "undefined" && tagOf(value) === SHARED_ARRAY_BUFFER_TAG;
+    }
+    function isArrayBufferLike(value) {
+      return isArrayBuffer(value) || isSharedArrayBuffer(value);
+    }
+    function isArrayBufferView(value) {
+      return isArrayBufferViewLike(value);
+    }
+    function isBufferSource(value) {
+      return isArrayBufferLike(value) || isArrayBufferView(value);
+    }
+    function assertBufferSource(value) {
+      if (!isBufferSource(value)) {
+        throw new TypeError("Expected ArrayBuffer, SharedArrayBuffer, or ArrayBufferView");
+      }
+    }
+    function toUint8Array(data) {
+      assertBufferSource(data);
+      if (isArrayBufferLike(data)) {
+        return new Uint8Array(data);
+      }
+      return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    }
+    function toUint8ArrayCopy(data) {
+      return copyBytes(data);
+    }
+    function toArrayBuffer2(data) {
+      assertBufferSource(data);
+      if (isArrayBuffer(data)) {
+        return data;
+      }
+      const buffer = new ArrayBuffer(data.byteLength);
+      new Uint8Array(buffer).set(toUint8Array(data));
+      return buffer;
+    }
+    function toArrayBufferLike(data) {
+      assertBufferSource(data);
+      if (isArrayBufferLike(data)) {
+        return data;
+      }
+      if (data.byteOffset === 0 && data.byteLength === data.buffer.byteLength) {
+        return data.buffer;
+      }
+      return copyBytes(data).buffer;
+    }
+    function toView(data, type) {
+      assertBufferSource(data);
+      if (ArrayBuffer.isView(data) && data.constructor === type) {
+        return data;
+      }
+      const view = toUint8Array(data);
+      const elementSize = bytesPerElement(type);
+      if (view.byteOffset % elementSize !== 0 || view.byteLength % elementSize !== 0) {
+        throw new RangeError(`Cannot create ${type.name} over unaligned byte range`);
+      }
+      if (isDataViewConstructor(type)) {
+        return new type(view.buffer, view.byteOffset, view.byteLength);
+      }
+      return new type(view.buffer, view.byteOffset, view.byteLength / elementSize);
+    }
+    function toViewCopy(data, type) {
+      const copy = toUint8ArrayCopy(data);
+      return toView(copy, type);
+    }
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/bytes/concat.js
+var require_concat = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/bytes/concat.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.concatToUint8Array = concatToUint8Array;
+    exports2.concat = concat;
+    var buffer_source_js_1 = require_buffer_source();
+    function concatToUint8Array(buffers) {
+      const views = [];
+      let length = 0;
+      for (const buffer of buffers) {
+        const view = (0, buffer_source_js_1.toUint8Array)(buffer);
+        views.push(view);
+        length += view.byteLength;
+      }
+      const result = new Uint8Array(length);
+      let offset = 0;
+      for (const view of views) {
+        result.set(view, offset);
+        offset += view.byteLength;
+      }
+      return result;
+    }
+    function concat(first, second, ...rest) {
+      let buffers;
+      let type;
+      if (typeof second === "function") {
+        buffers = Array.from(first);
+        type = second;
+      } else if ((0, buffer_source_js_1.isBufferSource)(first)) {
+        buffers = [first, second, ...rest].filter(buffer_source_js_1.isBufferSource);
+      } else {
+        buffers = Array.from(first);
+        if (second) {
+          buffers.push(second);
+        }
+        buffers.push(...rest);
+      }
+      const bytes = concatToUint8Array(buffers);
+      return type ? (0, buffer_source_js_1.toView)(bytes, type) : bytes.buffer;
+    }
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/bytes/equal.js
+var require_equal2 = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/bytes/equal.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.equal = equal;
+    var buffer_source_js_1 = require_buffer_source();
+    function equal(a, b, options = {}) {
+      const left = (0, buffer_source_js_1.toUint8Array)(a);
+      const right = (0, buffer_source_js_1.toUint8Array)(b);
+      if (!options.constantTime && left.byteLength !== right.byteLength) {
+        return false;
+      }
+      const length = Math.max(left.byteLength, right.byteLength);
+      let diff = left.byteLength ^ right.byteLength;
+      for (let i = 0; i < length; i++) {
+        diff |= (left[i] ?? 0) ^ (right[i] ?? 0);
+      }
+      return diff === 0;
+    }
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/bytes/sequence.js
+var require_sequence = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/bytes/sequence.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.indexOf = indexOf;
+    exports2.lastIndexOf = lastIndexOf;
+    exports2.includes = includes;
+    exports2.startsWith = startsWith;
+    exports2.endsWith = endsWith;
+    exports2.slice = slice;
+    exports2.tail = tail;
+    exports2.copy = copy;
+    exports2.compare = compare;
+    var buffer_source_js_1 = require_buffer_source();
+    function clampIndex(value, fallback, length) {
+      const normalized = Number.isFinite(value) ? Math.trunc(value) : fallback;
+      if (normalized <= 0) {
+        return 0;
+      }
+      if (normalized >= length) {
+        return length;
+      }
+      return normalized;
+    }
+    function normalizeForwardRange(length, options) {
+      const start = clampIndex(options?.start, 0, length);
+      const end = clampIndex(options?.end, length, length);
+      return end >= start ? [start, end] : [start, start];
+    }
+    function normalizeReverseRange(length, options) {
+      const start = clampIndex(options?.start, length, length);
+      const end = clampIndex(options?.end, 0, length);
+      return start >= end ? [end, start] : [start, start];
+    }
+    function normalizeSliceIndex(value, fallback, length) {
+      const normalized = Number.isFinite(value) ? Math.trunc(value) : fallback;
+      if (normalized < 0) {
+        return Math.max(length + normalized, 0);
+      }
+      if (normalized > length) {
+        return length;
+      }
+      return normalized;
+    }
+    function encodeAscii(text) {
+      const bytes = new Uint8Array(text.length);
+      for (let i = 0; i < text.length; i++) {
+        bytes[i] = text.charCodeAt(i) & 255;
+      }
+      return bytes;
+    }
+    function encodeUtf8(text) {
+      return new TextEncoder().encode(text);
+    }
+    function toPatternBytes(pattern, options) {
+      if (typeof pattern === "string") {
+        return options?.encoding === "utf8" ? encodeUtf8(pattern) : encodeAscii(pattern);
+      }
+      return (0, buffer_source_js_1.toUint8Array)(pattern);
+    }
+    function bytesEqualAt(data, pattern, offset) {
+      for (let index = 0; index < pattern.byteLength; index++) {
+        if (data[offset + index] !== pattern[index]) {
+          return false;
+        }
+      }
+      return true;
+    }
+    function indexOf(data, pattern, options) {
+      const bytes = (0, buffer_source_js_1.toUint8Array)(data);
+      const needle = toPatternBytes(pattern, options);
+      const [start, end] = normalizeForwardRange(bytes.byteLength, options);
+      if (needle.byteLength === 0) {
+        return start;
+      }
+      const lastOffset = end - needle.byteLength;
+      if (lastOffset < start) {
+        return -1;
+      }
+      for (let offset = start; offset <= lastOffset; offset++) {
+        if (bytesEqualAt(bytes, needle, offset)) {
+          return offset;
+        }
+      }
+      return -1;
+    }
+    function lastIndexOf(data, pattern, options) {
+      const bytes = (0, buffer_source_js_1.toUint8Array)(data);
+      const needle = toPatternBytes(pattern, options);
+      const [end, start] = normalizeReverseRange(bytes.byteLength, options);
+      if (needle.byteLength === 0) {
+        return start;
+      }
+      const firstOffset = start - needle.byteLength;
+      if (firstOffset < end) {
+        return -1;
+      }
+      for (let offset = firstOffset; offset >= end; offset--) {
+        if (bytesEqualAt(bytes, needle, offset)) {
+          return offset;
+        }
+      }
+      return -1;
+    }
+    function includes(data, pattern, options) {
+      return indexOf(data, pattern, options) !== -1;
+    }
+    function startsWith(data, pattern, options) {
+      const bytes = (0, buffer_source_js_1.toUint8Array)(data);
+      const needle = toPatternBytes(pattern, options);
+      if (needle.byteLength > bytes.byteLength) {
+        return false;
+      }
+      return bytesEqualAt(bytes, needle, 0);
+    }
+    function endsWith(data, pattern, options) {
+      const bytes = (0, buffer_source_js_1.toUint8Array)(data);
+      const needle = toPatternBytes(pattern, options);
+      if (needle.byteLength > bytes.byteLength) {
+        return false;
+      }
+      return bytesEqualAt(bytes, needle, bytes.byteLength - needle.byteLength);
+    }
+    function slice(data, start, end) {
+      const bytes = (0, buffer_source_js_1.toUint8Array)(data);
+      const normalizedStart = normalizeSliceIndex(start, 0, bytes.byteLength);
+      const normalizedEnd = normalizeSliceIndex(end, bytes.byteLength, bytes.byteLength);
+      if (normalizedEnd <= normalizedStart) {
+        return bytes.subarray(normalizedStart, normalizedStart);
+      }
+      return bytes.subarray(normalizedStart, normalizedEnd);
+    }
+    function tail(data, length) {
+      const bytes = (0, buffer_source_js_1.toUint8Array)(data);
+      const normalizedLength = Number.isFinite(length) ? Math.max(0, Math.trunc(length)) : 0;
+      if (normalizedLength >= bytes.byteLength) {
+        return bytes;
+      }
+      return bytes.subarray(bytes.byteLength - normalizedLength);
+    }
+    function copy(data) {
+      return (0, buffer_source_js_1.toUint8ArrayCopy)(data);
+    }
+    function compare(a, b) {
+      const left = (0, buffer_source_js_1.toUint8Array)(a);
+      const right = (0, buffer_source_js_1.toUint8Array)(b);
+      const limit = Math.min(left.byteLength, right.byteLength);
+      for (let index = 0; index < limit; index++) {
+        if (left[index] < right[index]) {
+          return -1;
+        }
+        if (left[index] > right[index]) {
+          return 1;
+        }
+      }
+      if (left.byteLength < right.byteLength) {
+        return -1;
+      }
+      if (left.byteLength > right.byteLength) {
+        return 1;
+      }
+      return 0;
+    }
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/bytes/index.js
+var require_bytes = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/bytes/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.tail = exports2.startsWith = exports2.slice = exports2.lastIndexOf = exports2.indexOf = exports2.includes = exports2.endsWith = exports2.copy = exports2.compare = exports2.equal = exports2.concatToUint8Array = exports2.concat = exports2.toViewCopy = exports2.toView = exports2.toUint8ArrayCopy = exports2.toUint8Array = exports2.toArrayBufferLike = exports2.toArrayBuffer = exports2.isSharedArrayBuffer = exports2.isBufferSource = exports2.isArrayBufferView = exports2.isArrayBufferLike = exports2.isArrayBuffer = exports2.assertBufferSource = void 0;
+    var buffer_source_js_1 = require_buffer_source();
+    Object.defineProperty(exports2, "assertBufferSource", { enumerable: true, get: function() {
+      return buffer_source_js_1.assertBufferSource;
+    } });
+    Object.defineProperty(exports2, "isArrayBuffer", { enumerable: true, get: function() {
+      return buffer_source_js_1.isArrayBuffer;
+    } });
+    Object.defineProperty(exports2, "isArrayBufferLike", { enumerable: true, get: function() {
+      return buffer_source_js_1.isArrayBufferLike;
+    } });
+    Object.defineProperty(exports2, "isArrayBufferView", { enumerable: true, get: function() {
+      return buffer_source_js_1.isArrayBufferView;
+    } });
+    Object.defineProperty(exports2, "isBufferSource", { enumerable: true, get: function() {
+      return buffer_source_js_1.isBufferSource;
+    } });
+    Object.defineProperty(exports2, "isSharedArrayBuffer", { enumerable: true, get: function() {
+      return buffer_source_js_1.isSharedArrayBuffer;
+    } });
+    Object.defineProperty(exports2, "toArrayBuffer", { enumerable: true, get: function() {
+      return buffer_source_js_1.toArrayBuffer;
+    } });
+    Object.defineProperty(exports2, "toArrayBufferLike", { enumerable: true, get: function() {
+      return buffer_source_js_1.toArrayBufferLike;
+    } });
+    Object.defineProperty(exports2, "toUint8Array", { enumerable: true, get: function() {
+      return buffer_source_js_1.toUint8Array;
+    } });
+    Object.defineProperty(exports2, "toUint8ArrayCopy", { enumerable: true, get: function() {
+      return buffer_source_js_1.toUint8ArrayCopy;
+    } });
+    Object.defineProperty(exports2, "toView", { enumerable: true, get: function() {
+      return buffer_source_js_1.toView;
+    } });
+    Object.defineProperty(exports2, "toViewCopy", { enumerable: true, get: function() {
+      return buffer_source_js_1.toViewCopy;
+    } });
+    var concat_js_1 = require_concat();
+    Object.defineProperty(exports2, "concat", { enumerable: true, get: function() {
+      return concat_js_1.concat;
+    } });
+    Object.defineProperty(exports2, "concatToUint8Array", { enumerable: true, get: function() {
+      return concat_js_1.concatToUint8Array;
+    } });
+    var equal_js_1 = require_equal2();
+    Object.defineProperty(exports2, "equal", { enumerable: true, get: function() {
+      return equal_js_1.equal;
+    } });
+    var sequence_js_1 = require_sequence();
+    Object.defineProperty(exports2, "compare", { enumerable: true, get: function() {
+      return sequence_js_1.compare;
+    } });
+    Object.defineProperty(exports2, "copy", { enumerable: true, get: function() {
+      return sequence_js_1.copy;
+    } });
+    Object.defineProperty(exports2, "endsWith", { enumerable: true, get: function() {
+      return sequence_js_1.endsWith;
+    } });
+    Object.defineProperty(exports2, "includes", { enumerable: true, get: function() {
+      return sequence_js_1.includes;
+    } });
+    Object.defineProperty(exports2, "indexOf", { enumerable: true, get: function() {
+      return sequence_js_1.indexOf;
+    } });
+    Object.defineProperty(exports2, "lastIndexOf", { enumerable: true, get: function() {
+      return sequence_js_1.lastIndexOf;
+    } });
+    Object.defineProperty(exports2, "slice", { enumerable: true, get: function() {
+      return sequence_js_1.slice;
+    } });
+    Object.defineProperty(exports2, "startsWith", { enumerable: true, get: function() {
+      return sequence_js_1.startsWith;
+    } });
+    Object.defineProperty(exports2, "tail", { enumerable: true, get: function() {
+      return sequence_js_1.tail;
+    } });
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/encoding/binary.js
+var require_binary = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/encoding/binary.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.binary = void 0;
+    exports2.encode = encode3;
+    exports2.decode = decode3;
+    exports2.is = is;
+    var index_js_1 = require_bytes();
+    function encode3(data) {
+      const bytes = (0, index_js_1.toUint8Array)(data);
+      let result = "";
+      for (const byte of bytes) {
+        result += String.fromCharCode(byte);
+      }
+      return result;
+    }
+    function decode3(text) {
+      const result = new Uint8Array(text.length);
+      for (let i = 0; i < text.length; i++) {
+        result[i] = text.charCodeAt(i) & 255;
+      }
+      return result;
+    }
+    function is(text) {
+      return typeof text === "string";
+    }
+    exports2.binary = { encode: encode3, decode: decode3, is };
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/encoding/hex.js
+var require_hex = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/encoding/hex.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.hex = exports2.formats = void 0;
+    exports2.normalize = normalize;
+    exports2.is = is;
+    exports2.encode = encode3;
+    exports2.decode = decode3;
+    exports2.parse = parse3;
+    exports2.format = format;
+    var index_js_1 = require_bytes();
+    var HEX_CHARACTER_REGEX = /^[0-9a-f]$/i;
+    var COMMON_SEPARATORS = [" ", "	", "\n", "\r", ":", "-", "."];
+    function resolveSeparators(options) {
+      if (options.separators === "none") {
+        return [];
+      }
+      if (!options.separators || options.separators === "common") {
+        return COMMON_SEPARATORS;
+      }
+      return options.separators;
+    }
+    function validateSeparator(separator) {
+      if (!separator) {
+        throw new TypeError("Hex separators must be non-empty strings");
+      }
+    }
+    function matchSeparator(text, index, separators) {
+      for (const separator of separators) {
+        if (text.startsWith(separator, index)) {
+          return separator;
+        }
+      }
+      return void 0;
+    }
+    function detectCase(text) {
+      const hasUpper = /[A-F]/.test(text);
+      const hasLower = /[a-f]/.test(text);
+      return hasUpper && !hasLower ? "upper" : "lower";
+    }
+    function detectLineSeparator(text) {
+      const match = /\r\n|\n/.exec(text);
+      if (!match) {
+        return void 0;
+      }
+      return match[0] === "\r\n" ? "\r\n" : "\n";
+    }
+    function compactForDetection(text) {
+      return text.replace(/[^0-9a-f]/gi, "");
+    }
+    function detectGroup(text) {
+      const segments = text.match(/[0-9A-Fa-f]+|[^0-9A-Fa-f]+/g) ?? [];
+      if (segments.length < 3) {
+        return void 0;
+      }
+      const hexSegments = segments.filter((_, index) => index % 2 === 0);
+      const separators = segments.filter((_, index) => index % 2 === 1);
+      const separator = separators[0];
+      if (!separator || separators.some((item) => item !== separator)) {
+        return void 0;
+      }
+      if (hexSegments.some((segment) => segment.length === 0 || segment.length % 2 !== 0)) {
+        return void 0;
+      }
+      const firstLength = hexSegments[0]?.length ?? 0;
+      if (!firstLength) {
+        return void 0;
+      }
+      if (hexSegments.slice(0, -1).some((segment) => segment.length !== firstLength)) {
+        return void 0;
+      }
+      if ((hexSegments[hexSegments.length - 1]?.length ?? 0) > firstLength) {
+        return void 0;
+      }
+      return {
+        size: firstLength / 2,
+        separator
+      };
+    }
+    function detectFormat(text) {
+      const trimmed = text.trim();
+      const prefix = /^0x/i.test(trimmed) ? "0x" : "";
+      const body = prefix ? trimmed.slice(2) : trimmed;
+      const lineSeparator = detectLineSeparator(body);
+      const lines = body.split(/\r\n|\n/).filter((line) => line.length > 0);
+      const sampleLine = lines[0]?.trim() ?? "";
+      const group = detectGroup(sampleLine);
+      const format2 = {
+        case: detectCase(trimmed),
+        prefix
+      };
+      if (group) {
+        format2.group = group;
+      }
+      if (lineSeparator && lines.length > 1) {
+        const firstLineBytes = compactForDetection(lines[0] ?? "").length / 2;
+        if (firstLineBytes > 0 && lines.slice(0, -1).every((line) => compactForDetection(line).length / 2 === firstLineBytes)) {
+          format2.line = {
+            bytesPerLine: firstLineBytes,
+            separator: lineSeparator
+          };
+        }
+      }
+      return format2;
+    }
+    function normalizeText(text, options) {
+      const allowPrefix = options.allowPrefix ?? true;
+      const separators = [...resolveSeparators(options)].sort((left, right) => right.length - left.length);
+      for (const separator of separators) {
+        validateSeparator(separator);
+      }
+      let working = text.trim();
+      if (/^0x/i.test(working)) {
+        if (!allowPrefix) {
+          throw new TypeError("Hexadecimal text must not include a 0x prefix");
+        }
+        working = working.slice(2);
+      }
+      let normalized = "";
+      let lastTokenWasSeparator = false;
+      for (let index = 0; index < working.length; ) {
+        const character = working[index] ?? "";
+        if (HEX_CHARACTER_REGEX.test(character)) {
+          normalized += character;
+          lastTokenWasSeparator = false;
+          index += 1;
+          continue;
+        }
+        const separator = matchSeparator(working, index, separators);
+        if (!separator) {
+          throw new TypeError("Input is not valid hexadecimal text");
+        }
+        if (options.strict && (lastTokenWasSeparator || normalized.length === 0)) {
+          throw new TypeError("Hexadecimal text contains misplaced separators");
+        }
+        lastTokenWasSeparator = true;
+        index += separator.length;
+      }
+      if (options.strict && lastTokenWasSeparator && normalized.length > 0) {
+        throw new TypeError("Hexadecimal text must not end with a separator");
+      }
+      if (normalized.length % 2 !== 0) {
+        if (!options.allowOddLength) {
+          throw new TypeError("Hexadecimal text must contain an even number of characters");
+        }
+        normalized = `0${normalized}`;
+      }
+      return normalized.toLowerCase();
+    }
+    function groupPairs(pairs, group) {
+      if (!group) {
+        return pairs.join("");
+      }
+      if (!Number.isInteger(group.size) || group.size < 1) {
+        throw new RangeError("Hex group size must be a positive integer");
+      }
+      const chunks = [];
+      for (let index = 0; index < pairs.length; index += group.size) {
+        chunks.push(pairs.slice(index, index + group.size).join(""));
+      }
+      return chunks.join(group.separator);
+    }
+    function normalize(text, options = {}) {
+      return normalizeText(text, options);
+    }
+    function is(text, options = {}) {
+      if (typeof text !== "string") {
+        return false;
+      }
+      try {
+        normalize(text, options);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    function encode3(data, options = {}) {
+      const bytes = (0, index_js_1.toUint8Array)(data);
+      const casing = options.case ?? "lower";
+      const pairs = Array.from(bytes, (byte) => {
+        const text = byte.toString(16).padStart(2, "0");
+        return casing === "upper" ? text.toUpperCase() : text;
+      });
+      let body = "";
+      if (options.line) {
+        const bytesPerLine = options.line.bytesPerLine;
+        if (!Number.isInteger(bytesPerLine) || bytesPerLine < 1) {
+          throw new RangeError("Hex bytesPerLine must be a positive integer");
+        }
+        const separator = options.line.separator ?? "\n";
+        const lines = [];
+        for (let index = 0; index < pairs.length; index += bytesPerLine) {
+          lines.push(groupPairs(pairs.slice(index, index + bytesPerLine), options.group));
+        }
+        body = lines.join(separator);
+      } else {
+        body = groupPairs(pairs, options.group);
+      }
+      return `${options.prefix ?? ""}${body}`;
+    }
+    function decode3(text, options = {}) {
+      const normalized = normalize(text, options);
+      const result = new Uint8Array(normalized.length / 2);
+      for (let i = 0; i < normalized.length; i += 2) {
+        result[i / 2] = Number.parseInt(normalized.slice(i, i + 2), 16);
+      }
+      return result;
+    }
+    function parse3(text, options = {}) {
+      const normalized = normalize(text, options);
+      return {
+        bytes: decode3(normalized),
+        format: detectFormat(text),
+        normalized
+      };
+    }
+    function format(data, value) {
+      return encode3(data, value);
+    }
+    exports2.formats = {
+      compact: Object.freeze({}),
+      upper: Object.freeze({ case: "upper" }),
+      colon: Object.freeze({ group: { size: 1, separator: ":" } }),
+      colonUpper: Object.freeze({ case: "upper", group: { size: 1, separator: ":" } }),
+      groupsOf4: Object.freeze({ group: { size: 4, separator: " " } }),
+      prefixed: Object.freeze({ prefix: "0x" })
+    };
+    exports2.hex = { encode: encode3, decode: decode3, format, formats: exports2.formats, is, normalize, parse: parse3 };
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/encoding/utf8.js
+var require_utf8 = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/encoding/utf8.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.utf8 = void 0;
+    exports2.encode = encode3;
+    exports2.decode = decode3;
+    var index_js_1 = require_bytes();
+    function encode3(text) {
+      return new TextEncoder().encode(text);
+    }
+    function decode3(data) {
+      return new TextDecoder("utf-8", { fatal: false }).decode((0, index_js_1.toUint8Array)(data));
+    }
+    exports2.utf8 = { encode: encode3, decode: decode3 };
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/encoding/utf16.js
+var require_utf16 = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/encoding/utf16.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.utf16 = void 0;
+    exports2.encode = encode3;
+    exports2.decode = decode3;
+    var index_js_1 = require_bytes();
+    function encode3(text, options = {}) {
+      const result = new ArrayBuffer(text.length * 2);
+      const view = new DataView(result);
+      for (let i = 0; i < text.length; i++) {
+        view.setUint16(i * 2, text.charCodeAt(i), options.littleEndian ?? false);
+      }
+      return new Uint8Array(result);
+    }
+    function decode3(data, options = {}) {
+      const buffer = (0, index_js_1.toArrayBuffer)(data);
+      const view = new DataView(buffer);
+      let result = "";
+      for (let i = 0; i < buffer.byteLength; i += 2) {
+        result += String.fromCharCode(view.getUint16(i, options.littleEndian ?? false));
+      }
+      return result;
+    }
+    exports2.utf16 = { encode: encode3, decode: decode3 };
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/encoding/base64.js
+var require_base64 = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/encoding/base64.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.base64 = void 0;
+    exports2.normalize = normalize;
+    exports2.pad = pad;
+    exports2.is = is;
+    exports2.encode = encode3;
+    exports2.decode = decode3;
+    var index_js_1 = require_bytes();
+    var binary_js_1 = require_binary();
+    var BASE64_REGEX = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+    function nodeBuffer() {
+      return globalThis.Buffer;
+    }
+    function normalize(text) {
+      return text.replace(/[\n\r\t ]/g, "");
+    }
+    function pad(text) {
+      const remainder = text.length % 4;
+      return remainder ? text + "=".repeat(4 - remainder) : text;
+    }
+    function is(text) {
+      if (typeof text !== "string") {
+        return false;
+      }
+      const normalized = normalize(text);
+      return normalized === "" || BASE64_REGEX.test(normalized);
+    }
+    function encode3(data, _options) {
+      const bytes = (0, index_js_1.toUint8Array)(data);
+      const buffer = nodeBuffer();
+      if (buffer) {
+        return buffer.from(bytes).toString("base64");
+      }
+      return btoa((0, binary_js_1.encode)(bytes));
+    }
+    function decode3(text, _options) {
+      const normalized = normalize(text);
+      if (!is(normalized)) {
+        throw new TypeError("Input is not valid Base64 text");
+      }
+      const buffer = nodeBuffer();
+      if (buffer) {
+        return new Uint8Array(buffer.from(normalized, "base64"));
+      }
+      return (0, binary_js_1.decode)(atob(normalized));
+    }
+    exports2.base64 = { encode: encode3, decode: decode3, is, normalize, pad };
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/encoding/base64url.js
+var require_base64url = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/encoding/base64url.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.base64url = void 0;
+    exports2.normalize = normalize;
+    exports2.is = is;
+    exports2.encode = encode3;
+    exports2.decode = decode3;
+    var base64_js_1 = require_base64();
+    var BASE64URL_REGEX = /^[A-Za-z0-9_-]*$/;
+    function normalize(text) {
+      return text.replace(/[\n\r\t ]/g, "");
+    }
+    function is(text) {
+      return typeof text === "string" && BASE64URL_REGEX.test(normalize(text));
+    }
+    function encode3(data, _options) {
+      return base64_js_1.base64.encode(data).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    }
+    function decode3(text, _options) {
+      const normalized = normalize(text);
+      if (!is(normalized)) {
+        throw new TypeError("Input is not valid Base64Url text");
+      }
+      return base64_js_1.base64.decode(base64_js_1.base64.pad(normalized.replace(/-/g, "+").replace(/_/g, "/")));
+    }
+    exports2.base64url = { encode: encode3, decode: decode3, is, normalize };
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/encoding/index.js
+var require_encoding = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/encoding/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.base64url = exports2.base64 = exports2.utf16 = exports2.utf8 = exports2.hex = exports2.binary = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    exports2.binary = tslib_1.__importStar(require_binary());
+    exports2.hex = tslib_1.__importStar(require_hex());
+    exports2.utf8 = tslib_1.__importStar(require_utf8());
+    exports2.utf16 = tslib_1.__importStar(require_utf16());
+    exports2.base64 = tslib_1.__importStar(require_base64());
+    exports2.base64url = tslib_1.__importStar(require_base64url());
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/pem/pem.js
+var require_pem = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/pem/pem.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.pemConverter = exports2.pem = void 0;
+    exports2.encode = encode3;
+    exports2.encodeMany = encodeMany;
+    exports2.decode = decode3;
+    exports2.find = find;
+    exports2.findAll = findAll;
+    exports2.decodeFirst = decodeFirst;
+    exports2.parse = parse3;
+    exports2.format = format;
+    var base64_js_1 = require_base64();
+    var LABEL_REGEX = /^[A-Z0-9][A-Z0-9 ._-]*[A-Z0-9]$/i;
+    var PEM_BLOCK_REGEX = /-----BEGIN ([^-]+)-----([\s\S]*?)-----END \1-----/g;
+    function assertLabel(label) {
+      if (!LABEL_REGEX.test(label)) {
+        throw new TypeError(`Invalid PEM label '${label}'`);
+      }
+    }
+    function wrap(text, lineLength) {
+      const result = [];
+      for (let i = 0; i < text.length; i += lineLength) {
+        result.push(text.slice(i, i + lineLength));
+      }
+      return result;
+    }
+    function parseBody(body) {
+      const normalized = body.trim().replace(/\r\n/g, "\n");
+      const lines = normalized.split("\n").map((line) => line.trim()).filter(Boolean);
+      const headers = {};
+      let index = 0;
+      for (; index < lines.length; index++) {
+        const line = lines[index];
+        const separator = line.indexOf(":");
+        if (separator <= 0) {
+          break;
+        }
+        headers[line.slice(0, separator).trim()] = line.slice(separator + 1).trim();
+      }
+      return {
+        headers: Object.keys(headers).length ? headers : void 0,
+        base64Lines: lines.slice(index),
+        base64Text: lines.slice(index).join("")
+      };
+    }
+    function detectNewline(text) {
+      return /\r\n/.test(text) ? "\r\n" : "\n";
+    }
+    function collectBlocks(text, options = {}) {
+      const blocks = [];
+      const requestedLabel = options.label;
+      let match;
+      PEM_BLOCK_REGEX.lastIndex = 0;
+      while (match = PEM_BLOCK_REGEX.exec(text)) {
+        const label = match[1].trim();
+        if (requestedLabel && label !== requestedLabel) {
+          continue;
+        }
+        assertLabel(label);
+        const parsed = parseBody(match[2]);
+        blocks.push({
+          label,
+          data: base64_js_1.base64.decode(parsed.base64Text),
+          headers: parsed.headers,
+          lineLength: parsed.base64Lines[0]?.length ?? 64,
+          newline: detectNewline(match[0])
+        });
+      }
+      if (options.strict && blocks.length === 0) {
+        throw new TypeError(requestedLabel ? `No PEM block with label '${requestedLabel}' was found` : "No PEM blocks were found");
+      }
+      return blocks;
+    }
+    function encode3(label, data, options = {}) {
+      assertLabel(label);
+      const lineLength = options.lineLength ?? 64;
+      if (!Number.isInteger(lineLength) || lineLength < 1) {
+        throw new RangeError("PEM lineLength must be a positive integer");
+      }
+      const newline = options.newline ?? "\n";
+      const lines = [`-----BEGIN ${label}-----`];
+      if (options.headers) {
+        for (const [name, value] of Object.entries(options.headers)) {
+          lines.push(`${name}: ${value}`);
+        }
+        lines.push("");
+      }
+      lines.push(...wrap(base64_js_1.base64.encode(data), lineLength));
+      lines.push(`-----END ${label}-----`);
+      return `${lines.join(newline)}${newline}`;
+    }
+    function encodeMany(blocks, options = {}) {
+      return blocks.map((block) => encode3(block.label, block.data, { ...options, headers: block.headers ?? options.headers })).join("");
+    }
+    function decode3(text, options = {}) {
+      return collectBlocks(text, options).map(({ lineLength: _lineLength, newline: _newline, ...block }) => block);
+    }
+    function find(text, label) {
+      return decode3(text, { label })[0];
+    }
+    function findAll(text, label) {
+      return decode3(text, { label });
+    }
+    function decodeFirst(text, label) {
+      const [block] = decode3(text, { label, strict: true });
+      return block.data;
+    }
+    function parse3(text, options = {}) {
+      const [block] = collectBlocks(text, { ...options, strict: true });
+      const format2 = {
+        label: block.label,
+        headers: block.headers,
+        lineLength: block.lineLength,
+        newline: block.newline
+      };
+      return {
+        bytes: block.data,
+        format: format2,
+        normalized: encode3(block.label, block.data, format2)
+      };
+    }
+    function format(data, value) {
+      return encode3(value.label, data, value);
+    }
+    exports2.pem = { decode: decode3, decodeFirst, encode: encode3, encodeMany, find, findAll, format, parse: parse3 };
+    exports2.pemConverter = {
+      name: "pem",
+      encode: (data, options) => {
+        if (!options?.label) {
+          throw new TypeError("PEM label is required");
+        }
+        return encode3(options.label, data, options);
+      },
+      decode: (text, options) => decodeFirst(text, options?.label),
+      format,
+      is: (text) => typeof text === "string" && /-----BEGIN [^-]+-----/.test(text),
+      parse: parse3
+    };
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/pem/index.js
+var require_pem2 = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/pem/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.pemConverter = exports2.pem = exports2.parse = exports2.format = exports2.findAll = exports2.find = exports2.encodeMany = exports2.encode = exports2.decodeFirst = exports2.decode = void 0;
+    var pem_js_1 = require_pem();
+    Object.defineProperty(exports2, "decode", { enumerable: true, get: function() {
+      return pem_js_1.decode;
+    } });
+    Object.defineProperty(exports2, "decodeFirst", { enumerable: true, get: function() {
+      return pem_js_1.decodeFirst;
+    } });
+    Object.defineProperty(exports2, "encode", { enumerable: true, get: function() {
+      return pem_js_1.encode;
+    } });
+    Object.defineProperty(exports2, "encodeMany", { enumerable: true, get: function() {
+      return pem_js_1.encodeMany;
+    } });
+    Object.defineProperty(exports2, "find", { enumerable: true, get: function() {
+      return pem_js_1.find;
+    } });
+    Object.defineProperty(exports2, "findAll", { enumerable: true, get: function() {
+      return pem_js_1.findAll;
+    } });
+    Object.defineProperty(exports2, "format", { enumerable: true, get: function() {
+      return pem_js_1.format;
+    } });
+    Object.defineProperty(exports2, "parse", { enumerable: true, get: function() {
+      return pem_js_1.parse;
+    } });
+    Object.defineProperty(exports2, "pem", { enumerable: true, get: function() {
+      return pem_js_1.pem;
+    } });
+    Object.defineProperty(exports2, "pemConverter", { enumerable: true, get: function() {
+      return pem_js_1.pemConverter;
+    } });
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/converters/registry.js
+var require_registry = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/converters/registry.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.createConverterRegistry = createConverterRegistry;
+    function keyOf(name) {
+      return name.trim().toLowerCase();
+    }
+    function toError(error48) {
+      return error48 instanceof Error ? error48 : new Error(String(error48));
+    }
+    function removeConverter(converters, primaryNames, converter) {
+      for (const alias of [converter.name, ...converter.aliases ?? []]) {
+        converters.delete(keyOf(alias));
+      }
+      primaryNames.delete(keyOf(converter.name));
+    }
+    function requireCapability(converter, name, capability) {
+      const method = converter[capability];
+      if (typeof method !== "function") {
+        throw new Error(`Converter '${name}' does not support ${capability}()`);
+      }
+      return method;
+    }
+    function detectConfidence(name, text, converter) {
+      const normalizedName = keyOf(converter.name || name);
+      const trimmed = text.trim();
+      if (!trimmed) {
+        return 0;
+      }
+      let accepted = false;
+      if (converter.is) {
+        accepted = converter.is(text);
+      }
+      let decodable = false;
+      try {
+        converter.decode(text);
+        decodable = true;
+      } catch {
+        decodable = false;
+      }
+      if (!accepted && !decodable) {
+        return 0;
+      }
+      switch (normalizedName) {
+        case "pem":
+          return /-----BEGIN [^-]+-----/.test(text) ? 1 : 0;
+        case "hex": {
+          const compact = trimmed.replace(/^0x/i, "").replace(/[\s:.-]/g, "");
+          if (!compact || /[^0-9a-f]/i.test(compact) || compact.length % 2 !== 0) {
+            return 0;
+          }
+          if (/^0x/i.test(trimmed) || /[:\s.-]/.test(trimmed)) {
+            return 0.95;
+          }
+          if (/[a-f]/.test(trimmed) || /[A-F]/.test(trimmed)) {
+            return 0.8;
+          }
+          return 0.45;
+        }
+        case "base64url":
+          if (/[-_]/.test(trimmed)) {
+            return 0.95;
+          }
+          if (/=/.test(trimmed)) {
+            return 0.1;
+          }
+          return 0.6;
+        case "base64":
+          if (/[+/=]/.test(trimmed)) {
+            return 0.9;
+          }
+          return 0.55;
+        case "binary":
+        case "utf8":
+        case "utf16be":
+        case "utf16le":
+          return 0;
+        default:
+          return accepted && decodable ? 0.75 : 0.5;
+      }
+    }
+    function createConverterRegistry(initialConverters = []) {
+      const converters = /* @__PURE__ */ new Map();
+      const primaryNames = /* @__PURE__ */ new Set();
+      const api = {
+        register(converter, options = {}) {
+          if (!converter.name || !keyOf(converter.name)) {
+            throw new TypeError("Converter name is required");
+          }
+          const names = [...new Set([converter.name, ...converter.aliases ?? []].map(keyOf))];
+          const conflicts = /* @__PURE__ */ new Set();
+          for (const name of names) {
+            const existing = converters.get(name);
+            if (!existing) {
+              continue;
+            }
+            if (!options.override) {
+              throw new Error(`Converter '${name}' is already registered`);
+            }
+            conflicts.add(existing);
+          }
+          for (const conflicting of conflicts) {
+            removeConverter(converters, primaryNames, conflicting);
+          }
+          for (const name of names) {
+            converters.set(name, converter);
+          }
+          primaryNames.add(keyOf(converter.name));
+          return this;
+        },
+        unregister(name) {
+          const converter = converters.get(keyOf(name));
+          if (!converter) {
+            return false;
+          }
+          removeConverter(converters, primaryNames, converter);
+          return true;
+        },
+        has(name) {
+          return converters.has(keyOf(name));
+        },
+        get(name) {
+          const converter = converters.get(keyOf(name));
+          if (!converter) {
+            throw new Error(`Converter '${name}' is not registered`);
+          }
+          return converter;
+        },
+        list() {
+          return [...primaryNames].map((name) => this.get(name));
+        },
+        encode(name, data, options) {
+          return this.get(name).encode(data, options);
+        },
+        decode(name, text, options) {
+          return this.get(name).decode(text, options);
+        },
+        tryDecode(name, text, options) {
+          try {
+            return { ok: true, bytes: this.decode(name, text, options) };
+          } catch (error48) {
+            return { ok: false, error: toError(error48) };
+          }
+        },
+        normalize(name, text, options) {
+          const converter = this.get(name);
+          return requireCapability(converter, name, "normalize").call(converter, text, options);
+        },
+        parse(name, text, options) {
+          const converter = this.get(name);
+          return requireCapability(converter, name, "parse").call(converter, text, options);
+        },
+        format(name, data, format) {
+          const converter = this.get(name);
+          return requireCapability(converter, name, "format").call(converter, data, format);
+        },
+        transcode(text, options) {
+          const bytes = this.decode(options.from, text, options.fromOptions);
+          return this.encode(options.to, bytes, options.toOptions);
+        },
+        detect(text, options = {}) {
+          const formatNames = options.formats?.length ? options.formats.map((name) => String(name)) : this.list().map((converter) => converter.name).filter((name) => !["binary", "utf8", "utf16be", "utf16le"].includes(keyOf(name)));
+          const detections = /* @__PURE__ */ new Map();
+          for (const requestedName of formatNames) {
+            const converter = this.get(requestedName);
+            const confidence = detectConfidence(requestedName, text, converter);
+            if (confidence <= 0) {
+              continue;
+            }
+            const format = converter.name;
+            const current = detections.get(format);
+            if (!current || confidence > current.confidence) {
+              detections.set(format, { format, confidence });
+            }
+          }
+          return [...detections.values()].sort((left, right) => right.confidence - left.confidence);
+        }
+      };
+      for (const converter of initialConverters) {
+        api.register(converter);
+      }
+      return api;
+    }
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/converters/defaults.js
+var require_defaults2 = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/converters/defaults.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.defaultConverterRegistry = exports2.defaultConverters = exports2.utf16leConverter = exports2.utf16beConverter = exports2.utf8Converter = exports2.base64urlConverter = exports2.base64Converter = exports2.hexConverter = exports2.binaryConverter = exports2.pemConverter = void 0;
+    var index_js_1 = require_encoding();
+    var index_js_2 = require_pem2();
+    var index_js_3 = require_pem2();
+    Object.defineProperty(exports2, "pemConverter", { enumerable: true, get: function() {
+      return index_js_3.pemConverter;
+    } });
+    var registry_js_1 = require_registry();
+    exports2.binaryConverter = {
+      name: "binary",
+      aliases: ["latin1"],
+      encode: index_js_1.binary.encode,
+      decode: index_js_1.binary.decode,
+      is: index_js_1.binary.is
+    };
+    exports2.hexConverter = {
+      name: "hex",
+      encode: index_js_1.hex.encode,
+      decode: index_js_1.hex.decode,
+      format: index_js_1.hex.format,
+      is: index_js_1.hex.is,
+      normalize: index_js_1.hex.normalize,
+      parse: index_js_1.hex.parse
+    };
+    exports2.base64Converter = {
+      name: "base64",
+      aliases: ["b64"],
+      encode: index_js_1.base64.encode,
+      decode: index_js_1.base64.decode,
+      is: index_js_1.base64.is,
+      normalize: index_js_1.base64.normalize
+    };
+    exports2.base64urlConverter = {
+      name: "base64url",
+      aliases: ["base64-url", "b64url"],
+      encode: index_js_1.base64url.encode,
+      decode: index_js_1.base64url.decode,
+      is: index_js_1.base64url.is,
+      normalize: index_js_1.base64url.normalize
+    };
+    exports2.utf8Converter = {
+      name: "utf8",
+      aliases: ["utf-8"],
+      encode: (data) => index_js_1.utf8.decode(data),
+      decode: (text) => index_js_1.utf8.encode(text),
+      is: (text) => typeof text === "string"
+    };
+    exports2.utf16beConverter = {
+      name: "utf16be",
+      aliases: ["utf16", "utf-16", "utf-16be"],
+      encode: (data) => index_js_1.utf16.decode(data),
+      decode: (text) => index_js_1.utf16.encode(text),
+      is: (text) => typeof text === "string"
+    };
+    exports2.utf16leConverter = {
+      name: "utf16le",
+      aliases: ["utf-16le", "ucs2", "usc2"],
+      encode: (data) => index_js_1.utf16.decode(data, { littleEndian: true }),
+      decode: (text) => index_js_1.utf16.encode(text, { littleEndian: true }),
+      is: (text) => typeof text === "string"
+    };
+    exports2.defaultConverters = [
+      exports2.binaryConverter,
+      exports2.hexConverter,
+      exports2.base64Converter,
+      exports2.base64urlConverter,
+      exports2.utf8Converter,
+      exports2.utf16beConverter,
+      exports2.utf16leConverter,
+      index_js_2.pemConverter
+    ];
+    exports2.defaultConverterRegistry = (0, registry_js_1.createConverterRegistry)(exports2.defaultConverters);
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/converters/convert.js
+var require_convert = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/converters/convert.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.convert = void 0;
+    var index_js_1 = require_bytes();
+    var index_js_2 = require_encoding();
+    var defaults_js_1 = require_defaults2();
+    function encode3(name, data, ...args) {
+      return defaults_js_1.defaultConverterRegistry.encode(name, data, ...args);
+    }
+    function decode3(name, text, ...args) {
+      return defaults_js_1.defaultConverterRegistry.decode(name, text, ...args);
+    }
+    function tryDecode(name, text, ...args) {
+      return defaults_js_1.defaultConverterRegistry.tryDecode(name, text, ...args);
+    }
+    function normalize(name, text, ...args) {
+      return defaults_js_1.defaultConverterRegistry.normalize(name, text, ...args);
+    }
+    function parse3(name, text, ...args) {
+      return defaults_js_1.defaultConverterRegistry.parse(name, text, ...args);
+    }
+    function format(name, data, value) {
+      return defaults_js_1.defaultConverterRegistry.format(name, data, value);
+    }
+    function transcode(text, options) {
+      return defaults_js_1.defaultConverterRegistry.transcode(text, options);
+    }
+    function detect(text, options) {
+      return defaults_js_1.defaultConverterRegistry.detect(text, options);
+    }
+    function normalizeEncodingName(encoding) {
+      return encoding.toLowerCase();
+    }
+    exports2.convert = {
+      encode: encode3,
+      decode: decode3,
+      tryDecode,
+      normalize,
+      parse: parse3,
+      format,
+      transcode,
+      detect,
+      to(format2, data, ...args) {
+        return encode3(format2, data, ...args);
+      },
+      from(format2, text, ...args) {
+        return decode3(format2, text, ...args);
+      },
+      toString(data, encoding = "utf8") {
+        return encode3(encoding, data);
+      },
+      fromString(text, encoding = "utf8") {
+        if (normalizeEncodingName(encoding) === "hex") {
+          return (0, index_js_1.toArrayBuffer)(index_js_2.hex.decode(text, { allowOddLength: true }));
+        }
+        return (0, index_js_1.toArrayBuffer)(decode3(encoding, text));
+      },
+      toBase64: index_js_2.base64.encode,
+      fromBase64: (text) => (0, index_js_1.toArrayBuffer)(index_js_2.base64.decode(text)),
+      toBase64Url: index_js_2.base64url.encode,
+      fromBase64Url: (text) => (0, index_js_1.toArrayBuffer)(index_js_2.base64url.decode(text)),
+      toHex: index_js_2.hex.encode,
+      fromHex: (text) => (0, index_js_1.toArrayBuffer)(index_js_2.hex.decode(text, { allowOddLength: true })),
+      toBinary: index_js_2.binary.encode,
+      fromBinary: (text) => (0, index_js_1.toArrayBuffer)(index_js_2.binary.decode(text)),
+      toUtf8String: index_js_2.utf8.decode,
+      fromUtf8String: (text) => (0, index_js_1.toArrayBuffer)(index_js_2.utf8.encode(text)),
+      toUtf16String: (data, littleEndian = false) => index_js_2.utf16.decode(data, { littleEndian }),
+      fromUtf16String: (text, littleEndian = false) => (0, index_js_1.toArrayBuffer)(index_js_2.utf16.encode(text, { littleEndian })),
+      isHex: index_js_2.hex.is,
+      isBase64: index_js_2.base64.is,
+      isBase64Url: index_js_2.base64url.is,
+      formatString: index_js_2.base64.normalize
+    };
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/converters/index.js
+var require_converters = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/converters/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.convert = exports2.utf8Converter = exports2.utf16leConverter = exports2.utf16beConverter = exports2.pemConverter = exports2.hexConverter = exports2.defaultConverters = exports2.defaultConverterRegistry = exports2.binaryConverter = exports2.base64urlConverter = exports2.base64Converter = exports2.createConverterRegistry = void 0;
+    var registry_js_1 = require_registry();
+    Object.defineProperty(exports2, "createConverterRegistry", { enumerable: true, get: function() {
+      return registry_js_1.createConverterRegistry;
+    } });
+    var defaults_js_1 = require_defaults2();
+    Object.defineProperty(exports2, "base64Converter", { enumerable: true, get: function() {
+      return defaults_js_1.base64Converter;
+    } });
+    Object.defineProperty(exports2, "base64urlConverter", { enumerable: true, get: function() {
+      return defaults_js_1.base64urlConverter;
+    } });
+    Object.defineProperty(exports2, "binaryConverter", { enumerable: true, get: function() {
+      return defaults_js_1.binaryConverter;
+    } });
+    Object.defineProperty(exports2, "defaultConverterRegistry", { enumerable: true, get: function() {
+      return defaults_js_1.defaultConverterRegistry;
+    } });
+    Object.defineProperty(exports2, "defaultConverters", { enumerable: true, get: function() {
+      return defaults_js_1.defaultConverters;
+    } });
+    Object.defineProperty(exports2, "hexConverter", { enumerable: true, get: function() {
+      return defaults_js_1.hexConverter;
+    } });
+    Object.defineProperty(exports2, "pemConverter", { enumerable: true, get: function() {
+      return defaults_js_1.pemConverter;
+    } });
+    Object.defineProperty(exports2, "utf16beConverter", { enumerable: true, get: function() {
+      return defaults_js_1.utf16beConverter;
+    } });
+    Object.defineProperty(exports2, "utf16leConverter", { enumerable: true, get: function() {
+      return defaults_js_1.utf16leConverter;
+    } });
+    Object.defineProperty(exports2, "utf8Converter", { enumerable: true, get: function() {
+      return defaults_js_1.utf8Converter;
+    } });
+    var convert_js_1 = require_convert();
+    Object.defineProperty(exports2, "convert", { enumerable: true, get: function() {
+      return convert_js_1.convert;
+    } });
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/legacy/buffer-source-converter.js
+var require_buffer_source_converter = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/legacy/buffer-source-converter.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.BufferSourceConverter = void 0;
+    var index_js_1 = require_bytes();
+    var BufferSourceConverter = class {
+      static isArrayBuffer(data) {
+        return (0, index_js_1.isArrayBuffer)(data);
+      }
+      static toArrayBuffer(data) {
+        return (0, index_js_1.toArrayBuffer)(data);
+      }
+      static toUint8Array(data) {
+        return (0, index_js_1.toUint8Array)(data);
+      }
+      static toView(data, type) {
+        return (0, index_js_1.toView)(data, type);
+      }
+      static isBufferSource(data) {
+        return (0, index_js_1.isBufferSource)(data);
+      }
+      static isArrayBufferView(data) {
+        return (0, index_js_1.isArrayBufferView)(data);
+      }
+      static isEqual(a, b) {
+        return (0, index_js_1.equal)(a, b);
+      }
+      static concat(first, second, ...rest) {
+        if (Array.isArray(first)) {
+          return typeof second === "function" ? (0, index_js_1.concat)(first, second) : (0, index_js_1.concat)(first);
+        }
+        const buffers = [first, second, ...rest].filter(Boolean);
+        return (0, index_js_1.concat)(buffers);
+      }
+    };
+    exports2.BufferSourceConverter = BufferSourceConverter;
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/legacy/convert.js
+var require_convert2 = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/legacy/convert.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Convert = void 0;
+    var index_js_1 = require_converters();
+    function normalizeTextEncoding(encoding) {
+      return encoding === "ascii" ? "binary" : encoding;
+    }
+    var Convert = class _Convert {
+      static DEFAULT_UTF8_ENCODING = "utf8";
+      static isHex(data) {
+        return index_js_1.convert.isHex(data);
+      }
+      static isBase64(data) {
+        return index_js_1.convert.isBase64(data);
+      }
+      static isBase64Url(data) {
+        return index_js_1.convert.isBase64Url(data);
+      }
+      static ToString(buffer, enc = "utf8") {
+        return index_js_1.convert.toString(buffer, enc);
+      }
+      static FromString(str, enc = "utf8") {
+        if (!str) {
+          return new ArrayBuffer(0);
+        }
+        return index_js_1.convert.fromString(str, enc);
+      }
+      static ToBase64(buffer) {
+        return index_js_1.convert.toBase64(buffer);
+      }
+      static FromBase64(base643) {
+        return index_js_1.convert.fromBase64(base643);
+      }
+      static FromBase64Url(base64url3) {
+        return index_js_1.convert.fromBase64Url(base64url3);
+      }
+      static ToBase64Url(data) {
+        return index_js_1.convert.toBase64Url(data);
+      }
+      static FromUtf8String(text, encoding = _Convert.DEFAULT_UTF8_ENCODING) {
+        return index_js_1.convert.fromString(text, normalizeTextEncoding(encoding));
+      }
+      static ToUtf8String(buffer, encoding = _Convert.DEFAULT_UTF8_ENCODING) {
+        return index_js_1.convert.toString(buffer, normalizeTextEncoding(encoding));
+      }
+      static FromBinary(text) {
+        return index_js_1.convert.fromBinary(text);
+      }
+      static ToBinary(buffer) {
+        return index_js_1.convert.toBinary(buffer);
+      }
+      static ToHex(buffer) {
+        return index_js_1.convert.toHex(buffer);
+      }
+      static FromHex(hexString) {
+        return index_js_1.convert.fromHex(hexString);
+      }
+      static ToUtf16String(buffer, littleEndian = false) {
+        return index_js_1.convert.toUtf16String(buffer, littleEndian);
+      }
+      static FromUtf16String(text, littleEndian = false) {
+        return index_js_1.convert.fromUtf16String(text, littleEndian);
+      }
+      static Base64Padding(base643) {
+        const padCount = 4 - base643.length % 4;
+        return padCount < 4 ? base643 + "=".repeat(padCount) : base643;
+      }
+      static formatString(data) {
+        return index_js_1.convert.formatString(data);
+      }
+    };
+    exports2.Convert = Convert;
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/legacy/functions.js
+var require_functions = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/legacy/functions.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.assign = assign;
+    exports2.combine = combine;
+    exports2.isEqual = isEqual;
+    var index_js_1 = require_bytes();
+    function assign(target, ...sources) {
+      for (const source of sources) {
+        if (!source) {
+          continue;
+        }
+        for (const prop in source) {
+          target[prop] = source[prop];
+        }
+      }
+      return target;
+    }
+    function combine(...buf) {
+      return (0, index_js_1.concat)(buf);
+    }
+    function isEqual(bytes1, bytes2) {
+      return (0, index_js_1.equal)(bytes1, bytes2);
+    }
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/legacy/index.js
+var require_legacy = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/legacy/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.isEqual = exports2.combine = exports2.assign = exports2.Convert = exports2.BufferSourceConverter = void 0;
+    var buffer_source_converter_js_1 = require_buffer_source_converter();
+    Object.defineProperty(exports2, "BufferSourceConverter", { enumerable: true, get: function() {
+      return buffer_source_converter_js_1.BufferSourceConverter;
+    } });
+    var convert_js_1 = require_convert2();
+    Object.defineProperty(exports2, "Convert", { enumerable: true, get: function() {
+      return convert_js_1.Convert;
+    } });
+    var functions_js_1 = require_functions();
+    Object.defineProperty(exports2, "assign", { enumerable: true, get: function() {
+      return functions_js_1.assign;
+    } });
+    Object.defineProperty(exports2, "combine", { enumerable: true, get: function() {
+      return functions_js_1.combine;
+    } });
+    Object.defineProperty(exports2, "isEqual", { enumerable: true, get: function() {
+      return functions_js_1.isEqual;
+    } });
+  }
+});
+
+// node_modules/@peculiar/utils/build/cjs/index.js
+var require_cjs = __commonJS({
+  "node_modules/@peculiar/utils/build/cjs/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.bytes = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_bytes(), exports2);
+    exports2.bytes = tslib_1.__importStar(require_bytes());
+    tslib_1.__exportStar(require_encoding(), exports2);
+    tslib_1.__exportStar(require_pem2(), exports2);
+    tslib_1.__exportStar(require_converters(), exports2);
+    tslib_1.__exportStar(require_legacy(), exports2);
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/enums.js
+var require_enums = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/enums.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AsnPropTypes = exports2.AsnTypeTypes = void 0;
+    var AsnTypeTypes;
+    (function(AsnTypeTypes2) {
+      AsnTypeTypes2[AsnTypeTypes2["Sequence"] = 0] = "Sequence";
+      AsnTypeTypes2[AsnTypeTypes2["Set"] = 1] = "Set";
+      AsnTypeTypes2[AsnTypeTypes2["Choice"] = 2] = "Choice";
+    })(AsnTypeTypes || (exports2.AsnTypeTypes = AsnTypeTypes = {}));
+    var AsnPropTypes;
+    (function(AsnPropTypes2) {
+      AsnPropTypes2[AsnPropTypes2["Any"] = 1] = "Any";
+      AsnPropTypes2[AsnPropTypes2["Boolean"] = 2] = "Boolean";
+      AsnPropTypes2[AsnPropTypes2["OctetString"] = 3] = "OctetString";
+      AsnPropTypes2[AsnPropTypes2["BitString"] = 4] = "BitString";
+      AsnPropTypes2[AsnPropTypes2["Integer"] = 5] = "Integer";
+      AsnPropTypes2[AsnPropTypes2["Enumerated"] = 6] = "Enumerated";
+      AsnPropTypes2[AsnPropTypes2["ObjectIdentifier"] = 7] = "ObjectIdentifier";
+      AsnPropTypes2[AsnPropTypes2["Utf8String"] = 8] = "Utf8String";
+      AsnPropTypes2[AsnPropTypes2["BmpString"] = 9] = "BmpString";
+      AsnPropTypes2[AsnPropTypes2["UniversalString"] = 10] = "UniversalString";
+      AsnPropTypes2[AsnPropTypes2["NumericString"] = 11] = "NumericString";
+      AsnPropTypes2[AsnPropTypes2["PrintableString"] = 12] = "PrintableString";
+      AsnPropTypes2[AsnPropTypes2["TeletexString"] = 13] = "TeletexString";
+      AsnPropTypes2[AsnPropTypes2["VideotexString"] = 14] = "VideotexString";
+      AsnPropTypes2[AsnPropTypes2["IA5String"] = 15] = "IA5String";
+      AsnPropTypes2[AsnPropTypes2["GraphicString"] = 16] = "GraphicString";
+      AsnPropTypes2[AsnPropTypes2["VisibleString"] = 17] = "VisibleString";
+      AsnPropTypes2[AsnPropTypes2["GeneralString"] = 18] = "GeneralString";
+      AsnPropTypes2[AsnPropTypes2["CharacterString"] = 19] = "CharacterString";
+      AsnPropTypes2[AsnPropTypes2["UTCTime"] = 20] = "UTCTime";
+      AsnPropTypes2[AsnPropTypes2["GeneralizedTime"] = 21] = "GeneralizedTime";
+      AsnPropTypes2[AsnPropTypes2["DATE"] = 22] = "DATE";
+      AsnPropTypes2[AsnPropTypes2["TimeOfDay"] = 23] = "TimeOfDay";
+      AsnPropTypes2[AsnPropTypes2["DateTime"] = 24] = "DateTime";
+      AsnPropTypes2[AsnPropTypes2["Duration"] = 25] = "Duration";
+      AsnPropTypes2[AsnPropTypes2["TIME"] = 26] = "TIME";
+      AsnPropTypes2[AsnPropTypes2["Null"] = 27] = "Null";
+      AsnPropTypes2[AsnPropTypes2["RelativeObjectIdentifier"] = 28] = "RelativeObjectIdentifier";
+    })(AsnPropTypes || (exports2.AsnPropTypes = AsnPropTypes = {}));
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/types/bit_string.js
+var require_bit_string = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/types/bit_string.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.BitString = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1js = tslib_1.__importStar(require_build2());
+    var utils_1 = require_cjs();
+    var BitString = class {
+      unusedBits = 0;
+      value = new ArrayBuffer(0);
+      constructor(params, unusedBits = 0) {
+        if (params) {
+          if (typeof params === "number") {
+            this.fromNumber(params);
+          } else if ((0, utils_1.isBufferSource)(params)) {
+            this.unusedBits = unusedBits;
+            this.value = (0, utils_1.toArrayBuffer)(params);
+          } else {
+            throw TypeError("Unsupported type of 'params' argument for BitString");
+          }
+        }
+      }
+      fromASN(asn) {
+        if (!(asn instanceof asn1js.BitString)) {
+          throw new TypeError("Argument 'asn' is not instance of ASN.1 BitString");
+        }
+        this.unusedBits = asn.valueBlock.unusedBits;
+        this.value = (0, utils_1.toArrayBuffer)(asn.valueBlock.valueHex);
+        return this;
+      }
+      toASN() {
+        return new asn1js.BitString({
+          unusedBits: this.unusedBits,
+          valueHex: this.value
+        });
+      }
+      toSchema(name) {
+        return new asn1js.BitString({ name });
+      }
+      toNumber() {
+        let res = "";
+        const uintArray = new Uint8Array(this.value);
+        for (const octet of uintArray) {
+          res += octet.toString(2).padStart(8, "0");
+        }
+        res = res.split("").reverse().join("");
+        if (this.unusedBits) {
+          res = res.slice(this.unusedBits).padStart(this.unusedBits, "0");
+        }
+        return parseInt(res, 2);
+      }
+      fromNumber(value) {
+        let bits = value.toString(2);
+        const octetSize = bits.length + 7 >> 3;
+        this.unusedBits = (octetSize << 3) - bits.length;
+        const octets = new Uint8Array(octetSize);
+        bits = bits.padStart(octetSize << 3, "0").split("").reverse().join("");
+        let index = 0;
+        while (index < octetSize) {
+          octets[index] = parseInt(bits.slice(index << 3, (index << 3) + 8), 2);
+          index++;
+        }
+        this.value = octets.buffer;
+      }
+    };
+    exports2.BitString = BitString;
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/types/octet_string.js
+var require_octet_string = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/types/octet_string.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.OctetString = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1js = tslib_1.__importStar(require_build2());
+    var utils_1 = require_cjs();
+    var OctetString = class {
+      buffer;
+      get byteLength() {
+        return this.buffer.byteLength;
+      }
+      get byteOffset() {
+        return 0;
+      }
+      constructor(param) {
+        if (typeof param === "number") {
+          this.buffer = new ArrayBuffer(param);
+        } else {
+          if ((0, utils_1.isBufferSource)(param)) {
+            this.buffer = (0, utils_1.toArrayBuffer)(param);
+          } else if (Array.isArray(param)) {
+            this.buffer = new Uint8Array(param).buffer;
+          } else {
+            this.buffer = new ArrayBuffer(0);
+          }
+        }
+      }
+      fromASN(asn) {
+        if (!(asn instanceof asn1js.OctetString)) {
+          throw new TypeError("Argument 'asn' is not instance of ASN.1 OctetString");
+        }
+        this.buffer = (0, utils_1.toArrayBuffer)(asn.valueBlock.valueHex);
+        return this;
+      }
+      toASN() {
+        return new asn1js.OctetString({ valueHex: this.buffer });
+      }
+      toSchema(name) {
+        return new asn1js.OctetString({ name });
+      }
+    };
+    exports2.OctetString = OctetString;
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/types/index.js
+var require_types2 = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/types/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_bit_string(), exports2);
+    tslib_1.__exportStar(require_octet_string(), exports2);
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/converters.js
+var require_converters2 = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/converters.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AsnNullConverter = exports2.AsnGeneralizedTimeConverter = exports2.AsnUTCTimeConverter = exports2.AsnCharacterStringConverter = exports2.AsnGeneralStringConverter = exports2.AsnVisibleStringConverter = exports2.AsnGraphicStringConverter = exports2.AsnIA5StringConverter = exports2.AsnVideotexStringConverter = exports2.AsnTeletexStringConverter = exports2.AsnPrintableStringConverter = exports2.AsnNumericStringConverter = exports2.AsnUniversalStringConverter = exports2.AsnBmpStringConverter = exports2.AsnUtf8StringConverter = exports2.AsnConstructedOctetStringConverter = exports2.AsnOctetStringConverter = exports2.AsnBooleanConverter = exports2.AsnRelativeObjectIdentifierConverter = exports2.AsnObjectIdentifierConverter = exports2.AsnBitStringConverter = exports2.AsnIntegerBigIntConverter = exports2.AsnIntegerArrayBufferConverter = exports2.AsnEnumeratedConverter = exports2.AsnIntegerConverter = exports2.AsnAnyConverter = void 0;
+    exports2.defaultConverter = defaultConverter;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1js = tslib_1.__importStar(require_build2());
+    var utils_1 = require_cjs();
+    var enums_1 = require_enums();
+    var index_1 = require_types2();
+    exports2.AsnAnyConverter = {
+      fromASN: (value) => value instanceof asn1js.Null ? null : (0, utils_1.toArrayBuffer)(value.valueBeforeDecodeView),
+      toASN: (value) => {
+        if (value === null) {
+          return new asn1js.Null();
+        }
+        const schema = asn1js.fromBER(value, { maxDepth: Infinity, maxNodes: Infinity, maxContentLength: Infinity });
+        if (schema.result.error) {
+          throw new Error(schema.result.error);
+        }
+        return schema.result;
+      }
+    };
+    exports2.AsnIntegerConverter = {
+      fromASN: (value) => value.valueBlock.valueHexView.byteLength >= 4 ? value.valueBlock.toString() : value.valueBlock.valueDec,
+      toASN: (value) => new asn1js.Integer({ value: +value })
+    };
+    exports2.AsnEnumeratedConverter = {
+      fromASN: (value) => value.valueBlock.valueDec,
+      toASN: (value) => new asn1js.Enumerated({ value })
+    };
+    exports2.AsnIntegerArrayBufferConverter = {
+      fromASN: (value) => (0, utils_1.toArrayBuffer)(value.valueBlock.valueHexView),
+      toASN: (value) => new asn1js.Integer({ valueHex: value })
+    };
+    exports2.AsnIntegerBigIntConverter = {
+      fromASN: (value) => value.toBigInt(),
+      toASN: (value) => asn1js.Integer.fromBigInt(value)
+    };
+    exports2.AsnBitStringConverter = {
+      fromASN: (value) => (0, utils_1.toArrayBuffer)(value.valueBlock.valueHexView),
+      toASN: (value) => new asn1js.BitString({ valueHex: value })
+    };
+    exports2.AsnObjectIdentifierConverter = {
+      fromASN: (value) => value.valueBlock.toString(),
+      toASN: (value) => new asn1js.ObjectIdentifier({ value })
+    };
+    exports2.AsnRelativeObjectIdentifierConverter = {
+      fromASN: (value) => value.valueBlock.toString(),
+      toASN: (value) => new asn1js.RelativeObjectIdentifier({ value })
+    };
+    exports2.AsnBooleanConverter = {
+      fromASN: (value) => value.valueBlock.value,
+      toASN: (value) => new asn1js.Boolean({ value })
+    };
+    exports2.AsnOctetStringConverter = {
+      fromASN: (value) => (0, utils_1.toArrayBuffer)(value.valueBlock.valueHexView),
+      toASN: (value) => new asn1js.OctetString({ valueHex: value })
+    };
+    exports2.AsnConstructedOctetStringConverter = {
+      fromASN: (value) => new index_1.OctetString(value.getValue()),
+      toASN: (value) => value.toASN()
+    };
+    function createStringConverter(Asn1Type) {
+      return {
+        fromASN: (value) => value.valueBlock.value,
+        toASN: (value) => new Asn1Type({ value })
+      };
+    }
+    exports2.AsnUtf8StringConverter = createStringConverter(asn1js.Utf8String);
+    exports2.AsnBmpStringConverter = createStringConverter(asn1js.BmpString);
+    exports2.AsnUniversalStringConverter = createStringConverter(asn1js.UniversalString);
+    exports2.AsnNumericStringConverter = createStringConverter(asn1js.NumericString);
+    exports2.AsnPrintableStringConverter = createStringConverter(asn1js.PrintableString);
+    exports2.AsnTeletexStringConverter = createStringConverter(asn1js.TeletexString);
+    exports2.AsnVideotexStringConverter = createStringConverter(asn1js.VideotexString);
+    exports2.AsnIA5StringConverter = createStringConverter(asn1js.IA5String);
+    exports2.AsnGraphicStringConverter = createStringConverter(asn1js.GraphicString);
+    exports2.AsnVisibleStringConverter = createStringConverter(asn1js.VisibleString);
+    exports2.AsnGeneralStringConverter = createStringConverter(asn1js.GeneralString);
+    exports2.AsnCharacterStringConverter = createStringConverter(asn1js.CharacterString);
+    exports2.AsnUTCTimeConverter = {
+      fromASN: (value) => value.toDate(),
+      toASN: (value) => new asn1js.UTCTime({ valueDate: value })
+    };
+    exports2.AsnGeneralizedTimeConverter = {
+      fromASN: (value) => value.toDate(),
+      toASN: (value) => new asn1js.GeneralizedTime({ valueDate: value })
+    };
+    exports2.AsnNullConverter = {
+      fromASN: () => null,
+      toASN: () => {
+        return new asn1js.Null();
+      }
+    };
+    function defaultConverter(type) {
+      switch (type) {
+        case enums_1.AsnPropTypes.Any:
+          return exports2.AsnAnyConverter;
+        case enums_1.AsnPropTypes.BitString:
+          return exports2.AsnBitStringConverter;
+        case enums_1.AsnPropTypes.BmpString:
+          return exports2.AsnBmpStringConverter;
+        case enums_1.AsnPropTypes.Boolean:
+          return exports2.AsnBooleanConverter;
+        case enums_1.AsnPropTypes.CharacterString:
+          return exports2.AsnCharacterStringConverter;
+        case enums_1.AsnPropTypes.Enumerated:
+          return exports2.AsnEnumeratedConverter;
+        case enums_1.AsnPropTypes.GeneralString:
+          return exports2.AsnGeneralStringConverter;
+        case enums_1.AsnPropTypes.GeneralizedTime:
+          return exports2.AsnGeneralizedTimeConverter;
+        case enums_1.AsnPropTypes.GraphicString:
+          return exports2.AsnGraphicStringConverter;
+        case enums_1.AsnPropTypes.IA5String:
+          return exports2.AsnIA5StringConverter;
+        case enums_1.AsnPropTypes.Integer:
+          return exports2.AsnIntegerConverter;
+        case enums_1.AsnPropTypes.Null:
+          return exports2.AsnNullConverter;
+        case enums_1.AsnPropTypes.NumericString:
+          return exports2.AsnNumericStringConverter;
+        case enums_1.AsnPropTypes.ObjectIdentifier:
+          return exports2.AsnObjectIdentifierConverter;
+        case enums_1.AsnPropTypes.RelativeObjectIdentifier:
+          return exports2.AsnRelativeObjectIdentifierConverter;
+        case enums_1.AsnPropTypes.OctetString:
+          return exports2.AsnOctetStringConverter;
+        case enums_1.AsnPropTypes.PrintableString:
+          return exports2.AsnPrintableStringConverter;
+        case enums_1.AsnPropTypes.TeletexString:
+          return exports2.AsnTeletexStringConverter;
+        case enums_1.AsnPropTypes.UTCTime:
+          return exports2.AsnUTCTimeConverter;
+        case enums_1.AsnPropTypes.UniversalString:
+          return exports2.AsnUniversalStringConverter;
+        case enums_1.AsnPropTypes.Utf8String:
+          return exports2.AsnUtf8StringConverter;
+        case enums_1.AsnPropTypes.VideotexString:
+          return exports2.AsnVideotexStringConverter;
+        case enums_1.AsnPropTypes.VisibleString:
+          return exports2.AsnVisibleStringConverter;
+        default:
+          return null;
+      }
+    }
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/helper.js
+var require_helper = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/helper.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.isConvertible = isConvertible;
+    exports2.isTypeOfArray = isTypeOfArray;
+    exports2.isArrayEqual = isArrayEqual;
+    function isConvertible(target) {
+      if (typeof target === "function" && target.prototype) {
+        if (target.prototype.toASN && target.prototype.fromASN) {
+          return true;
+        } else {
+          return isConvertible(target.prototype);
+        }
+      } else {
+        return !!(target && typeof target === "object" && "toASN" in target && "fromASN" in target);
+      }
+    }
+    function isTypeOfArray(target) {
+      if (target) {
+        const proto = Object.getPrototypeOf(target);
+        if (proto?.prototype?.constructor === Array) {
+          return true;
+        }
+        return isTypeOfArray(proto);
+      }
+      return false;
+    }
+    function isArrayEqual(bytes1, bytes2) {
+      if (!(bytes1 && bytes2)) {
+        return false;
+      }
+      if (bytes1.byteLength !== bytes2.byteLength) {
+        return false;
+      }
+      const b1 = new Uint8Array(bytes1);
+      const b2 = new Uint8Array(bytes2);
+      for (let i = 0; i < bytes1.byteLength; i++) {
+        if (b1[i] !== b2[i]) {
+          return false;
+        }
+      }
+      return true;
+    }
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/schema.js
+var require_schema = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/schema.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AsnSchemaStorage = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1js = tslib_1.__importStar(require_build2());
+    var enums_1 = require_enums();
+    var helper_1 = require_helper();
+    var AsnSchemaStorage = class {
+      items = /* @__PURE__ */ new WeakMap();
+      has(target) {
+        return this.items.has(target);
+      }
+      get(target, checkSchema = false) {
+        const schema = this.items.get(target);
+        if (!schema) {
+          throw new Error(`Cannot get schema for '${target.prototype.constructor.name}' target`);
+        }
+        if (checkSchema && !schema.schema) {
+          throw new Error(`Schema '${target.prototype.constructor.name}' doesn't contain ASN.1 schema. Call 'AsnSchemaStorage.cache'.`);
+        }
+        return schema;
+      }
+      cache(target) {
+        const schema = this.get(target);
+        if (!schema.schema) {
+          schema.schema = this.create(target, true);
+        }
+      }
+      createDefault(target) {
+        const schema = {
+          type: enums_1.AsnTypeTypes.Sequence,
+          items: {}
+        };
+        const parentSchema = this.findParentSchema(target);
+        if (parentSchema) {
+          Object.assign(schema, parentSchema);
+          schema.items = Object.assign({}, schema.items, parentSchema.items);
+        }
+        return schema;
+      }
+      create(target, useNames) {
+        const schema = this.items.get(target) || this.createDefault(target);
+        const asn1Value = [];
+        for (const key in schema.items) {
+          const item = schema.items[key];
+          const name = useNames ? key : "";
+          let asn1Item;
+          if (typeof item.type === "number") {
+            const Asn1TypeName = enums_1.AsnPropTypes[item.type];
+            const Asn1Type = asn1js[Asn1TypeName];
+            if (!Asn1Type) {
+              throw new Error(`Cannot get ASN1 class by name '${Asn1TypeName}'`);
+            }
+            asn1Item = new Asn1Type({ name });
+          } else if ((0, helper_1.isConvertible)(item.type)) {
+            const instance = new item.type();
+            asn1Item = instance.toSchema(name);
+          } else if (item.optional) {
+            const itemSchema = this.get(item.type);
+            if (itemSchema.type === enums_1.AsnTypeTypes.Choice) {
+              asn1Item = new asn1js.Any({ name });
+            } else {
+              asn1Item = this.create(item.type, false);
+              asn1Item.name = name;
+            }
+          } else {
+            asn1Item = new asn1js.Any({ name });
+          }
+          const optional2 = !!item.optional || item.defaultValue !== void 0;
+          if (item.repeated) {
+            asn1Item.name = "";
+            const Container = item.repeated === "set" ? asn1js.Set : asn1js.Sequence;
+            asn1Item = new Container({
+              name: "",
+              value: [
+                new asn1js.Repeated({
+                  name,
+                  value: asn1Item
+                })
+              ]
+            });
+          }
+          if (item.context !== null && item.context !== void 0) {
+            if (item.implicit) {
+              if (typeof item.type === "number" || (0, helper_1.isConvertible)(item.type)) {
+                const Container = item.repeated ? asn1js.Constructed : asn1js.Primitive;
+                asn1Value.push(new Container({
+                  name,
+                  optional: optional2,
+                  idBlock: {
+                    tagClass: 3,
+                    tagNumber: item.context
+                  }
+                }));
+              } else {
+                this.cache(item.type);
+                const isRepeated = !!item.repeated;
+                let value = !isRepeated ? this.get(item.type, true).schema : asn1Item;
+                value = "valueBlock" in value ? value.valueBlock.value : value.value;
+                asn1Value.push(new asn1js.Constructed({
+                  name: !isRepeated ? name : "",
+                  optional: optional2,
+                  idBlock: {
+                    tagClass: 3,
+                    tagNumber: item.context
+                  },
+                  value
+                }));
+              }
+            } else {
+              asn1Value.push(new asn1js.Constructed({
+                optional: optional2,
+                idBlock: {
+                  tagClass: 3,
+                  tagNumber: item.context
+                },
+                value: [asn1Item]
+              }));
+            }
+          } else {
+            asn1Item.optional = optional2;
+            asn1Value.push(asn1Item);
+          }
+        }
+        switch (schema.type) {
+          case enums_1.AsnTypeTypes.Sequence:
+            return new asn1js.Sequence({
+              value: asn1Value,
+              name: ""
+            });
+          case enums_1.AsnTypeTypes.Set:
+            return new asn1js.Set({
+              value: asn1Value,
+              name: ""
+            });
+          case enums_1.AsnTypeTypes.Choice:
+            return new asn1js.Choice({
+              value: asn1Value,
+              name: ""
+            });
+          default:
+            throw new Error("Unsupported ASN1 type in use");
+        }
+      }
+      set(target, schema) {
+        this.items.set(target, schema);
+        return this;
+      }
+      findParentSchema(target) {
+        const parent = Object.getPrototypeOf(target);
+        if (parent) {
+          const schema = this.items.get(parent);
+          return schema || this.findParentSchema(parent);
+        }
+        return null;
+      }
+    };
+    exports2.AsnSchemaStorage = AsnSchemaStorage;
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/storage.js
+var require_storage = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/storage.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.schemaStorage = void 0;
+    var schema_1 = require_schema();
+    exports2.schemaStorage = new schema_1.AsnSchemaStorage();
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/decorators.js
+var require_decorators = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/decorators.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AsnProp = exports2.AsnSequenceType = exports2.AsnSetType = exports2.AsnChoiceType = exports2.AsnType = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var converters = tslib_1.__importStar(require_converters2());
+    var enums_1 = require_enums();
+    var storage_1 = require_storage();
+    var AsnType = (options) => (target) => {
+      let schema;
+      if (!storage_1.schemaStorage.has(target)) {
+        schema = storage_1.schemaStorage.createDefault(target);
+        storage_1.schemaStorage.set(target, schema);
+      } else {
+        schema = storage_1.schemaStorage.get(target);
+      }
+      Object.assign(schema, options);
+    };
+    exports2.AsnType = AsnType;
+    var AsnChoiceType = () => (0, exports2.AsnType)({ type: enums_1.AsnTypeTypes.Choice });
+    exports2.AsnChoiceType = AsnChoiceType;
+    var AsnSetType = (options) => (0, exports2.AsnType)({
+      type: enums_1.AsnTypeTypes.Set,
+      ...options
+    });
+    exports2.AsnSetType = AsnSetType;
+    var AsnSequenceType = (options) => (0, exports2.AsnType)({
+      type: enums_1.AsnTypeTypes.Sequence,
+      ...options
+    });
+    exports2.AsnSequenceType = AsnSequenceType;
+    var AsnProp = (options) => (target, propertyKey) => {
+      let schema;
+      if (!storage_1.schemaStorage.has(target.constructor)) {
+        schema = storage_1.schemaStorage.createDefault(target.constructor);
+        storage_1.schemaStorage.set(target.constructor, schema);
+      } else {
+        schema = storage_1.schemaStorage.get(target.constructor);
+      }
+      const copyOptions = Object.assign({}, options);
+      if (typeof copyOptions.type === "number" && !copyOptions.converter) {
+        const defaultConverter = converters.defaultConverter(options.type);
+        if (!defaultConverter) {
+          throw new Error(`Cannot get default converter for property '${propertyKey}' of ${target.constructor.name}`);
+        }
+        copyOptions.converter = defaultConverter;
+      }
+      copyOptions.raw = options.raw;
+      schema.items[propertyKey] = copyOptions;
+    };
+    exports2.AsnProp = AsnProp;
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/errors/schema_validation.js
+var require_schema_validation = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/errors/schema_validation.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AsnSchemaValidationError = void 0;
+    var AsnSchemaValidationError = class extends Error {
+      schemas = [];
+    };
+    exports2.AsnSchemaValidationError = AsnSchemaValidationError;
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/errors/index.js
+var require_errors2 = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/errors/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_schema_validation(), exports2);
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/parser.js
+var require_parser = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/parser.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AsnParser = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1js = tslib_1.__importStar(require_build2());
+    var utils_1 = require_cjs();
+    var enums_1 = require_enums();
+    var converters = tslib_1.__importStar(require_converters2());
+    var errors_1 = require_errors2();
+    var helper_1 = require_helper();
+    var storage_1 = require_storage();
+    var AsnParser = class {
+      static parse(data, target, options) {
+        const asn1Parsed = asn1js.fromBER((0, utils_1.toArrayBuffer)(data), options?.berOptions);
+        if (asn1Parsed.result.error) {
+          throw new Error(asn1Parsed.result.error);
+        }
+        const res = this.fromASN(asn1Parsed.result, target, options);
+        return res;
+      }
+      static fromASN(asn1Schema, target, options) {
+        try {
+          if ((0, helper_1.isConvertible)(target)) {
+            const value = new target();
+            return value.fromASN(asn1Schema);
+          }
+          const schema = storage_1.schemaStorage.get(target);
+          storage_1.schemaStorage.cache(target);
+          let targetSchema = schema.schema;
+          const choiceResult = this.handleChoiceTypes(asn1Schema, schema, target, targetSchema, options);
+          if (choiceResult?.result) {
+            return choiceResult.result;
+          }
+          if (choiceResult?.targetSchema) {
+            targetSchema = choiceResult.targetSchema;
+          }
+          const sequenceResult = this.handleSequenceTypes(asn1Schema, schema, target, targetSchema);
+          const res = new target();
+          if ((0, helper_1.isTypeOfArray)(target)) {
+            return this.handleArrayTypes(asn1Schema, schema, target, options);
+          }
+          this.processSchemaItems(schema, sequenceResult, res, options);
+          return res;
+        } catch (error48) {
+          if (error48 instanceof errors_1.AsnSchemaValidationError) {
+            error48.schemas.push(target.name);
+          }
+          throw error48;
+        }
+      }
+      static handleChoiceTypes(asn1Schema, schema, target, targetSchema, options) {
+        if (asn1Schema.constructor === asn1js.Constructed && schema.type === enums_1.AsnTypeTypes.Choice && asn1Schema.idBlock.tagClass === 3) {
+          for (const key in schema.items) {
+            const schemaItem = schema.items[key];
+            if (schemaItem.context === asn1Schema.idBlock.tagNumber && schemaItem.implicit) {
+              if (typeof schemaItem.type === "function" && storage_1.schemaStorage.has(schemaItem.type)) {
+                const fieldSchema = storage_1.schemaStorage.get(schemaItem.type);
+                if (fieldSchema && fieldSchema.type === enums_1.AsnTypeTypes.Sequence) {
+                  const newSeq = new asn1js.Sequence();
+                  if ("value" in asn1Schema.valueBlock && Array.isArray(asn1Schema.valueBlock.value) && "value" in newSeq.valueBlock) {
+                    newSeq.valueBlock.value = asn1Schema.valueBlock.value;
+                    const fieldValue = this.fromASN(newSeq, schemaItem.type, options);
+                    const res = new target();
+                    res[key] = fieldValue;
+                    return { result: res };
+                  }
+                }
+              }
+            }
+          }
+        } else if (asn1Schema.constructor === asn1js.Constructed && schema.type !== enums_1.AsnTypeTypes.Choice) {
+          const newTargetSchema = new asn1js.Constructed({
+            idBlock: {
+              tagClass: 3,
+              tagNumber: asn1Schema.idBlock.tagNumber
+            },
+            value: schema.schema.valueBlock.value
+          });
+          for (const key in schema.items) {
+            delete asn1Schema[key];
+          }
+          return { targetSchema: newTargetSchema };
+        }
+        return null;
+      }
+      static handleSequenceTypes(asn1Schema, schema, target, targetSchema) {
+        if (schema.type === enums_1.AsnTypeTypes.Sequence) {
+          const asn1ComparedSchema = asn1js.compareSchema({}, asn1Schema, targetSchema);
+          if (!asn1ComparedSchema.verified) {
+            throw new errors_1.AsnSchemaValidationError(`Data does not match to ${target.name} ASN1 schema.${asn1ComparedSchema.result.error ? ` ${asn1ComparedSchema.result.error}` : ""}`);
+          }
+          return asn1ComparedSchema;
+        } else {
+          const asn1ComparedSchema = asn1js.compareSchema({}, asn1Schema, targetSchema);
+          if (!asn1ComparedSchema.verified) {
+            throw new errors_1.AsnSchemaValidationError(`Data does not match to ${target.name} ASN1 schema.${asn1ComparedSchema.result.error ? ` ${asn1ComparedSchema.result.error}` : ""}`);
+          }
+          return asn1ComparedSchema;
+        }
+      }
+      static processRepeatedField(asn1Elements, asn1Index, schemaItem) {
+        let elementsToProcess = asn1Elements.slice(asn1Index);
+        if (elementsToProcess.length === 1 && elementsToProcess[0].constructor.name === "Sequence") {
+          const seq = elementsToProcess[0];
+          if (seq.valueBlock && seq.valueBlock.value && Array.isArray(seq.valueBlock.value)) {
+            elementsToProcess = seq.valueBlock.value;
+          }
+        }
+        if (typeof schemaItem.type === "number") {
+          const converter = converters.defaultConverter(schemaItem.type);
+          if (!converter)
+            throw new Error(`No converter for ASN.1 type ${schemaItem.type}`);
+          return elementsToProcess.filter((el) => el && el.valueBlock).map((el) => {
+            try {
+              return converter.fromASN(el);
+            } catch {
+              return void 0;
+            }
+          }).filter((v) => v !== void 0);
+        } else {
+          return elementsToProcess.filter((el) => el && el.valueBlock).map((el) => {
+            try {
+              return this.fromASN(el, schemaItem.type);
+            } catch {
+              return void 0;
+            }
+          }).filter((v) => v !== void 0);
+        }
+      }
+      static processPrimitiveField(asn1Element, schemaItem) {
+        const converter = converters.defaultConverter(schemaItem.type);
+        if (!converter)
+          throw new Error(`No converter for ASN.1 type ${schemaItem.type}`);
+        return converter.fromASN(asn1Element);
+      }
+      static isOptionalChoiceField(schemaItem) {
+        return schemaItem.optional && typeof schemaItem.type === "function" && storage_1.schemaStorage.has(schemaItem.type) && storage_1.schemaStorage.get(schemaItem.type).type === enums_1.AsnTypeTypes.Choice;
+      }
+      static processOptionalChoiceField(asn1Element, schemaItem) {
+        try {
+          const value = this.fromASN(asn1Element, schemaItem.type);
+          return {
+            processed: true,
+            value
+          };
+        } catch (err) {
+          if (err instanceof errors_1.AsnSchemaValidationError && /Wrong values for Choice type/.test(err.message)) {
+            return { processed: false };
+          }
+          throw err;
+        }
+      }
+      static handleArrayTypes(asn1Schema, schema, target, options) {
+        if (!("value" in asn1Schema.valueBlock && Array.isArray(asn1Schema.valueBlock.value))) {
+          throw new Error("Cannot get items from the ASN.1 parsed value. ASN.1 object is not constructed.");
+        }
+        const itemType = schema.itemType;
+        if (typeof itemType === "number") {
+          const converter = converters.defaultConverter(itemType);
+          if (!converter) {
+            throw new Error(`Cannot get default converter for array item of ${target.name} ASN1 schema`);
+          }
+          return target.from(asn1Schema.valueBlock.value, (element) => converter.fromASN(element));
+        } else {
+          return target.from(asn1Schema.valueBlock.value, (element) => this.fromASN(element, itemType, options));
+        }
+      }
+      static processSchemaItems(schema, asn1ComparedSchema, res, options) {
+        for (const key in schema.items) {
+          const asn1SchemaValue = asn1ComparedSchema.result[key];
+          if (!asn1SchemaValue) {
+            continue;
+          }
+          const schemaItem = schema.items[key];
+          const schemaItemType = schemaItem.type;
+          let parsedValue;
+          if (typeof schemaItemType === "number" || (0, helper_1.isConvertible)(schemaItemType)) {
+            parsedValue = this.processPrimitiveSchemaItem(asn1SchemaValue, schemaItem, schemaItemType, options);
+          } else {
+            parsedValue = this.processComplexSchemaItem(asn1SchemaValue, schemaItem, schemaItemType, options);
+          }
+          if (parsedValue && typeof parsedValue === "object" && "value" in parsedValue && "raw" in parsedValue) {
+            res[key] = parsedValue.value;
+            res[`${key}Raw`] = parsedValue.raw;
+          } else {
+            res[key] = parsedValue;
+          }
+        }
+      }
+      static processPrimitiveSchemaItem(asn1SchemaValue, schemaItem, schemaItemType, options) {
+        const converter = schemaItem.converter ?? ((0, helper_1.isConvertible)(schemaItemType) ? new schemaItemType() : null);
+        if (!converter) {
+          throw new Error("Converter is empty");
+        }
+        if (schemaItem.repeated) {
+          return this.processRepeatedPrimitiveItem(asn1SchemaValue, schemaItem, converter, options);
+        } else {
+          return this.processSinglePrimitiveItem(asn1SchemaValue, schemaItem, schemaItemType, converter, options);
+        }
+      }
+      static processRepeatedPrimitiveItem(asn1SchemaValue, schemaItem, converter, options) {
+        if (schemaItem.implicit) {
+          const Container = schemaItem.repeated === "sequence" ? asn1js.Sequence : asn1js.Set;
+          const newItem = new Container();
+          newItem.valueBlock = asn1SchemaValue.valueBlock;
+          const newItemAsn = asn1js.fromBER(newItem.toBER(false), options?.berOptions);
+          if (newItemAsn.offset === -1) {
+            throw new Error(`Cannot parse the child item. ${newItemAsn.result.error}`);
+          }
+          if (!("value" in newItemAsn.result.valueBlock && Array.isArray(newItemAsn.result.valueBlock.value))) {
+            throw new Error("Cannot get items from the ASN.1 parsed value. ASN.1 object is not constructed.");
+          }
+          const value = newItemAsn.result.valueBlock.value;
+          return Array.from(value, (element) => converter.fromASN(element));
+        } else {
+          return Array.from(asn1SchemaValue, (element) => converter.fromASN(element));
+        }
+      }
+      static processSinglePrimitiveItem(asn1SchemaValue, schemaItem, schemaItemType, converter, options) {
+        let value = asn1SchemaValue;
+        if (schemaItem.implicit) {
+          let newItem;
+          if ((0, helper_1.isConvertible)(schemaItemType)) {
+            newItem = new schemaItemType().toSchema("");
+          } else {
+            const Asn1TypeName = enums_1.AsnPropTypes[schemaItemType];
+            const Asn1Type = asn1js[Asn1TypeName];
+            if (!Asn1Type) {
+              throw new Error(`Cannot get '${Asn1TypeName}' class from asn1js module`);
+            }
+            newItem = new Asn1Type();
+          }
+          newItem.valueBlock = value.valueBlock;
+          value = asn1js.fromBER(newItem.toBER(false), options?.berOptions).result;
+        }
+        return converter.fromASN(value);
+      }
+      static processComplexSchemaItem(asn1SchemaValue, schemaItem, schemaItemType, options) {
+        if (schemaItem.repeated) {
+          if (!Array.isArray(asn1SchemaValue)) {
+            throw new Error("Cannot get list of items from the ASN.1 parsed value. ASN.1 value should be iterable.");
+          }
+          return Array.from(asn1SchemaValue, (element) => this.fromASN(element, schemaItemType, options));
+        } else {
+          const valueToProcess = this.handleImplicitTagging(asn1SchemaValue, schemaItem, schemaItemType);
+          if (this.isOptionalChoiceField(schemaItem)) {
+            try {
+              return this.fromASN(valueToProcess, schemaItemType, options);
+            } catch (err) {
+              if (err instanceof errors_1.AsnSchemaValidationError && /Wrong values for Choice type/.test(err.message)) {
+                return void 0;
+              }
+              throw err;
+            }
+          } else {
+            const parsedValue = this.fromASN(valueToProcess, schemaItemType, options);
+            if (schemaItem.raw) {
+              return {
+                value: parsedValue,
+                raw: asn1SchemaValue.valueBeforeDecodeView
+              };
+            }
+            return parsedValue;
+          }
+        }
+      }
+      static handleImplicitTagging(asn1SchemaValue, schemaItem, schemaItemType) {
+        if (schemaItem.implicit && typeof schemaItem.context === "number") {
+          const schema = storage_1.schemaStorage.get(schemaItemType);
+          if (schema.type === enums_1.AsnTypeTypes.Sequence) {
+            const newSeq = new asn1js.Sequence();
+            if ("value" in asn1SchemaValue.valueBlock && Array.isArray(asn1SchemaValue.valueBlock.value) && "value" in newSeq.valueBlock) {
+              newSeq.valueBlock.value = asn1SchemaValue.valueBlock.value;
+              return newSeq;
+            }
+          } else if (schema.type === enums_1.AsnTypeTypes.Set) {
+            const newSet = new asn1js.Set();
+            if ("value" in asn1SchemaValue.valueBlock && Array.isArray(asn1SchemaValue.valueBlock.value) && "value" in newSet.valueBlock) {
+              newSet.valueBlock.value = asn1SchemaValue.valueBlock.value;
+              return newSet;
+            }
+          }
+        }
+        return asn1SchemaValue;
+      }
+    };
+    exports2.AsnParser = AsnParser;
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/serializer.js
+var require_serializer = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/serializer.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AsnSerializer = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1js = tslib_1.__importStar(require_build2());
+    var utils_1 = require_cjs();
+    var converters = tslib_1.__importStar(require_converters2());
+    var enums_1 = require_enums();
+    var helper_1 = require_helper();
+    var storage_1 = require_storage();
+    var AsnSerializer = class _AsnSerializer {
+      static serialize(obj) {
+        if (obj instanceof asn1js.BaseBlock) {
+          return obj.toBER(false);
+        }
+        return this.toASN(obj).toBER(false);
+      }
+      static toASN(obj) {
+        if (obj && typeof obj === "object" && (0, helper_1.isConvertible)(obj)) {
+          return obj.toASN();
+        }
+        if (!(obj && typeof obj === "object")) {
+          throw new TypeError("Parameter 1 should be type of Object.");
+        }
+        const target = obj.constructor;
+        const schema = storage_1.schemaStorage.get(target);
+        storage_1.schemaStorage.cache(target);
+        let asn1Value = [];
+        if (schema.itemType) {
+          if (!Array.isArray(obj)) {
+            throw new TypeError("Parameter 1 should be type of Array.");
+          }
+          if (typeof schema.itemType === "number") {
+            const converter = converters.defaultConverter(schema.itemType);
+            if (!converter) {
+              throw new Error(`Cannot get default converter for array item of ${target.name} ASN1 schema`);
+            }
+            asn1Value = obj.map((o) => converter.toASN(o));
+          } else {
+            asn1Value = obj.map((o) => this.toAsnItem({ type: schema.itemType }, "[]", target, o));
+          }
+        } else {
+          for (const key in schema.items) {
+            const schemaItem = schema.items[key];
+            const objProp = obj[key];
+            if (objProp === void 0 || schemaItem.defaultValue === objProp || typeof schemaItem.defaultValue === "object" && typeof objProp === "object" && (0, helper_1.isArrayEqual)(this.serialize(schemaItem.defaultValue), this.serialize(objProp))) {
+              continue;
+            }
+            const asn1Item = _AsnSerializer.toAsnItem(schemaItem, key, target, objProp);
+            if (typeof schemaItem.context === "number") {
+              if (schemaItem.implicit) {
+                if (!schemaItem.repeated && (typeof schemaItem.type === "number" || (0, helper_1.isConvertible)(schemaItem.type))) {
+                  const value = {};
+                  value.valueHex = asn1Item instanceof asn1js.Null ? (0, utils_1.toArrayBuffer)(asn1Item.valueBeforeDecodeView) : asn1Item.valueBlock.toBER();
+                  asn1Value.push(new asn1js.Primitive({
+                    optional: schemaItem.optional,
+                    idBlock: {
+                      tagClass: 3,
+                      tagNumber: schemaItem.context
+                    },
+                    ...value
+                  }));
+                } else {
+                  asn1Value.push(new asn1js.Constructed({
+                    optional: schemaItem.optional,
+                    idBlock: {
+                      tagClass: 3,
+                      tagNumber: schemaItem.context
+                    },
+                    value: asn1Item.valueBlock.value
+                  }));
+                }
+              } else {
+                asn1Value.push(new asn1js.Constructed({
+                  optional: schemaItem.optional,
+                  idBlock: {
+                    tagClass: 3,
+                    tagNumber: schemaItem.context
+                  },
+                  value: [asn1Item]
+                }));
+              }
+            } else if (schemaItem.repeated) {
+              asn1Value = asn1Value.concat(asn1Item);
+            } else {
+              asn1Value.push(asn1Item);
+            }
+          }
+        }
+        let asnSchema;
+        switch (schema.type) {
+          case enums_1.AsnTypeTypes.Sequence:
+            asnSchema = new asn1js.Sequence({ value: asn1Value });
+            break;
+          case enums_1.AsnTypeTypes.Set:
+            asnSchema = new asn1js.Set({ value: asn1Value });
+            break;
+          case enums_1.AsnTypeTypes.Choice:
+            if (!asn1Value[0]) {
+              throw new Error(`Schema '${target.name}' has wrong data. Choice cannot be empty.`);
+            }
+            asnSchema = asn1Value[0];
+            break;
+        }
+        return asnSchema;
+      }
+      static toAsnItem(schemaItem, key, target, objProp) {
+        let asn1Item;
+        if (typeof schemaItem.type === "number") {
+          const converter = schemaItem.converter;
+          if (!converter) {
+            throw new Error(`Property '${key}' doesn't have converter for type ${enums_1.AsnPropTypes[schemaItem.type]} in schema '${target.name}'`);
+          }
+          if (schemaItem.repeated) {
+            if (!Array.isArray(objProp)) {
+              throw new TypeError("Parameter 'objProp' should be type of Array.");
+            }
+            const items = Array.from(objProp, (element) => converter.toASN(element));
+            const Container = schemaItem.repeated === "sequence" ? asn1js.Sequence : asn1js.Set;
+            asn1Item = new Container({ value: items });
+          } else {
+            asn1Item = converter.toASN(objProp);
+          }
+        } else {
+          if (schemaItem.repeated) {
+            if (!Array.isArray(objProp)) {
+              throw new TypeError("Parameter 'objProp' should be type of Array.");
+            }
+            const items = Array.from(objProp, (element) => this.toASN(element));
+            const Container = schemaItem.repeated === "sequence" ? asn1js.Sequence : asn1js.Set;
+            asn1Item = new Container({ value: items });
+          } else {
+            asn1Item = this.toASN(objProp);
+          }
+        }
+        return asn1Item;
+      }
+    };
+    exports2.AsnSerializer = AsnSerializer;
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/objects.js
+var require_objects = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/objects.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AsnArray = void 0;
+    var AsnArray = class extends Array {
+      constructor(items = []) {
+        if (typeof items === "number") {
+          super(items);
+        } else {
+          super();
+          for (const item of items) {
+            this.push(item);
+          }
+        }
+      }
+    };
+    exports2.AsnArray = AsnArray;
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/convert.js
+var require_convert3 = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/convert.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AsnConvert = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1js = tslib_1.__importStar(require_build2());
+    var utils_1 = require_cjs();
+    var parser_1 = require_parser();
+    var serializer_1 = require_serializer();
+    var AsnConvert = class _AsnConvert {
+      static serialize(obj) {
+        return serializer_1.AsnSerializer.serialize(obj);
+      }
+      static parse(data, target, options) {
+        return parser_1.AsnParser.parse(data, target, options);
+      }
+      static toString(data, options) {
+        const buf = (0, utils_1.isBufferSource)(data) ? (0, utils_1.toArrayBuffer)(data) : _AsnConvert.serialize(data);
+        const asn = asn1js.fromBER(buf, options?.berOptions);
+        if (asn.offset === -1) {
+          throw new Error(`Cannot decode ASN.1 data. ${asn.result.error}`);
+        }
+        return asn.result.toString();
+      }
+    };
+    exports2.AsnConvert = AsnConvert;
+  }
+});
+
+// node_modules/@peculiar/asn1-schema/build/cjs/index.js
+var require_cjs2 = __commonJS({
+  "node_modules/@peculiar/asn1-schema/build/cjs/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AsnSerializer = exports2.AsnParser = exports2.AsnPropTypes = exports2.AsnTypeTypes = exports2.AsnSetType = exports2.AsnSequenceType = exports2.AsnChoiceType = exports2.AsnType = exports2.AsnProp = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_converters2(), exports2);
+    tslib_1.__exportStar(require_types2(), exports2);
+    var decorators_1 = require_decorators();
+    Object.defineProperty(exports2, "AsnProp", { enumerable: true, get: function() {
+      return decorators_1.AsnProp;
+    } });
+    Object.defineProperty(exports2, "AsnType", { enumerable: true, get: function() {
+      return decorators_1.AsnType;
+    } });
+    Object.defineProperty(exports2, "AsnChoiceType", { enumerable: true, get: function() {
+      return decorators_1.AsnChoiceType;
+    } });
+    Object.defineProperty(exports2, "AsnSequenceType", { enumerable: true, get: function() {
+      return decorators_1.AsnSequenceType;
+    } });
+    Object.defineProperty(exports2, "AsnSetType", { enumerable: true, get: function() {
+      return decorators_1.AsnSetType;
+    } });
+    var enums_1 = require_enums();
+    Object.defineProperty(exports2, "AsnTypeTypes", { enumerable: true, get: function() {
+      return enums_1.AsnTypeTypes;
+    } });
+    Object.defineProperty(exports2, "AsnPropTypes", { enumerable: true, get: function() {
+      return enums_1.AsnPropTypes;
+    } });
+    var parser_1 = require_parser();
+    Object.defineProperty(exports2, "AsnParser", { enumerable: true, get: function() {
+      return parser_1.AsnParser;
+    } });
+    var serializer_1 = require_serializer();
+    Object.defineProperty(exports2, "AsnSerializer", { enumerable: true, get: function() {
+      return serializer_1.AsnSerializer;
+    } });
+    tslib_1.__exportStar(require_errors2(), exports2);
+    tslib_1.__exportStar(require_objects(), exports2);
+    tslib_1.__exportStar(require_convert3(), exports2);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/ip_converter.js
+var require_ip_converter = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/ip_converter.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.IpConverter = void 0;
+    var encoding_1 = require_encoding();
+    var IpConverter = class {
+      static isIPv4(ip) {
+        return /^(\d{1,3}\.){3}\d{1,3}$/.test(ip);
+      }
+      static parseIPv4(ip) {
+        const parts = ip.split(".");
+        if (parts.length !== 4) {
+          throw new Error("Invalid IPv4 address");
+        }
+        return parts.map((part) => {
+          const num = parseInt(part, 10);
+          if (isNaN(num) || num < 0 || num > 255) {
+            throw new Error("Invalid IPv4 address part");
+          }
+          return num;
+        });
+      }
+      static parseIPv6(ip) {
+        const expandedIP = this.expandIPv6(ip);
+        const parts = expandedIP.split(":");
+        if (parts.length !== 8) {
+          throw new Error("Invalid IPv6 address");
+        }
+        return parts.reduce((bytes, part) => {
+          const num = parseInt(part, 16);
+          if (isNaN(num) || num < 0 || num > 65535) {
+            throw new Error("Invalid IPv6 address part");
+          }
+          bytes.push(num >> 8 & 255);
+          bytes.push(num & 255);
+          return bytes;
+        }, []);
+      }
+      static expandIPv6(ip) {
+        if (!ip.includes("::")) {
+          return ip;
+        }
+        const parts = ip.split("::");
+        if (parts.length > 2) {
+          throw new Error("Invalid IPv6 address");
+        }
+        const left = parts[0] ? parts[0].split(":") : [];
+        const right = parts[1] ? parts[1].split(":") : [];
+        const missing = 8 - (left.length + right.length);
+        if (missing < 0) {
+          throw new Error("Invalid IPv6 address");
+        }
+        return [...left, ...Array(missing).fill("0"), ...right].join(":");
+      }
+      static formatIPv6(bytes) {
+        const parts = [];
+        for (let i = 0; i < 16; i += 2) {
+          parts.push((bytes[i] << 8 | bytes[i + 1]).toString(16));
+        }
+        return this.compressIPv6(parts.join(":"));
+      }
+      static compressIPv6(ip) {
+        const parts = ip.split(":");
+        let longestZeroStart = -1;
+        let longestZeroLength = 0;
+        let currentZeroStart = -1;
+        let currentZeroLength = 0;
+        for (let i = 0; i < parts.length; i++) {
+          if (parts[i] === "0") {
+            if (currentZeroStart === -1) {
+              currentZeroStart = i;
+            }
+            currentZeroLength++;
+          } else {
+            if (currentZeroLength > longestZeroLength) {
+              longestZeroStart = currentZeroStart;
+              longestZeroLength = currentZeroLength;
+            }
+            currentZeroStart = -1;
+            currentZeroLength = 0;
+          }
+        }
+        if (currentZeroLength > longestZeroLength) {
+          longestZeroStart = currentZeroStart;
+          longestZeroLength = currentZeroLength;
+        }
+        if (longestZeroLength > 1) {
+          const before = parts.slice(0, longestZeroStart).join(":");
+          const after = parts.slice(longestZeroStart + longestZeroLength).join(":");
+          return `${before}::${after}`;
+        }
+        return ip;
+      }
+      static parseCIDR(text) {
+        const [addr, prefixStr] = text.split("/");
+        const prefix = parseInt(prefixStr, 10);
+        if (this.isIPv4(addr)) {
+          if (prefix < 0 || prefix > 32) {
+            throw new Error("Invalid IPv4 prefix length");
+          }
+          return [this.parseIPv4(addr), prefix];
+        } else {
+          if (prefix < 0 || prefix > 128) {
+            throw new Error("Invalid IPv6 prefix length");
+          }
+          return [this.parseIPv6(addr), prefix];
+        }
+      }
+      static decodeIP(value) {
+        if (value.length === 64 && parseInt(value, 16) === 0) {
+          return "::/0";
+        }
+        if (value.length !== 16) {
+          return value;
+        }
+        const mask = parseInt(value.slice(8), 16).toString(2).split("").reduce((a, k) => a + +k, 0);
+        let ip = value.slice(0, 8).replace(/(.{2})/g, (match) => `${parseInt(match, 16)}.`);
+        ip = ip.slice(0, -1);
+        return `${ip}/${mask}`;
+      }
+      static toString(buf) {
+        const uint8 = new Uint8Array(buf);
+        if (uint8.length === 4) {
+          return Array.from(uint8).join(".");
+        }
+        if (uint8.length === 16) {
+          return this.formatIPv6(uint8);
+        }
+        if (uint8.length === 8 || uint8.length === 32) {
+          const half = uint8.length / 2;
+          const addrBytes = uint8.slice(0, half);
+          const maskBytes = uint8.slice(half);
+          const isAllZeros = uint8.every((byte) => byte === 0);
+          if (isAllZeros) {
+            return uint8.length === 8 ? "0.0.0.0/0" : "::/0";
+          }
+          const prefixLen = maskBytes.reduce((a, b) => a + (b.toString(2).match(/1/g) || []).length, 0);
+          if (uint8.length === 8) {
+            const addrStr = Array.from(addrBytes).join(".");
+            return `${addrStr}/${prefixLen}`;
+          } else {
+            const addrStr = this.formatIPv6(addrBytes);
+            return `${addrStr}/${prefixLen}`;
+          }
+        }
+        return this.decodeIP(encoding_1.hex.encode(buf));
+      }
+      static fromString(text) {
+        if (text.includes("/")) {
+          const [addr, prefix] = this.parseCIDR(text);
+          const maskBytes = new Uint8Array(addr.length);
+          let bitsLeft = prefix;
+          for (let i = 0; i < maskBytes.length; i++) {
+            if (bitsLeft >= 8) {
+              maskBytes[i] = 255;
+              bitsLeft -= 8;
+            } else if (bitsLeft > 0) {
+              maskBytes[i] = 255 << 8 - bitsLeft;
+              bitsLeft = 0;
+            }
+          }
+          const out = new Uint8Array(addr.length * 2);
+          out.set(addr, 0);
+          out.set(maskBytes, addr.length);
+          return out.buffer;
+        }
+        const bytes = this.isIPv4(text) ? this.parseIPv4(text) : this.parseIPv6(text);
+        return new Uint8Array(bytes).buffer;
+      }
+    };
+    exports2.IpConverter = IpConverter;
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/name.js
+var require_name = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/name.js"(exports2) {
+    "use strict";
+    var RelativeDistinguishedName_1;
+    var RDNSequence_1;
+    var Name_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Name = exports2.RDNSequence = exports2.RelativeDistinguishedName = exports2.AttributeTypeAndValue = exports2.AttributeValue = exports2.DirectoryString = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var encoding_1 = require_encoding();
+    var DirectoryString = class DirectoryString {
+      teletexString;
+      printableString;
+      universalString;
+      utf8String;
+      bmpString;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+      toString() {
+        return this.bmpString || this.printableString || this.teletexString || this.universalString || this.utf8String || "";
+      }
+    };
+    exports2.DirectoryString = DirectoryString;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.TeletexString })
+    ], DirectoryString.prototype, "teletexString", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.PrintableString })
+    ], DirectoryString.prototype, "printableString", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.UniversalString })
+    ], DirectoryString.prototype, "universalString", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Utf8String })
+    ], DirectoryString.prototype, "utf8String", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.BmpString })
+    ], DirectoryString.prototype, "bmpString", void 0);
+    exports2.DirectoryString = DirectoryString = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], DirectoryString);
+    var AttributeValue = class AttributeValue extends DirectoryString {
+      ia5String;
+      anyValue;
+      constructor(params = {}) {
+        super(params);
+        Object.assign(this, params);
+      }
+      toString() {
+        return this.ia5String || (this.anyValue ? encoding_1.hex.encode(this.anyValue) : super.toString());
+      }
+    };
+    exports2.AttributeValue = AttributeValue;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.IA5String })
+    ], AttributeValue.prototype, "ia5String", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Any })
+    ], AttributeValue.prototype, "anyValue", void 0);
+    exports2.AttributeValue = AttributeValue = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], AttributeValue);
+    var AttributeTypeAndValue = class {
+      type = "";
+      value = new AttributeValue();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.AttributeTypeAndValue = AttributeTypeAndValue;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], AttributeTypeAndValue.prototype, "type", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: AttributeValue })
+    ], AttributeTypeAndValue.prototype, "value", void 0);
+    var RelativeDistinguishedName = RelativeDistinguishedName_1 = class RelativeDistinguishedName extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, RelativeDistinguishedName_1.prototype);
+      }
+    };
+    exports2.RelativeDistinguishedName = RelativeDistinguishedName;
+    exports2.RelativeDistinguishedName = RelativeDistinguishedName = RelativeDistinguishedName_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Set,
+        itemType: AttributeTypeAndValue
+      })
+    ], RelativeDistinguishedName);
+    var RDNSequence = RDNSequence_1 = class RDNSequence extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, RDNSequence_1.prototype);
+      }
+    };
+    exports2.RDNSequence = RDNSequence;
+    exports2.RDNSequence = RDNSequence = RDNSequence_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: RelativeDistinguishedName
+      })
+    ], RDNSequence);
+    var Name = Name_1 = class Name extends RDNSequence {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, Name_1.prototype);
+      }
+    };
+    exports2.Name = Name;
+    exports2.Name = Name = Name_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], Name);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/general_name.js
+var require_general_name = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/general_name.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.GeneralName = exports2.EDIPartyName = exports2.OtherName = exports2.AsnIpConverter = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var ip_converter_1 = require_ip_converter();
+    var name_1 = require_name();
+    exports2.AsnIpConverter = {
+      fromASN: (value) => ip_converter_1.IpConverter.toString(asn1_schema_1.AsnOctetStringConverter.fromASN(value)),
+      toASN: (value) => asn1_schema_1.AsnOctetStringConverter.toASN(ip_converter_1.IpConverter.fromString(value))
+    };
+    var OtherName = class {
+      typeId = "";
+      value = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.OtherName = OtherName;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], OtherName.prototype, "typeId", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Any,
+        context: 0
+      })
+    ], OtherName.prototype, "value", void 0);
+    var EDIPartyName = class {
+      nameAssigner;
+      partyName = new name_1.DirectoryString();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.EDIPartyName = EDIPartyName;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: name_1.DirectoryString,
+        optional: true,
+        context: 0,
+        implicit: true
+      })
+    ], EDIPartyName.prototype, "nameAssigner", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: name_1.DirectoryString,
+        context: 1,
+        implicit: true
+      })
+    ], EDIPartyName.prototype, "partyName", void 0);
+    var GeneralName = class GeneralName {
+      otherName;
+      rfc822Name;
+      dNSName;
+      x400Address;
+      directoryName;
+      ediPartyName;
+      uniformResourceIdentifier;
+      iPAddress;
+      registeredID;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.GeneralName = GeneralName;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: OtherName,
+        context: 0,
+        implicit: true
+      })
+    ], GeneralName.prototype, "otherName", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.IA5String,
+        context: 1,
+        implicit: true
+      })
+    ], GeneralName.prototype, "rfc822Name", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.IA5String,
+        context: 2,
+        implicit: true
+      })
+    ], GeneralName.prototype, "dNSName", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Any,
+        context: 3,
+        implicit: true
+      })
+    ], GeneralName.prototype, "x400Address", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: name_1.Name,
+        context: 4,
+        implicit: false
+      })
+    ], GeneralName.prototype, "directoryName", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: EDIPartyName,
+        context: 5
+      })
+    ], GeneralName.prototype, "ediPartyName", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.IA5String,
+        context: 6,
+        implicit: true
+      })
+    ], GeneralName.prototype, "uniformResourceIdentifier", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.OctetString,
+        context: 7,
+        implicit: true,
+        converter: exports2.AsnIpConverter
+      })
+    ], GeneralName.prototype, "iPAddress", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.ObjectIdentifier,
+        context: 8,
+        implicit: true
+      })
+    ], GeneralName.prototype, "registeredID", void 0);
+    exports2.GeneralName = GeneralName = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], GeneralName);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/object_identifiers.js
+var require_object_identifiers = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/object_identifiers.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.id_alg_unsigned = exports2.id_ce = exports2.id_ad_caRepository = exports2.id_ad_timeStamping = exports2.id_ad_caIssuers = exports2.id_ad_ocsp = exports2.id_qt_unotice = exports2.id_qt_csp = exports2.id_ad = exports2.id_kp = exports2.id_qt = exports2.id_pe = exports2.id_pkix = void 0;
+    exports2.id_pkix = "1.3.6.1.5.5.7";
+    exports2.id_pe = `${exports2.id_pkix}.1`;
+    exports2.id_qt = `${exports2.id_pkix}.2`;
+    exports2.id_kp = `${exports2.id_pkix}.3`;
+    exports2.id_ad = `${exports2.id_pkix}.48`;
+    exports2.id_qt_csp = `${exports2.id_qt}.1`;
+    exports2.id_qt_unotice = `${exports2.id_qt}.2`;
+    exports2.id_ad_ocsp = `${exports2.id_ad}.1`;
+    exports2.id_ad_caIssuers = `${exports2.id_ad}.2`;
+    exports2.id_ad_timeStamping = `${exports2.id_ad}.3`;
+    exports2.id_ad_caRepository = `${exports2.id_ad}.5`;
+    exports2.id_ce = "2.5.29";
+    exports2.id_alg_unsigned = "1.3.6.1.5.5.7.6.36";
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/authority_information_access.js
+var require_authority_information_access = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/authority_information_access.js"(exports2) {
+    "use strict";
+    var AuthorityInfoAccessSyntax_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AuthorityInfoAccessSyntax = exports2.AccessDescription = exports2.id_pe_authorityInfoAccess = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var general_name_1 = require_general_name();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_pe_authorityInfoAccess = `${object_identifiers_1.id_pe}.1`;
+    var AccessDescription = class {
+      accessMethod = "";
+      accessLocation = new general_name_1.GeneralName();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.AccessDescription = AccessDescription;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], AccessDescription.prototype, "accessMethod", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: general_name_1.GeneralName })
+    ], AccessDescription.prototype, "accessLocation", void 0);
+    var AuthorityInfoAccessSyntax = AuthorityInfoAccessSyntax_1 = class AuthorityInfoAccessSyntax extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, AuthorityInfoAccessSyntax_1.prototype);
+      }
+    };
+    exports2.AuthorityInfoAccessSyntax = AuthorityInfoAccessSyntax;
+    exports2.AuthorityInfoAccessSyntax = AuthorityInfoAccessSyntax = AuthorityInfoAccessSyntax_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: AccessDescription
+      })
+    ], AuthorityInfoAccessSyntax);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/authority_key_identifier.js
+var require_authority_key_identifier = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/authority_key_identifier.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AuthorityKeyIdentifier = exports2.KeyIdentifier = exports2.id_ce_authorityKeyIdentifier = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var general_name_1 = require_general_name();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_authorityKeyIdentifier = `${object_identifiers_1.id_ce}.35`;
+    var KeyIdentifier = class extends asn1_schema_1.OctetString {
+    };
+    exports2.KeyIdentifier = KeyIdentifier;
+    var AuthorityKeyIdentifier = class {
+      keyIdentifier;
+      authorityCertIssuer;
+      authorityCertSerialNumber;
+      constructor(params = {}) {
+        if (params) {
+          Object.assign(this, params);
+        }
+      }
+    };
+    exports2.AuthorityKeyIdentifier = AuthorityKeyIdentifier;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: KeyIdentifier,
+        context: 0,
+        optional: true,
+        implicit: true
+      })
+    ], AuthorityKeyIdentifier.prototype, "keyIdentifier", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: general_name_1.GeneralName,
+        context: 1,
+        optional: true,
+        implicit: true,
+        repeated: "sequence"
+      })
+    ], AuthorityKeyIdentifier.prototype, "authorityCertIssuer", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        context: 2,
+        optional: true,
+        implicit: true,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], AuthorityKeyIdentifier.prototype, "authorityCertSerialNumber", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/basic_constraints.js
+var require_basic_constraints = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/basic_constraints.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.BasicConstraints = exports2.id_ce_basicConstraints = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_basicConstraints = `${object_identifiers_1.id_ce}.19`;
+    var BasicConstraints = class {
+      cA = false;
+      pathLenConstraint;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.BasicConstraints = BasicConstraints;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Boolean,
+        defaultValue: false
+      })
+    ], BasicConstraints.prototype, "cA", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        optional: true
+      })
+    ], BasicConstraints.prototype, "pathLenConstraint", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/general_names.js
+var require_general_names = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/general_names.js"(exports2) {
+    "use strict";
+    var GeneralNames_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.GeneralNames = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var general_name_1 = require_general_name();
+    var GeneralNames = GeneralNames_1 = class GeneralNames extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, GeneralNames_1.prototype);
+      }
+    };
+    exports2.GeneralNames = GeneralNames;
+    exports2.GeneralNames = GeneralNames = GeneralNames_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: general_name_1.GeneralName
+      })
+    ], GeneralNames);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/certificate_issuer.js
+var require_certificate_issuer = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/certificate_issuer.js"(exports2) {
+    "use strict";
+    var CertificateIssuer_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.CertificateIssuer = exports2.id_ce_certificateIssuer = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var general_names_1 = require_general_names();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_certificateIssuer = `${object_identifiers_1.id_ce}.29`;
+    var CertificateIssuer = CertificateIssuer_1 = class CertificateIssuer extends general_names_1.GeneralNames {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, CertificateIssuer_1.prototype);
+      }
+    };
+    exports2.CertificateIssuer = CertificateIssuer;
+    exports2.CertificateIssuer = CertificateIssuer = CertificateIssuer_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], CertificateIssuer);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/certificate_policies.js
+var require_certificate_policies = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/certificate_policies.js"(exports2) {
+    "use strict";
+    var CertificatePolicies_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.CertificatePolicies = exports2.PolicyInformation = exports2.PolicyQualifierInfo = exports2.Qualifier = exports2.UserNotice = exports2.NoticeReference = exports2.DisplayText = exports2.id_ce_certificatePolicies_anyPolicy = exports2.id_ce_certificatePolicies = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_certificatePolicies = `${object_identifiers_1.id_ce}.32`;
+    exports2.id_ce_certificatePolicies_anyPolicy = `${exports2.id_ce_certificatePolicies}.0`;
+    var DisplayText = class DisplayText {
+      ia5String;
+      visibleString;
+      bmpString;
+      utf8String;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+      toString() {
+        return this.ia5String || this.visibleString || this.bmpString || this.utf8String || "";
+      }
+    };
+    exports2.DisplayText = DisplayText;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.IA5String })
+    ], DisplayText.prototype, "ia5String", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.VisibleString })
+    ], DisplayText.prototype, "visibleString", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.BmpString })
+    ], DisplayText.prototype, "bmpString", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Utf8String })
+    ], DisplayText.prototype, "utf8String", void 0);
+    exports2.DisplayText = DisplayText = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], DisplayText);
+    var NoticeReference = class {
+      organization = new DisplayText();
+      noticeNumbers = [];
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.NoticeReference = NoticeReference;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: DisplayText })
+    ], NoticeReference.prototype, "organization", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        repeated: "sequence"
+      })
+    ], NoticeReference.prototype, "noticeNumbers", void 0);
+    var UserNotice = class {
+      noticeRef;
+      explicitText;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.UserNotice = UserNotice;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: NoticeReference,
+        optional: true
+      })
+    ], UserNotice.prototype, "noticeRef", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: DisplayText,
+        optional: true
+      })
+    ], UserNotice.prototype, "explicitText", void 0);
+    var Qualifier = class Qualifier {
+      cPSuri;
+      userNotice;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.Qualifier = Qualifier;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.IA5String })
+    ], Qualifier.prototype, "cPSuri", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: UserNotice })
+    ], Qualifier.prototype, "userNotice", void 0);
+    exports2.Qualifier = Qualifier = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], Qualifier);
+    var PolicyQualifierInfo = class {
+      policyQualifierId = "";
+      qualifier = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.PolicyQualifierInfo = PolicyQualifierInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], PolicyQualifierInfo.prototype, "policyQualifierId", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Any })
+    ], PolicyQualifierInfo.prototype, "qualifier", void 0);
+    var PolicyInformation = class {
+      policyIdentifier = "";
+      policyQualifiers;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.PolicyInformation = PolicyInformation;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], PolicyInformation.prototype, "policyIdentifier", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: PolicyQualifierInfo,
+        repeated: "sequence",
+        optional: true
+      })
+    ], PolicyInformation.prototype, "policyQualifiers", void 0);
+    var CertificatePolicies = CertificatePolicies_1 = class CertificatePolicies extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, CertificatePolicies_1.prototype);
+      }
+    };
+    exports2.CertificatePolicies = CertificatePolicies;
+    exports2.CertificatePolicies = CertificatePolicies = CertificatePolicies_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: PolicyInformation
+      })
+    ], CertificatePolicies);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/crl_number.js
+var require_crl_number = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/crl_number.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.CRLNumber = exports2.id_ce_cRLNumber = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_cRLNumber = `${object_identifiers_1.id_ce}.20`;
+    var CRLNumber = class CRLNumber {
+      value;
+      constructor(value = 0) {
+        this.value = value;
+      }
+    };
+    exports2.CRLNumber = CRLNumber;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], CRLNumber.prototype, "value", void 0);
+    exports2.CRLNumber = CRLNumber = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], CRLNumber);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/crl_delta_indicator.js
+var require_crl_delta_indicator = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/crl_delta_indicator.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.BaseCRLNumber = exports2.id_ce_deltaCRLIndicator = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    var crl_number_1 = require_crl_number();
+    exports2.id_ce_deltaCRLIndicator = `${object_identifiers_1.id_ce}.27`;
+    var BaseCRLNumber = class BaseCRLNumber extends crl_number_1.CRLNumber {
+    };
+    exports2.BaseCRLNumber = BaseCRLNumber;
+    exports2.BaseCRLNumber = BaseCRLNumber = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], BaseCRLNumber);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/crl_distribution_points.js
+var require_crl_distribution_points = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/crl_distribution_points.js"(exports2) {
+    "use strict";
+    var CRLDistributionPoints_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.CRLDistributionPoints = exports2.DistributionPoint = exports2.DistributionPointName = exports2.Reason = exports2.ReasonFlags = exports2.id_ce_cRLDistributionPoints = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var name_1 = require_name();
+    var general_name_1 = require_general_name();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_cRLDistributionPoints = `${object_identifiers_1.id_ce}.31`;
+    var ReasonFlags;
+    (function(ReasonFlags2) {
+      ReasonFlags2[ReasonFlags2["unused"] = 1] = "unused";
+      ReasonFlags2[ReasonFlags2["keyCompromise"] = 2] = "keyCompromise";
+      ReasonFlags2[ReasonFlags2["cACompromise"] = 4] = "cACompromise";
+      ReasonFlags2[ReasonFlags2["affiliationChanged"] = 8] = "affiliationChanged";
+      ReasonFlags2[ReasonFlags2["superseded"] = 16] = "superseded";
+      ReasonFlags2[ReasonFlags2["cessationOfOperation"] = 32] = "cessationOfOperation";
+      ReasonFlags2[ReasonFlags2["certificateHold"] = 64] = "certificateHold";
+      ReasonFlags2[ReasonFlags2["privilegeWithdrawn"] = 128] = "privilegeWithdrawn";
+      ReasonFlags2[ReasonFlags2["aACompromise"] = 256] = "aACompromise";
+    })(ReasonFlags || (exports2.ReasonFlags = ReasonFlags = {}));
+    var Reason = class extends asn1_schema_1.BitString {
+      toJSON() {
+        const res = [];
+        const flags = this.toNumber();
+        if (flags & ReasonFlags.aACompromise) {
+          res.push("aACompromise");
+        }
+        if (flags & ReasonFlags.affiliationChanged) {
+          res.push("affiliationChanged");
+        }
+        if (flags & ReasonFlags.cACompromise) {
+          res.push("cACompromise");
+        }
+        if (flags & ReasonFlags.certificateHold) {
+          res.push("certificateHold");
+        }
+        if (flags & ReasonFlags.cessationOfOperation) {
+          res.push("cessationOfOperation");
+        }
+        if (flags & ReasonFlags.keyCompromise) {
+          res.push("keyCompromise");
+        }
+        if (flags & ReasonFlags.privilegeWithdrawn) {
+          res.push("privilegeWithdrawn");
+        }
+        if (flags & ReasonFlags.superseded) {
+          res.push("superseded");
+        }
+        if (flags & ReasonFlags.unused) {
+          res.push("unused");
+        }
+        return res;
+      }
+      toString() {
+        return `[${this.toJSON().join(", ")}]`;
+      }
+    };
+    exports2.Reason = Reason;
+    var DistributionPointName = class DistributionPointName {
+      fullName;
+      nameRelativeToCRLIssuer;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.DistributionPointName = DistributionPointName;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: general_name_1.GeneralName,
+        context: 0,
+        repeated: "sequence",
+        implicit: true
+      })
+    ], DistributionPointName.prototype, "fullName", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: name_1.RelativeDistinguishedName,
+        context: 1,
+        implicit: true
+      })
+    ], DistributionPointName.prototype, "nameRelativeToCRLIssuer", void 0);
+    exports2.DistributionPointName = DistributionPointName = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], DistributionPointName);
+    var DistributionPoint = class {
+      distributionPoint;
+      reasons;
+      cRLIssuer;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.DistributionPoint = DistributionPoint;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: DistributionPointName,
+        context: 0,
+        optional: true
+      })
+    ], DistributionPoint.prototype, "distributionPoint", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: Reason,
+        context: 1,
+        optional: true,
+        implicit: true
+      })
+    ], DistributionPoint.prototype, "reasons", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: general_name_1.GeneralName,
+        context: 2,
+        optional: true,
+        repeated: "sequence",
+        implicit: true
+      })
+    ], DistributionPoint.prototype, "cRLIssuer", void 0);
+    var CRLDistributionPoints = CRLDistributionPoints_1 = class CRLDistributionPoints extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, CRLDistributionPoints_1.prototype);
+      }
+    };
+    exports2.CRLDistributionPoints = CRLDistributionPoints;
+    exports2.CRLDistributionPoints = CRLDistributionPoints = CRLDistributionPoints_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: DistributionPoint
+      })
+    ], CRLDistributionPoints);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/crl_freshest.js
+var require_crl_freshest = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/crl_freshest.js"(exports2) {
+    "use strict";
+    var FreshestCRL_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.FreshestCRL = exports2.id_ce_freshestCRL = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    var crl_distribution_points_1 = require_crl_distribution_points();
+    exports2.id_ce_freshestCRL = `${object_identifiers_1.id_ce}.46`;
+    var FreshestCRL = FreshestCRL_1 = class FreshestCRL extends crl_distribution_points_1.CRLDistributionPoints {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, FreshestCRL_1.prototype);
+      }
+    };
+    exports2.FreshestCRL = FreshestCRL;
+    exports2.FreshestCRL = FreshestCRL = FreshestCRL_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: crl_distribution_points_1.DistributionPoint
+      })
+    ], FreshestCRL);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/crl_issuing_distribution_point.js
+var require_crl_issuing_distribution_point = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/crl_issuing_distribution_point.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.IssuingDistributionPoint = exports2.id_ce_issuingDistributionPoint = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    var crl_distribution_points_1 = require_crl_distribution_points();
+    exports2.id_ce_issuingDistributionPoint = `${object_identifiers_1.id_ce}.28`;
+    var IssuingDistributionPoint = class _IssuingDistributionPoint {
+      static ONLY = false;
+      distributionPoint;
+      onlyContainsUserCerts = _IssuingDistributionPoint.ONLY;
+      onlyContainsCACerts = _IssuingDistributionPoint.ONLY;
+      onlySomeReasons;
+      indirectCRL = _IssuingDistributionPoint.ONLY;
+      onlyContainsAttributeCerts = _IssuingDistributionPoint.ONLY;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.IssuingDistributionPoint = IssuingDistributionPoint;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: crl_distribution_points_1.DistributionPointName,
+        context: 0,
+        optional: true
+      })
+    ], IssuingDistributionPoint.prototype, "distributionPoint", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Boolean,
+        context: 1,
+        defaultValue: IssuingDistributionPoint.ONLY,
+        implicit: true
+      })
+    ], IssuingDistributionPoint.prototype, "onlyContainsUserCerts", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Boolean,
+        context: 2,
+        defaultValue: IssuingDistributionPoint.ONLY,
+        implicit: true
+      })
+    ], IssuingDistributionPoint.prototype, "onlyContainsCACerts", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: crl_distribution_points_1.Reason,
+        context: 3,
+        optional: true,
+        implicit: true
+      })
+    ], IssuingDistributionPoint.prototype, "onlySomeReasons", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Boolean,
+        context: 4,
+        defaultValue: IssuingDistributionPoint.ONLY,
+        implicit: true
+      })
+    ], IssuingDistributionPoint.prototype, "indirectCRL", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Boolean,
+        context: 5,
+        defaultValue: IssuingDistributionPoint.ONLY,
+        implicit: true
+      })
+    ], IssuingDistributionPoint.prototype, "onlyContainsAttributeCerts", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/crl_reason.js
+var require_crl_reason = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/crl_reason.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.CRLReason = exports2.CRLReasons = exports2.id_ce_cRLReasons = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_cRLReasons = `${object_identifiers_1.id_ce}.21`;
+    var CRLReasons;
+    (function(CRLReasons2) {
+      CRLReasons2[CRLReasons2["unspecified"] = 0] = "unspecified";
+      CRLReasons2[CRLReasons2["keyCompromise"] = 1] = "keyCompromise";
+      CRLReasons2[CRLReasons2["cACompromise"] = 2] = "cACompromise";
+      CRLReasons2[CRLReasons2["affiliationChanged"] = 3] = "affiliationChanged";
+      CRLReasons2[CRLReasons2["superseded"] = 4] = "superseded";
+      CRLReasons2[CRLReasons2["cessationOfOperation"] = 5] = "cessationOfOperation";
+      CRLReasons2[CRLReasons2["certificateHold"] = 6] = "certificateHold";
+      CRLReasons2[CRLReasons2["removeFromCRL"] = 8] = "removeFromCRL";
+      CRLReasons2[CRLReasons2["privilegeWithdrawn"] = 9] = "privilegeWithdrawn";
+      CRLReasons2[CRLReasons2["aACompromise"] = 10] = "aACompromise";
+    })(CRLReasons || (exports2.CRLReasons = CRLReasons = {}));
+    var CRLReason = class CRLReason {
+      reason = CRLReasons.unspecified;
+      constructor(reason = CRLReasons.unspecified) {
+        this.reason = reason;
+      }
+      toJSON() {
+        return CRLReasons[this.reason];
+      }
+      toString() {
+        return this.toJSON();
+      }
+    };
+    exports2.CRLReason = CRLReason;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Enumerated })
+    ], CRLReason.prototype, "reason", void 0);
+    exports2.CRLReason = CRLReason = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], CRLReason);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/extended_key_usage.js
+var require_extended_key_usage = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/extended_key_usage.js"(exports2) {
+    "use strict";
+    var ExtendedKeyUsage_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.id_kp_OCSPSigning = exports2.id_kp_timeStamping = exports2.id_kp_emailProtection = exports2.id_kp_codeSigning = exports2.id_kp_clientAuth = exports2.id_kp_serverAuth = exports2.anyExtendedKeyUsage = exports2.ExtendedKeyUsage = exports2.id_ce_extKeyUsage = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_extKeyUsage = `${object_identifiers_1.id_ce}.37`;
+    var ExtendedKeyUsage = ExtendedKeyUsage_1 = class ExtendedKeyUsage extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, ExtendedKeyUsage_1.prototype);
+      }
+    };
+    exports2.ExtendedKeyUsage = ExtendedKeyUsage;
+    exports2.ExtendedKeyUsage = ExtendedKeyUsage = ExtendedKeyUsage_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: asn1_schema_1.AsnPropTypes.ObjectIdentifier
+      })
+    ], ExtendedKeyUsage);
+    exports2.anyExtendedKeyUsage = `${exports2.id_ce_extKeyUsage}.0`;
+    exports2.id_kp_serverAuth = `${object_identifiers_1.id_kp}.1`;
+    exports2.id_kp_clientAuth = `${object_identifiers_1.id_kp}.2`;
+    exports2.id_kp_codeSigning = `${object_identifiers_1.id_kp}.3`;
+    exports2.id_kp_emailProtection = `${object_identifiers_1.id_kp}.4`;
+    exports2.id_kp_timeStamping = `${object_identifiers_1.id_kp}.8`;
+    exports2.id_kp_OCSPSigning = `${object_identifiers_1.id_kp}.9`;
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/inhibit_any_policy.js
+var require_inhibit_any_policy = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/inhibit_any_policy.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.InhibitAnyPolicy = exports2.id_ce_inhibitAnyPolicy = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_inhibitAnyPolicy = `${object_identifiers_1.id_ce}.54`;
+    var InhibitAnyPolicy = class InhibitAnyPolicy {
+      value;
+      constructor(value = new ArrayBuffer(0)) {
+        this.value = value;
+      }
+    };
+    exports2.InhibitAnyPolicy = InhibitAnyPolicy;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], InhibitAnyPolicy.prototype, "value", void 0);
+    exports2.InhibitAnyPolicy = InhibitAnyPolicy = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], InhibitAnyPolicy);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/invalidity_date.js
+var require_invalidity_date = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/invalidity_date.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.InvalidityDate = exports2.id_ce_invalidityDate = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_invalidityDate = `${object_identifiers_1.id_ce}.24`;
+    var InvalidityDate = class InvalidityDate {
+      value = /* @__PURE__ */ new Date();
+      constructor(value) {
+        if (value) {
+          this.value = value;
+        }
+      }
+    };
+    exports2.InvalidityDate = InvalidityDate;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.GeneralizedTime })
+    ], InvalidityDate.prototype, "value", void 0);
+    exports2.InvalidityDate = InvalidityDate = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], InvalidityDate);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/issuer_alternative_name.js
+var require_issuer_alternative_name = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/issuer_alternative_name.js"(exports2) {
+    "use strict";
+    var IssueAlternativeName_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.IssueAlternativeName = exports2.id_ce_issuerAltName = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var general_names_1 = require_general_names();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_issuerAltName = `${object_identifiers_1.id_ce}.18`;
+    var IssueAlternativeName = IssueAlternativeName_1 = class IssueAlternativeName extends general_names_1.GeneralNames {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, IssueAlternativeName_1.prototype);
+      }
+    };
+    exports2.IssueAlternativeName = IssueAlternativeName;
+    exports2.IssueAlternativeName = IssueAlternativeName = IssueAlternativeName_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], IssueAlternativeName);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/key_usage.js
+var require_key_usage = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/key_usage.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.KeyUsage = exports2.KeyUsageFlags = exports2.id_ce_keyUsage = void 0;
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_keyUsage = `${object_identifiers_1.id_ce}.15`;
+    var KeyUsageFlags;
+    (function(KeyUsageFlags2) {
+      KeyUsageFlags2[KeyUsageFlags2["digitalSignature"] = 1] = "digitalSignature";
+      KeyUsageFlags2[KeyUsageFlags2["nonRepudiation"] = 2] = "nonRepudiation";
+      KeyUsageFlags2[KeyUsageFlags2["keyEncipherment"] = 4] = "keyEncipherment";
+      KeyUsageFlags2[KeyUsageFlags2["dataEncipherment"] = 8] = "dataEncipherment";
+      KeyUsageFlags2[KeyUsageFlags2["keyAgreement"] = 16] = "keyAgreement";
+      KeyUsageFlags2[KeyUsageFlags2["keyCertSign"] = 32] = "keyCertSign";
+      KeyUsageFlags2[KeyUsageFlags2["cRLSign"] = 64] = "cRLSign";
+      KeyUsageFlags2[KeyUsageFlags2["encipherOnly"] = 128] = "encipherOnly";
+      KeyUsageFlags2[KeyUsageFlags2["decipherOnly"] = 256] = "decipherOnly";
+    })(KeyUsageFlags || (exports2.KeyUsageFlags = KeyUsageFlags = {}));
+    var KeyUsage = class extends asn1_schema_1.BitString {
+      toJSON() {
+        const flag = this.toNumber();
+        const res = [];
+        if (flag & KeyUsageFlags.cRLSign) {
+          res.push("crlSign");
+        }
+        if (flag & KeyUsageFlags.dataEncipherment) {
+          res.push("dataEncipherment");
+        }
+        if (flag & KeyUsageFlags.decipherOnly) {
+          res.push("decipherOnly");
+        }
+        if (flag & KeyUsageFlags.digitalSignature) {
+          res.push("digitalSignature");
+        }
+        if (flag & KeyUsageFlags.encipherOnly) {
+          res.push("encipherOnly");
+        }
+        if (flag & KeyUsageFlags.keyAgreement) {
+          res.push("keyAgreement");
+        }
+        if (flag & KeyUsageFlags.keyCertSign) {
+          res.push("keyCertSign");
+        }
+        if (flag & KeyUsageFlags.keyEncipherment) {
+          res.push("keyEncipherment");
+        }
+        if (flag & KeyUsageFlags.nonRepudiation) {
+          res.push("nonRepudiation");
+        }
+        return res;
+      }
+      toString() {
+        return `[${this.toJSON().join(", ")}]`;
+      }
+    };
+    exports2.KeyUsage = KeyUsage;
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/name_constraints.js
+var require_name_constraints = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/name_constraints.js"(exports2) {
+    "use strict";
+    var GeneralSubtrees_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.NameConstraints = exports2.GeneralSubtrees = exports2.GeneralSubtree = exports2.id_ce_nameConstraints = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var general_name_1 = require_general_name();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_nameConstraints = `${object_identifiers_1.id_ce}.30`;
+    var GeneralSubtree = class {
+      base = new general_name_1.GeneralName();
+      minimum = 0;
+      maximum;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.GeneralSubtree = GeneralSubtree;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: general_name_1.GeneralName })
+    ], GeneralSubtree.prototype, "base", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        context: 0,
+        defaultValue: 0,
+        implicit: true
+      })
+    ], GeneralSubtree.prototype, "minimum", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        context: 1,
+        optional: true,
+        implicit: true
+      })
+    ], GeneralSubtree.prototype, "maximum", void 0);
+    var GeneralSubtrees = GeneralSubtrees_1 = class GeneralSubtrees extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, GeneralSubtrees_1.prototype);
+      }
+    };
+    exports2.GeneralSubtrees = GeneralSubtrees;
+    exports2.GeneralSubtrees = GeneralSubtrees = GeneralSubtrees_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: GeneralSubtree
+      })
+    ], GeneralSubtrees);
+    var NameConstraints = class {
+      permittedSubtrees;
+      excludedSubtrees;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.NameConstraints = NameConstraints;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: GeneralSubtrees,
+        context: 0,
+        optional: true,
+        implicit: true
+      })
+    ], NameConstraints.prototype, "permittedSubtrees", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: GeneralSubtrees,
+        context: 1,
+        optional: true,
+        implicit: true
+      })
+    ], NameConstraints.prototype, "excludedSubtrees", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/policy_constraints.js
+var require_policy_constraints = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/policy_constraints.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.PolicyConstraints = exports2.id_ce_policyConstraints = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_policyConstraints = `${object_identifiers_1.id_ce}.36`;
+    var PolicyConstraints = class {
+      requireExplicitPolicy;
+      inhibitPolicyMapping;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.PolicyConstraints = PolicyConstraints;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        context: 0,
+        implicit: true,
+        optional: true,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], PolicyConstraints.prototype, "requireExplicitPolicy", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        context: 1,
+        implicit: true,
+        optional: true,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], PolicyConstraints.prototype, "inhibitPolicyMapping", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/policy_mappings.js
+var require_policy_mappings = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/policy_mappings.js"(exports2) {
+    "use strict";
+    var PolicyMappings_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.PolicyMappings = exports2.PolicyMapping = exports2.id_ce_policyMappings = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_policyMappings = `${object_identifiers_1.id_ce}.33`;
+    var PolicyMapping = class {
+      issuerDomainPolicy = "";
+      subjectDomainPolicy = "";
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.PolicyMapping = PolicyMapping;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], PolicyMapping.prototype, "issuerDomainPolicy", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], PolicyMapping.prototype, "subjectDomainPolicy", void 0);
+    var PolicyMappings = PolicyMappings_1 = class PolicyMappings extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, PolicyMappings_1.prototype);
+      }
+    };
+    exports2.PolicyMappings = PolicyMappings;
+    exports2.PolicyMappings = PolicyMappings = PolicyMappings_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: PolicyMapping
+      })
+    ], PolicyMappings);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/subject_alternative_name.js
+var require_subject_alternative_name = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/subject_alternative_name.js"(exports2) {
+    "use strict";
+    var SubjectAlternativeName_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SubjectAlternativeName = exports2.id_ce_subjectAltName = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var general_names_1 = require_general_names();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_subjectAltName = `${object_identifiers_1.id_ce}.17`;
+    var SubjectAlternativeName = SubjectAlternativeName_1 = class SubjectAlternativeName extends general_names_1.GeneralNames {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, SubjectAlternativeName_1.prototype);
+      }
+    };
+    exports2.SubjectAlternativeName = SubjectAlternativeName;
+    exports2.SubjectAlternativeName = SubjectAlternativeName = SubjectAlternativeName_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], SubjectAlternativeName);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/attribute.js
+var require_attribute = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/attribute.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Attribute = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var Attribute = class {
+      type = "";
+      values = [];
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.Attribute = Attribute;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], Attribute.prototype, "type", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Any,
+        repeated: "set"
+      })
+    ], Attribute.prototype, "values", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/subject_directory_attributes.js
+var require_subject_directory_attributes = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/subject_directory_attributes.js"(exports2) {
+    "use strict";
+    var SubjectDirectoryAttributes_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SubjectDirectoryAttributes = exports2.id_ce_subjectDirectoryAttributes = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var attribute_1 = require_attribute();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_subjectDirectoryAttributes = `${object_identifiers_1.id_ce}.9`;
+    var SubjectDirectoryAttributes = SubjectDirectoryAttributes_1 = class SubjectDirectoryAttributes extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, SubjectDirectoryAttributes_1.prototype);
+      }
+    };
+    exports2.SubjectDirectoryAttributes = SubjectDirectoryAttributes;
+    exports2.SubjectDirectoryAttributes = SubjectDirectoryAttributes = SubjectDirectoryAttributes_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: attribute_1.Attribute
+      })
+    ], SubjectDirectoryAttributes);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/subject_key_identifier.js
+var require_subject_key_identifier = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/subject_key_identifier.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SubjectKeyIdentifier = exports2.id_ce_subjectKeyIdentifier = void 0;
+    var object_identifiers_1 = require_object_identifiers();
+    var authority_key_identifier_1 = require_authority_key_identifier();
+    exports2.id_ce_subjectKeyIdentifier = `${object_identifiers_1.id_ce}.14`;
+    var SubjectKeyIdentifier = class extends authority_key_identifier_1.KeyIdentifier {
+    };
+    exports2.SubjectKeyIdentifier = SubjectKeyIdentifier;
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/private_key_usage_period.js
+var require_private_key_usage_period = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/private_key_usage_period.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.PrivateKeyUsagePeriod = exports2.id_ce_privateKeyUsagePeriod = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    exports2.id_ce_privateKeyUsagePeriod = `${object_identifiers_1.id_ce}.16`;
+    var PrivateKeyUsagePeriod = class {
+      notBefore;
+      notAfter;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.PrivateKeyUsagePeriod = PrivateKeyUsagePeriod;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.GeneralizedTime,
+        context: 0,
+        implicit: true,
+        optional: true
+      })
+    ], PrivateKeyUsagePeriod.prototype, "notBefore", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.GeneralizedTime,
+        context: 1,
+        implicit: true,
+        optional: true
+      })
+    ], PrivateKeyUsagePeriod.prototype, "notAfter", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/entrust_version_info.js
+var require_entrust_version_info = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/entrust_version_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.EntrustVersionInfo = exports2.EntrustInfo = exports2.EntrustInfoFlags = exports2.id_entrust_entrustVersInfo = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    exports2.id_entrust_entrustVersInfo = "1.2.840.113533.7.65.0";
+    var EntrustInfoFlags;
+    (function(EntrustInfoFlags2) {
+      EntrustInfoFlags2[EntrustInfoFlags2["keyUpdateAllowed"] = 1] = "keyUpdateAllowed";
+      EntrustInfoFlags2[EntrustInfoFlags2["newExtensions"] = 2] = "newExtensions";
+      EntrustInfoFlags2[EntrustInfoFlags2["pKIXCertificate"] = 4] = "pKIXCertificate";
+    })(EntrustInfoFlags || (exports2.EntrustInfoFlags = EntrustInfoFlags = {}));
+    var EntrustInfo = class extends asn1_schema_1.BitString {
+      toJSON() {
+        const res = [];
+        const flags = this.toNumber();
+        if (flags & EntrustInfoFlags.pKIXCertificate) {
+          res.push("pKIXCertificate");
+        }
+        if (flags & EntrustInfoFlags.newExtensions) {
+          res.push("newExtensions");
+        }
+        if (flags & EntrustInfoFlags.keyUpdateAllowed) {
+          res.push("keyUpdateAllowed");
+        }
+        return res;
+      }
+      toString() {
+        return `[${this.toJSON().join(", ")}]`;
+      }
+    };
+    exports2.EntrustInfo = EntrustInfo;
+    var EntrustVersionInfo = class {
+      entrustVers = "";
+      entrustInfoFlags = new EntrustInfo();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.EntrustVersionInfo = EntrustVersionInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.GeneralString })
+    ], EntrustVersionInfo.prototype, "entrustVers", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: EntrustInfo })
+    ], EntrustVersionInfo.prototype, "entrustInfoFlags", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/subject_info_access.js
+var require_subject_info_access = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/subject_info_access.js"(exports2) {
+    "use strict";
+    var SubjectInfoAccessSyntax_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SubjectInfoAccessSyntax = exports2.id_pe_subjectInfoAccess = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var object_identifiers_1 = require_object_identifiers();
+    var authority_information_access_1 = require_authority_information_access();
+    exports2.id_pe_subjectInfoAccess = `${object_identifiers_1.id_pe}.11`;
+    var SubjectInfoAccessSyntax = SubjectInfoAccessSyntax_1 = class SubjectInfoAccessSyntax extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, SubjectInfoAccessSyntax_1.prototype);
+      }
+    };
+    exports2.SubjectInfoAccessSyntax = SubjectInfoAccessSyntax;
+    exports2.SubjectInfoAccessSyntax = SubjectInfoAccessSyntax = SubjectInfoAccessSyntax_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: authority_information_access_1.AccessDescription
+      })
+    ], SubjectInfoAccessSyntax);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extensions/index.js
+var require_extensions = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extensions/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_authority_information_access(), exports2);
+    tslib_1.__exportStar(require_authority_key_identifier(), exports2);
+    tslib_1.__exportStar(require_basic_constraints(), exports2);
+    tslib_1.__exportStar(require_certificate_issuer(), exports2);
+    tslib_1.__exportStar(require_certificate_policies(), exports2);
+    tslib_1.__exportStar(require_crl_delta_indicator(), exports2);
+    tslib_1.__exportStar(require_crl_distribution_points(), exports2);
+    tslib_1.__exportStar(require_crl_freshest(), exports2);
+    tslib_1.__exportStar(require_crl_issuing_distribution_point(), exports2);
+    tslib_1.__exportStar(require_crl_number(), exports2);
+    tslib_1.__exportStar(require_crl_reason(), exports2);
+    tslib_1.__exportStar(require_extended_key_usage(), exports2);
+    tslib_1.__exportStar(require_inhibit_any_policy(), exports2);
+    tslib_1.__exportStar(require_invalidity_date(), exports2);
+    tslib_1.__exportStar(require_issuer_alternative_name(), exports2);
+    tslib_1.__exportStar(require_key_usage(), exports2);
+    tslib_1.__exportStar(require_name_constraints(), exports2);
+    tslib_1.__exportStar(require_policy_constraints(), exports2);
+    tslib_1.__exportStar(require_policy_mappings(), exports2);
+    tslib_1.__exportStar(require_subject_alternative_name(), exports2);
+    tslib_1.__exportStar(require_subject_directory_attributes(), exports2);
+    tslib_1.__exportStar(require_subject_key_identifier(), exports2);
+    tslib_1.__exportStar(require_private_key_usage_period(), exports2);
+    tslib_1.__exportStar(require_entrust_version_info(), exports2);
+    tslib_1.__exportStar(require_subject_info_access(), exports2);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/algorithm_identifier.js
+var require_algorithm_identifier = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/algorithm_identifier.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AlgorithmIdentifier = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var bytes_1 = require_bytes();
+    var AlgorithmIdentifier = class _AlgorithmIdentifier {
+      algorithm = "";
+      parameters;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+      isEqual(data) {
+        return data instanceof _AlgorithmIdentifier && data.algorithm == this.algorithm && (data.parameters && this.parameters && (0, bytes_1.equal)(data.parameters, this.parameters) || data.parameters === this.parameters);
+      }
+    };
+    exports2.AlgorithmIdentifier = AlgorithmIdentifier;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], AlgorithmIdentifier.prototype, "algorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Any,
+        optional: true
+      })
+    ], AlgorithmIdentifier.prototype, "parameters", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/subject_public_key_info.js
+var require_subject_public_key_info = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/subject_public_key_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SubjectPublicKeyInfo = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var algorithm_identifier_1 = require_algorithm_identifier();
+    var SubjectPublicKeyInfo = class {
+      algorithm = new algorithm_identifier_1.AlgorithmIdentifier();
+      subjectPublicKey = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.SubjectPublicKeyInfo = SubjectPublicKeyInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: algorithm_identifier_1.AlgorithmIdentifier })
+    ], SubjectPublicKeyInfo.prototype, "algorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.BitString })
+    ], SubjectPublicKeyInfo.prototype, "subjectPublicKey", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/time.js
+var require_time = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/time.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Time = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var Time = class Time {
+      utcTime;
+      generalTime;
+      constructor(time3) {
+        if (time3) {
+          if (typeof time3 === "string" || typeof time3 === "number" || time3 instanceof Date) {
+            const date5 = new Date(time3);
+            date5.setUTCMilliseconds(0);
+            if (date5.getUTCFullYear() > 2049) {
+              this.generalTime = date5;
+            } else {
+              this.utcTime = date5;
+            }
+          } else {
+            Object.assign(this, time3);
+          }
+        }
+      }
+      getTime() {
+        const time3 = this.utcTime || this.generalTime;
+        if (!time3) {
+          throw new Error("Cannot get time from CHOICE object");
+        }
+        return time3;
+      }
+    };
+    exports2.Time = Time;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.UTCTime })
+    ], Time.prototype, "utcTime", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.GeneralizedTime })
+    ], Time.prototype, "generalTime", void 0);
+    exports2.Time = Time = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], Time);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/validity.js
+var require_validity = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/validity.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Validity = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var time_1 = require_time();
+    var Validity = class {
+      notBefore = new time_1.Time(/* @__PURE__ */ new Date());
+      notAfter = new time_1.Time(/* @__PURE__ */ new Date());
+      constructor(params) {
+        if (params) {
+          this.notBefore = new time_1.Time(params.notBefore);
+          this.notAfter = new time_1.Time(params.notAfter);
+        }
+      }
+    };
+    exports2.Validity = Validity;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: time_1.Time })
+    ], Validity.prototype, "notBefore", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: time_1.Time })
+    ], Validity.prototype, "notAfter", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/extension.js
+var require_extension2 = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/extension.js"(exports2) {
+    "use strict";
+    var Extensions_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Extensions = exports2.Extension = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var Extension = class _Extension {
+      static CRITICAL = false;
+      extnID = "";
+      critical = _Extension.CRITICAL;
+      extnValue = new asn1_schema_1.OctetString();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.Extension = Extension;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], Extension.prototype, "extnID", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Boolean,
+        defaultValue: Extension.CRITICAL
+      })
+    ], Extension.prototype, "critical", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.OctetString })
+    ], Extension.prototype, "extnValue", void 0);
+    var Extensions = Extensions_1 = class Extensions extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, Extensions_1.prototype);
+      }
+    };
+    exports2.Extensions = Extensions;
+    exports2.Extensions = Extensions = Extensions_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: Extension
+      })
+    ], Extensions);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/types.js
+var require_types3 = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/types.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Version = void 0;
+    var Version;
+    (function(Version2) {
+      Version2[Version2["v1"] = 0] = "v1";
+      Version2[Version2["v2"] = 1] = "v2";
+      Version2[Version2["v3"] = 2] = "v3";
+    })(Version || (exports2.Version = Version = {}));
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/tbs_certificate.js
+var require_tbs_certificate = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/tbs_certificate.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.TBSCertificate = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var algorithm_identifier_1 = require_algorithm_identifier();
+    var name_1 = require_name();
+    var subject_public_key_info_1 = require_subject_public_key_info();
+    var validity_1 = require_validity();
+    var extension_1 = require_extension2();
+    var types_1 = require_types3();
+    var TBSCertificate = class {
+      version = types_1.Version.v1;
+      serialNumber = new ArrayBuffer(0);
+      signature = new algorithm_identifier_1.AlgorithmIdentifier();
+      issuer = new name_1.Name();
+      validity = new validity_1.Validity();
+      subject = new name_1.Name();
+      subjectPublicKeyInfo = new subject_public_key_info_1.SubjectPublicKeyInfo();
+      issuerUniqueID;
+      subjectUniqueID;
+      extensions;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.TBSCertificate = TBSCertificate;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        context: 0,
+        defaultValue: types_1.Version.v1
+      })
+    ], TBSCertificate.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], TBSCertificate.prototype, "serialNumber", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: algorithm_identifier_1.AlgorithmIdentifier })
+    ], TBSCertificate.prototype, "signature", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: name_1.Name })
+    ], TBSCertificate.prototype, "issuer", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: validity_1.Validity })
+    ], TBSCertificate.prototype, "validity", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: name_1.Name })
+    ], TBSCertificate.prototype, "subject", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: subject_public_key_info_1.SubjectPublicKeyInfo })
+    ], TBSCertificate.prototype, "subjectPublicKeyInfo", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.BitString,
+        context: 1,
+        implicit: true,
+        optional: true
+      })
+    ], TBSCertificate.prototype, "issuerUniqueID", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.BitString,
+        context: 2,
+        implicit: true,
+        optional: true
+      })
+    ], TBSCertificate.prototype, "subjectUniqueID", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: extension_1.Extensions,
+        context: 3,
+        optional: true
+      })
+    ], TBSCertificate.prototype, "extensions", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/certificate.js
+var require_certificate = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/certificate.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Certificate = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var algorithm_identifier_1 = require_algorithm_identifier();
+    var tbs_certificate_1 = require_tbs_certificate();
+    var Certificate = class {
+      tbsCertificate = new tbs_certificate_1.TBSCertificate();
+      tbsCertificateRaw;
+      signatureAlgorithm = new algorithm_identifier_1.AlgorithmIdentifier();
+      signatureValue = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.Certificate = Certificate;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: tbs_certificate_1.TBSCertificate,
+        raw: true
+      })
+    ], Certificate.prototype, "tbsCertificate", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: algorithm_identifier_1.AlgorithmIdentifier })
+    ], Certificate.prototype, "signatureAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.BitString })
+    ], Certificate.prototype, "signatureValue", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/tbs_cert_list.js
+var require_tbs_cert_list = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/tbs_cert_list.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.TBSCertList = exports2.RevokedCertificate = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var algorithm_identifier_1 = require_algorithm_identifier();
+    var name_1 = require_name();
+    var time_1 = require_time();
+    var extension_1 = require_extension2();
+    var RevokedCertificate = class {
+      userCertificate = new ArrayBuffer(0);
+      revocationDate = new time_1.Time();
+      crlEntryExtensions;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.RevokedCertificate = RevokedCertificate;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], RevokedCertificate.prototype, "userCertificate", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: time_1.Time })
+    ], RevokedCertificate.prototype, "revocationDate", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: extension_1.Extension,
+        optional: true,
+        repeated: "sequence"
+      })
+    ], RevokedCertificate.prototype, "crlEntryExtensions", void 0);
+    var TBSCertList = class {
+      version;
+      signature = new algorithm_identifier_1.AlgorithmIdentifier();
+      issuer = new name_1.Name();
+      thisUpdate = new time_1.Time();
+      nextUpdate;
+      revokedCertificates;
+      crlExtensions;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.TBSCertList = TBSCertList;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        optional: true
+      })
+    ], TBSCertList.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: algorithm_identifier_1.AlgorithmIdentifier })
+    ], TBSCertList.prototype, "signature", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: name_1.Name })
+    ], TBSCertList.prototype, "issuer", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: time_1.Time })
+    ], TBSCertList.prototype, "thisUpdate", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: time_1.Time,
+        optional: true
+      })
+    ], TBSCertList.prototype, "nextUpdate", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: RevokedCertificate,
+        repeated: "sequence",
+        optional: true
+      })
+    ], TBSCertList.prototype, "revokedCertificates", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: extension_1.Extension,
+        optional: true,
+        context: 0,
+        repeated: "sequence"
+      })
+    ], TBSCertList.prototype, "crlExtensions", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/certificate_list.js
+var require_certificate_list = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/certificate_list.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.CertificateList = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var algorithm_identifier_1 = require_algorithm_identifier();
+    var tbs_cert_list_1 = require_tbs_cert_list();
+    var CertificateList = class {
+      tbsCertList = new tbs_cert_list_1.TBSCertList();
+      tbsCertListRaw;
+      signatureAlgorithm = new algorithm_identifier_1.AlgorithmIdentifier();
+      signature = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.CertificateList = CertificateList;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: tbs_cert_list_1.TBSCertList,
+        raw: true
+      })
+    ], CertificateList.prototype, "tbsCertList", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: algorithm_identifier_1.AlgorithmIdentifier })
+    ], CertificateList.prototype, "signatureAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.BitString })
+    ], CertificateList.prototype, "signature", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509/build/cjs/index.js
+var require_cjs3 = __commonJS({
+  "node_modules/@peculiar/asn1-x509/build/cjs/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_extensions(), exports2);
+    tslib_1.__exportStar(require_algorithm_identifier(), exports2);
+    tslib_1.__exportStar(require_attribute(), exports2);
+    tslib_1.__exportStar(require_certificate(), exports2);
+    tslib_1.__exportStar(require_certificate_list(), exports2);
+    tslib_1.__exportStar(require_extension2(), exports2);
+    tslib_1.__exportStar(require_general_name(), exports2);
+    tslib_1.__exportStar(require_general_names(), exports2);
+    tslib_1.__exportStar(require_name(), exports2);
+    tslib_1.__exportStar(require_object_identifiers(), exports2);
+    tslib_1.__exportStar(require_subject_public_key_info(), exports2);
+    tslib_1.__exportStar(require_tbs_cert_list(), exports2);
+    tslib_1.__exportStar(require_tbs_certificate(), exports2);
+    tslib_1.__exportStar(require_time(), exports2);
+    tslib_1.__exportStar(require_types3(), exports2);
+    tslib_1.__exportStar(require_validity(), exports2);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/issuer_and_serial_number.js
+var require_issuer_and_serial_number = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/issuer_and_serial_number.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.IssuerAndSerialNumber = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var IssuerAndSerialNumber = class {
+      issuer = new asn1_x509_1.Name();
+      serialNumber = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.IssuerAndSerialNumber = IssuerAndSerialNumber;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.Name })
+    ], IssuerAndSerialNumber.prototype, "issuer", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], IssuerAndSerialNumber.prototype, "serialNumber", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/signer_identifier.js
+var require_signer_identifier = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/signer_identifier.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SignerIdentifier = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var issuer_and_serial_number_1 = require_issuer_and_serial_number();
+    var SignerIdentifier = class SignerIdentifier {
+      subjectKeyIdentifier;
+      issuerAndSerialNumber;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.SignerIdentifier = SignerIdentifier;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.SubjectKeyIdentifier,
+        context: 0,
+        implicit: true
+      })
+    ], SignerIdentifier.prototype, "subjectKeyIdentifier", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: issuer_and_serial_number_1.IssuerAndSerialNumber })
+    ], SignerIdentifier.prototype, "issuerAndSerialNumber", void 0);
+    exports2.SignerIdentifier = SignerIdentifier = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], SignerIdentifier);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/types.js
+var require_types4 = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/types.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.KeyDerivationAlgorithmIdentifier = exports2.MessageAuthenticationCodeAlgorithm = exports2.ContentEncryptionAlgorithmIdentifier = exports2.KeyEncryptionAlgorithmIdentifier = exports2.SignatureAlgorithmIdentifier = exports2.DigestAlgorithmIdentifier = exports2.CMSVersion = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_x509_1 = require_cjs3();
+    var asn1_schema_1 = require_cjs2();
+    var CMSVersion;
+    (function(CMSVersion2) {
+      CMSVersion2[CMSVersion2["v0"] = 0] = "v0";
+      CMSVersion2[CMSVersion2["v1"] = 1] = "v1";
+      CMSVersion2[CMSVersion2["v2"] = 2] = "v2";
+      CMSVersion2[CMSVersion2["v3"] = 3] = "v3";
+      CMSVersion2[CMSVersion2["v4"] = 4] = "v4";
+      CMSVersion2[CMSVersion2["v5"] = 5] = "v5";
+    })(CMSVersion || (exports2.CMSVersion = CMSVersion = {}));
+    var DigestAlgorithmIdentifier = class DigestAlgorithmIdentifier extends asn1_x509_1.AlgorithmIdentifier {
+    };
+    exports2.DigestAlgorithmIdentifier = DigestAlgorithmIdentifier;
+    exports2.DigestAlgorithmIdentifier = DigestAlgorithmIdentifier = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], DigestAlgorithmIdentifier);
+    var SignatureAlgorithmIdentifier = class SignatureAlgorithmIdentifier extends asn1_x509_1.AlgorithmIdentifier {
+    };
+    exports2.SignatureAlgorithmIdentifier = SignatureAlgorithmIdentifier;
+    exports2.SignatureAlgorithmIdentifier = SignatureAlgorithmIdentifier = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], SignatureAlgorithmIdentifier);
+    var KeyEncryptionAlgorithmIdentifier = class KeyEncryptionAlgorithmIdentifier extends asn1_x509_1.AlgorithmIdentifier {
+    };
+    exports2.KeyEncryptionAlgorithmIdentifier = KeyEncryptionAlgorithmIdentifier;
+    exports2.KeyEncryptionAlgorithmIdentifier = KeyEncryptionAlgorithmIdentifier = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], KeyEncryptionAlgorithmIdentifier);
+    var ContentEncryptionAlgorithmIdentifier = class ContentEncryptionAlgorithmIdentifier extends asn1_x509_1.AlgorithmIdentifier {
+    };
+    exports2.ContentEncryptionAlgorithmIdentifier = ContentEncryptionAlgorithmIdentifier;
+    exports2.ContentEncryptionAlgorithmIdentifier = ContentEncryptionAlgorithmIdentifier = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], ContentEncryptionAlgorithmIdentifier);
+    var MessageAuthenticationCodeAlgorithm = class MessageAuthenticationCodeAlgorithm extends asn1_x509_1.AlgorithmIdentifier {
+    };
+    exports2.MessageAuthenticationCodeAlgorithm = MessageAuthenticationCodeAlgorithm;
+    exports2.MessageAuthenticationCodeAlgorithm = MessageAuthenticationCodeAlgorithm = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], MessageAuthenticationCodeAlgorithm);
+    var KeyDerivationAlgorithmIdentifier = class KeyDerivationAlgorithmIdentifier extends asn1_x509_1.AlgorithmIdentifier {
+    };
+    exports2.KeyDerivationAlgorithmIdentifier = KeyDerivationAlgorithmIdentifier;
+    exports2.KeyDerivationAlgorithmIdentifier = KeyDerivationAlgorithmIdentifier = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], KeyDerivationAlgorithmIdentifier);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/attribute.js
+var require_attribute2 = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/attribute.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Attribute = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var Attribute = class {
+      attrType = "";
+      attrValues = [];
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.Attribute = Attribute;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], Attribute.prototype, "attrType", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Any,
+        repeated: "set"
+      })
+    ], Attribute.prototype, "attrValues", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/signer_info.js
+var require_signer_info = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/signer_info.js"(exports2) {
+    "use strict";
+    var SignerInfos_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SignerInfos = exports2.SignerInfo = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var signer_identifier_1 = require_signer_identifier();
+    var types_1 = require_types4();
+    var attribute_1 = require_attribute2();
+    var SignerInfo = class {
+      version = types_1.CMSVersion.v0;
+      sid = new signer_identifier_1.SignerIdentifier();
+      digestAlgorithm = new types_1.DigestAlgorithmIdentifier();
+      signedAttrs;
+      signedAttrsRaw;
+      signatureAlgorithm = new types_1.SignatureAlgorithmIdentifier();
+      signature = new asn1_schema_1.OctetString();
+      unsignedAttrs;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.SignerInfo = SignerInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], SignerInfo.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: signer_identifier_1.SignerIdentifier })
+    ], SignerInfo.prototype, "sid", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: types_1.DigestAlgorithmIdentifier })
+    ], SignerInfo.prototype, "digestAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: attribute_1.Attribute,
+        repeated: "set",
+        context: 0,
+        implicit: true,
+        optional: true,
+        raw: true
+      })
+    ], SignerInfo.prototype, "signedAttrs", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: types_1.SignatureAlgorithmIdentifier })
+    ], SignerInfo.prototype, "signatureAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.OctetString })
+    ], SignerInfo.prototype, "signature", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: attribute_1.Attribute,
+        repeated: "set",
+        context: 1,
+        implicit: true,
+        optional: true
+      })
+    ], SignerInfo.prototype, "unsignedAttrs", void 0);
+    var SignerInfos = SignerInfos_1 = class SignerInfos extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, SignerInfos_1.prototype);
+      }
+    };
+    exports2.SignerInfos = SignerInfos;
+    exports2.SignerInfos = SignerInfos = SignerInfos_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Set,
+        itemType: SignerInfo
+      })
+    ], SignerInfos);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/attributes/counter_signature.js
+var require_counter_signature = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/attributes/counter_signature.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.CounterSignature = exports2.id_counterSignature = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var signer_info_1 = require_signer_info();
+    exports2.id_counterSignature = "1.2.840.113549.1.9.6";
+    var CounterSignature = class CounterSignature extends signer_info_1.SignerInfo {
+    };
+    exports2.CounterSignature = CounterSignature;
+    exports2.CounterSignature = CounterSignature = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], CounterSignature);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/attributes/message_digest.js
+var require_message_digest = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/attributes/message_digest.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.MessageDigest = exports2.id_messageDigest = void 0;
+    var asn1_schema_1 = require_cjs2();
+    exports2.id_messageDigest = "1.2.840.113549.1.9.4";
+    var MessageDigest = class extends asn1_schema_1.OctetString {
+    };
+    exports2.MessageDigest = MessageDigest;
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/attributes/signing_time.js
+var require_signing_time = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/attributes/signing_time.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SigningTime = exports2.id_signingTime = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_x509_1 = require_cjs3();
+    var asn1_schema_1 = require_cjs2();
+    exports2.id_signingTime = "1.2.840.113549.1.9.5";
+    var SigningTime = class SigningTime extends asn1_x509_1.Time {
+    };
+    exports2.SigningTime = SigningTime;
+    exports2.SigningTime = SigningTime = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], SigningTime);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/attributes/index.js
+var require_attributes = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/attributes/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.id_contentType = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_counter_signature(), exports2);
+    tslib_1.__exportStar(require_message_digest(), exports2);
+    tslib_1.__exportStar(require_signing_time(), exports2);
+    exports2.id_contentType = "1.2.840.113549.1.9.3";
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/aa_clear_attrs.js
+var require_aa_clear_attrs = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/aa_clear_attrs.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.ACClearAttrs = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var ACClearAttrs = class {
+      acIssuer = new asn1_x509_1.GeneralName();
+      acSerial = 0;
+      attrs = [];
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.ACClearAttrs = ACClearAttrs;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.GeneralName })
+    ], ACClearAttrs.prototype, "acIssuer", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], ACClearAttrs.prototype, "acSerial", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.Attribute,
+        repeated: "sequence"
+      })
+    ], ACClearAttrs.prototype, "attrs", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/attr_spec.js
+var require_attr_spec = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/attr_spec.js"(exports2) {
+    "use strict";
+    var AttrSpec_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AttrSpec = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var AttrSpec = AttrSpec_1 = class AttrSpec extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, AttrSpec_1.prototype);
+      }
+    };
+    exports2.AttrSpec = AttrSpec;
+    exports2.AttrSpec = AttrSpec = AttrSpec_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: asn1_schema_1.AsnPropTypes.ObjectIdentifier
+      })
+    ], AttrSpec);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/aa_controls.js
+var require_aa_controls = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/aa_controls.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AAControls = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var attr_spec_1 = require_attr_spec();
+    var AAControls = class {
+      pathLenConstraint;
+      permittedAttrs;
+      excludedAttrs;
+      permitUnSpecified = true;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.AAControls = AAControls;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        optional: true
+      })
+    ], AAControls.prototype, "pathLenConstraint", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: attr_spec_1.AttrSpec,
+        implicit: true,
+        context: 0,
+        optional: true
+      })
+    ], AAControls.prototype, "permittedAttrs", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: attr_spec_1.AttrSpec,
+        implicit: true,
+        context: 1,
+        optional: true
+      })
+    ], AAControls.prototype, "excludedAttrs", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Boolean,
+        defaultValue: true
+      })
+    ], AAControls.prototype, "permitUnSpecified", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/issuer_serial.js
+var require_issuer_serial = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/issuer_serial.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.IssuerSerial = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var IssuerSerial = class {
+      issuer = new asn1_x509_1.GeneralNames();
+      serial = new ArrayBuffer(0);
+      issuerUID = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.IssuerSerial = IssuerSerial;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.GeneralNames })
+    ], IssuerSerial.prototype, "issuer", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], IssuerSerial.prototype, "serial", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.BitString,
+        optional: true
+      })
+    ], IssuerSerial.prototype, "issuerUID", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/object_digest_info.js
+var require_object_digest_info = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/object_digest_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.ObjectDigestInfo = exports2.DigestedObjectType = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var DigestedObjectType;
+    (function(DigestedObjectType2) {
+      DigestedObjectType2[DigestedObjectType2["publicKey"] = 0] = "publicKey";
+      DigestedObjectType2[DigestedObjectType2["publicKeyCert"] = 1] = "publicKeyCert";
+      DigestedObjectType2[DigestedObjectType2["otherObjectTypes"] = 2] = "otherObjectTypes";
+    })(DigestedObjectType || (exports2.DigestedObjectType = DigestedObjectType = {}));
+    var ObjectDigestInfo = class {
+      digestedObjectType = DigestedObjectType.publicKey;
+      otherObjectTypeID;
+      digestAlgorithm = new asn1_x509_1.AlgorithmIdentifier();
+      objectDigest = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.ObjectDigestInfo = ObjectDigestInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Enumerated })
+    ], ObjectDigestInfo.prototype, "digestedObjectType", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.ObjectIdentifier,
+        optional: true
+      })
+    ], ObjectDigestInfo.prototype, "otherObjectTypeID", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.AlgorithmIdentifier })
+    ], ObjectDigestInfo.prototype, "digestAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.BitString })
+    ], ObjectDigestInfo.prototype, "objectDigest", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/v2_form.js
+var require_v2_form = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/v2_form.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.V2Form = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var issuer_serial_1 = require_issuer_serial();
+    var object_digest_info_1 = require_object_digest_info();
+    var V2Form = class {
+      issuerName;
+      baseCertificateID;
+      objectDigestInfo;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.V2Form = V2Form;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.GeneralNames,
+        optional: true
+      })
+    ], V2Form.prototype, "issuerName", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: issuer_serial_1.IssuerSerial,
+        context: 0,
+        implicit: true,
+        optional: true
+      })
+    ], V2Form.prototype, "baseCertificateID", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: object_digest_info_1.ObjectDigestInfo,
+        context: 1,
+        implicit: true,
+        optional: true
+      })
+    ], V2Form.prototype, "objectDigestInfo", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/attr_cert_issuer.js
+var require_attr_cert_issuer = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/attr_cert_issuer.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AttCertIssuer = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var v2_form_1 = require_v2_form();
+    var AttCertIssuer = class AttCertIssuer {
+      v1Form;
+      v2Form;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.AttCertIssuer = AttCertIssuer;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.GeneralName,
+        repeated: "sequence"
+      })
+    ], AttCertIssuer.prototype, "v1Form", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: v2_form_1.V2Form,
+        context: 0,
+        implicit: true
+      })
+    ], AttCertIssuer.prototype, "v2Form", void 0);
+    exports2.AttCertIssuer = AttCertIssuer = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], AttCertIssuer);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/attr_cert_validity_period.js
+var require_attr_cert_validity_period = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/attr_cert_validity_period.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AttCertValidityPeriod = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var AttCertValidityPeriod = class {
+      notBeforeTime = /* @__PURE__ */ new Date();
+      notAfterTime = /* @__PURE__ */ new Date();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.AttCertValidityPeriod = AttCertValidityPeriod;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.GeneralizedTime })
+    ], AttCertValidityPeriod.prototype, "notBeforeTime", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.GeneralizedTime })
+    ], AttCertValidityPeriod.prototype, "notAfterTime", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/holder.js
+var require_holder = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/holder.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Holder = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var issuer_serial_1 = require_issuer_serial();
+    var object_digest_info_1 = require_object_digest_info();
+    var Holder = class {
+      baseCertificateID;
+      entityName;
+      objectDigestInfo;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.Holder = Holder;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: issuer_serial_1.IssuerSerial,
+        implicit: true,
+        context: 0,
+        optional: true
+      })
+    ], Holder.prototype, "baseCertificateID", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.GeneralNames,
+        implicit: true,
+        context: 1,
+        optional: true
+      })
+    ], Holder.prototype, "entityName", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: object_digest_info_1.ObjectDigestInfo,
+        implicit: true,
+        context: 2,
+        optional: true
+      })
+    ], Holder.prototype, "objectDigestInfo", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/attribute_certificate_info.js
+var require_attribute_certificate_info = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/attribute_certificate_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AttributeCertificateInfo = exports2.AttCertVersion = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var holder_1 = require_holder();
+    var attr_cert_issuer_1 = require_attr_cert_issuer();
+    var attr_cert_validity_period_1 = require_attr_cert_validity_period();
+    var AttCertVersion;
+    (function(AttCertVersion2) {
+      AttCertVersion2[AttCertVersion2["v2"] = 1] = "v2";
+    })(AttCertVersion || (exports2.AttCertVersion = AttCertVersion = {}));
+    var AttributeCertificateInfo = class {
+      version = AttCertVersion.v2;
+      holder = new holder_1.Holder();
+      issuer = new attr_cert_issuer_1.AttCertIssuer();
+      signature = new asn1_x509_1.AlgorithmIdentifier();
+      serialNumber = new ArrayBuffer(0);
+      attrCertValidityPeriod = new attr_cert_validity_period_1.AttCertValidityPeriod();
+      attributes = [];
+      issuerUniqueID;
+      extensions;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.AttributeCertificateInfo = AttributeCertificateInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], AttributeCertificateInfo.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: holder_1.Holder })
+    ], AttributeCertificateInfo.prototype, "holder", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: attr_cert_issuer_1.AttCertIssuer })
+    ], AttributeCertificateInfo.prototype, "issuer", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.AlgorithmIdentifier })
+    ], AttributeCertificateInfo.prototype, "signature", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], AttributeCertificateInfo.prototype, "serialNumber", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: attr_cert_validity_period_1.AttCertValidityPeriod })
+    ], AttributeCertificateInfo.prototype, "attrCertValidityPeriod", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.Attribute,
+        repeated: "sequence"
+      })
+    ], AttributeCertificateInfo.prototype, "attributes", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.BitString,
+        optional: true
+      })
+    ], AttributeCertificateInfo.prototype, "issuerUniqueID", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.Extensions,
+        optional: true
+      })
+    ], AttributeCertificateInfo.prototype, "extensions", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/attribute_certificate.js
+var require_attribute_certificate = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/attribute_certificate.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AttributeCertificate = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var attribute_certificate_info_1 = require_attribute_certificate_info();
+    var AttributeCertificate = class {
+      acinfo = new attribute_certificate_info_1.AttributeCertificateInfo();
+      signatureAlgorithm = new asn1_x509_1.AlgorithmIdentifier();
+      signatureValue = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.AttributeCertificate = AttributeCertificate;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: attribute_certificate_info_1.AttributeCertificateInfo })
+    ], AttributeCertificate.prototype, "acinfo", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.AlgorithmIdentifier })
+    ], AttributeCertificate.prototype, "signatureAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.BitString })
+    ], AttributeCertificate.prototype, "signatureValue", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/class_list.js
+var require_class_list = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/class_list.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.ClassList = exports2.ClassListFlags = void 0;
+    var asn1_schema_1 = require_cjs2();
+    var ClassListFlags;
+    (function(ClassListFlags2) {
+      ClassListFlags2[ClassListFlags2["unmarked"] = 1] = "unmarked";
+      ClassListFlags2[ClassListFlags2["unclassified"] = 2] = "unclassified";
+      ClassListFlags2[ClassListFlags2["restricted"] = 4] = "restricted";
+      ClassListFlags2[ClassListFlags2["confidential"] = 8] = "confidential";
+      ClassListFlags2[ClassListFlags2["secret"] = 16] = "secret";
+      ClassListFlags2[ClassListFlags2["topSecret"] = 32] = "topSecret";
+    })(ClassListFlags || (exports2.ClassListFlags = ClassListFlags = {}));
+    var ClassList = class extends asn1_schema_1.BitString {
+    };
+    exports2.ClassList = ClassList;
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/security_category.js
+var require_security_category = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/security_category.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SecurityCategory = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var SecurityCategory = class {
+      type = "";
+      value = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.SecurityCategory = SecurityCategory;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.ObjectIdentifier,
+        implicit: true,
+        context: 0
+      })
+    ], SecurityCategory.prototype, "type", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Any,
+        implicit: true,
+        context: 1
+      })
+    ], SecurityCategory.prototype, "value", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/clearance.js
+var require_clearance = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/clearance.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Clearance = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var class_list_1 = require_class_list();
+    var security_category_1 = require_security_category();
+    var Clearance = class {
+      policyId = "";
+      classList = new class_list_1.ClassList(class_list_1.ClassListFlags.unclassified);
+      securityCategories;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.Clearance = Clearance;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], Clearance.prototype, "policyId", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: class_list_1.ClassList,
+        defaultValue: new class_list_1.ClassList(class_list_1.ClassListFlags.unclassified)
+      })
+    ], Clearance.prototype, "classList", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: security_category_1.SecurityCategory,
+        repeated: "set"
+      })
+    ], Clearance.prototype, "securityCategories", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/ietf_attr_syntax.js
+var require_ietf_attr_syntax = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/ietf_attr_syntax.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.IetfAttrSyntax = exports2.IetfAttrSyntaxValueChoices = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var IetfAttrSyntaxValueChoices = class {
+      cotets;
+      oid;
+      string;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.IetfAttrSyntaxValueChoices = IetfAttrSyntaxValueChoices;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.OctetString })
+    ], IetfAttrSyntaxValueChoices.prototype, "cotets", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], IetfAttrSyntaxValueChoices.prototype, "oid", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Utf8String })
+    ], IetfAttrSyntaxValueChoices.prototype, "string", void 0);
+    var IetfAttrSyntax = class {
+      policyAuthority;
+      values = [];
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.IetfAttrSyntax = IetfAttrSyntax;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.GeneralNames,
+        implicit: true,
+        context: 0,
+        optional: true
+      })
+    ], IetfAttrSyntax.prototype, "policyAuthority", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: IetfAttrSyntaxValueChoices,
+        repeated: "sequence"
+      })
+    ], IetfAttrSyntax.prototype, "values", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/object_identifiers.js
+var require_object_identifiers2 = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/object_identifiers.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.id_at_clearance = exports2.id_at_role = exports2.id_at = exports2.id_aca_encAttrs = exports2.id_aca_group = exports2.id_aca_chargingIdentity = exports2.id_aca_accessIdentity = exports2.id_aca_authenticationInfo = exports2.id_aca = exports2.id_ce_targetInformation = exports2.id_pe_ac_proxying = exports2.id_pe_aaControls = exports2.id_pe_ac_auditIdentity = void 0;
+    var asn1_x509_1 = require_cjs3();
+    exports2.id_pe_ac_auditIdentity = `${asn1_x509_1.id_pe}.4`;
+    exports2.id_pe_aaControls = `${asn1_x509_1.id_pe}.6`;
+    exports2.id_pe_ac_proxying = `${asn1_x509_1.id_pe}.10`;
+    exports2.id_ce_targetInformation = `${asn1_x509_1.id_ce}.55`;
+    exports2.id_aca = `${asn1_x509_1.id_pkix}.10`;
+    exports2.id_aca_authenticationInfo = `${exports2.id_aca}.1`;
+    exports2.id_aca_accessIdentity = `${exports2.id_aca}.2`;
+    exports2.id_aca_chargingIdentity = `${exports2.id_aca}.3`;
+    exports2.id_aca_group = `${exports2.id_aca}.4`;
+    exports2.id_aca_encAttrs = `${exports2.id_aca}.6`;
+    exports2.id_at = "2.5.4";
+    exports2.id_at_role = `${exports2.id_at}.72`;
+    exports2.id_at_clearance = "2.5.1.5.55";
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/target.js
+var require_target = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/target.js"(exports2) {
+    "use strict";
+    var Targets_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Targets = exports2.Target = exports2.TargetCert = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var issuer_serial_1 = require_issuer_serial();
+    var object_digest_info_1 = require_object_digest_info();
+    var TargetCert = class {
+      targetCertificate = new issuer_serial_1.IssuerSerial();
+      targetName;
+      certDigestInfo;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.TargetCert = TargetCert;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: issuer_serial_1.IssuerSerial })
+    ], TargetCert.prototype, "targetCertificate", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.GeneralName,
+        optional: true
+      })
+    ], TargetCert.prototype, "targetName", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: object_digest_info_1.ObjectDigestInfo,
+        optional: true
+      })
+    ], TargetCert.prototype, "certDigestInfo", void 0);
+    var Target = class Target {
+      targetName;
+      targetGroup;
+      targetCert;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.Target = Target;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.GeneralName,
+        context: 0,
+        implicit: true
+      })
+    ], Target.prototype, "targetName", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.GeneralName,
+        context: 1,
+        implicit: true
+      })
+    ], Target.prototype, "targetGroup", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: TargetCert,
+        context: 2,
+        implicit: true
+      })
+    ], Target.prototype, "targetCert", void 0);
+    exports2.Target = Target = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], Target);
+    var Targets = Targets_1 = class Targets extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, Targets_1.prototype);
+      }
+    };
+    exports2.Targets = Targets;
+    exports2.Targets = Targets = Targets_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: Target
+      })
+    ], Targets);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/proxy_info.js
+var require_proxy_info = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/proxy_info.js"(exports2) {
+    "use strict";
+    var ProxyInfo_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.ProxyInfo = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var target_1 = require_target();
+    var ProxyInfo = ProxyInfo_1 = class ProxyInfo extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, ProxyInfo_1.prototype);
+      }
+    };
+    exports2.ProxyInfo = ProxyInfo;
+    exports2.ProxyInfo = ProxyInfo = ProxyInfo_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: target_1.Targets
+      })
+    ], ProxyInfo);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/role_syntax.js
+var require_role_syntax = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/role_syntax.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.RoleSyntax = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var RoleSyntax = class {
+      roleAuthority;
+      roleName;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.RoleSyntax = RoleSyntax;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.GeneralNames,
+        implicit: true,
+        context: 0,
+        optional: true
+      })
+    ], RoleSyntax.prototype, "roleAuthority", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.GeneralName,
+        implicit: true,
+        context: 1
+      })
+    ], RoleSyntax.prototype, "roleName", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/svce_auth_info.js
+var require_svce_auth_info = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/svce_auth_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SvceAuthInfo = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var SvceAuthInfo = class {
+      service = new asn1_x509_1.GeneralName();
+      ident = new asn1_x509_1.GeneralName();
+      authInfo;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.SvceAuthInfo = SvceAuthInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.GeneralName })
+    ], SvceAuthInfo.prototype, "service", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.GeneralName })
+    ], SvceAuthInfo.prototype, "ident", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.OctetString,
+        optional: true
+      })
+    ], SvceAuthInfo.prototype, "authInfo", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-x509-attr/build/cjs/index.js
+var require_cjs4 = __commonJS({
+  "node_modules/@peculiar/asn1-x509-attr/build/cjs/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_aa_clear_attrs(), exports2);
+    tslib_1.__exportStar(require_aa_controls(), exports2);
+    tslib_1.__exportStar(require_attr_cert_issuer(), exports2);
+    tslib_1.__exportStar(require_attr_cert_validity_period(), exports2);
+    tslib_1.__exportStar(require_attr_spec(), exports2);
+    tslib_1.__exportStar(require_attribute_certificate(), exports2);
+    tslib_1.__exportStar(require_attribute_certificate_info(), exports2);
+    tslib_1.__exportStar(require_class_list(), exports2);
+    tslib_1.__exportStar(require_clearance(), exports2);
+    tslib_1.__exportStar(require_holder(), exports2);
+    tslib_1.__exportStar(require_ietf_attr_syntax(), exports2);
+    tslib_1.__exportStar(require_issuer_serial(), exports2);
+    tslib_1.__exportStar(require_object_digest_info(), exports2);
+    tslib_1.__exportStar(require_object_identifiers2(), exports2);
+    tslib_1.__exportStar(require_proxy_info(), exports2);
+    tslib_1.__exportStar(require_role_syntax(), exports2);
+    tslib_1.__exportStar(require_security_category(), exports2);
+    tslib_1.__exportStar(require_svce_auth_info(), exports2);
+    tslib_1.__exportStar(require_target(), exports2);
+    tslib_1.__exportStar(require_v2_form(), exports2);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/certificate_choices.js
+var require_certificate_choices = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/certificate_choices.js"(exports2) {
+    "use strict";
+    var CertificateSet_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.CertificateSet = exports2.CertificateChoices = exports2.OtherCertificateFormat = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var asn1_x509_attr_1 = require_cjs4();
+    var OtherCertificateFormat = class {
+      otherCertFormat = "";
+      otherCert = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.OtherCertificateFormat = OtherCertificateFormat;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], OtherCertificateFormat.prototype, "otherCertFormat", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Any })
+    ], OtherCertificateFormat.prototype, "otherCert", void 0);
+    var CertificateChoices = class CertificateChoices {
+      certificate;
+      v2AttrCert;
+      other;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.CertificateChoices = CertificateChoices;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.Certificate })
+    ], CertificateChoices.prototype, "certificate", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_attr_1.AttributeCertificate,
+        context: 2,
+        implicit: true
+      })
+    ], CertificateChoices.prototype, "v2AttrCert", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: OtherCertificateFormat,
+        context: 3,
+        implicit: true
+      })
+    ], CertificateChoices.prototype, "other", void 0);
+    exports2.CertificateChoices = CertificateChoices = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], CertificateChoices);
+    var CertificateSet = CertificateSet_1 = class CertificateSet extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, CertificateSet_1.prototype);
+      }
+    };
+    exports2.CertificateSet = CertificateSet;
+    exports2.CertificateSet = CertificateSet = CertificateSet_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Set,
+        itemType: CertificateChoices
+      })
+    ], CertificateSet);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/content_info.js
+var require_content_info = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/content_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.ContentInfo = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var ContentInfo = class {
+      contentType = "";
+      content = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.ContentInfo = ContentInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], ContentInfo.prototype, "contentType", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Any,
+        context: 0
+      })
+    ], ContentInfo.prototype, "content", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/encapsulated_content_info.js
+var require_encapsulated_content_info = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/encapsulated_content_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.EncapsulatedContentInfo = exports2.EncapsulatedContent = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var EncapsulatedContent = class EncapsulatedContent {
+      single;
+      any;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.EncapsulatedContent = EncapsulatedContent;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.OctetString })
+    ], EncapsulatedContent.prototype, "single", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Any })
+    ], EncapsulatedContent.prototype, "any", void 0);
+    exports2.EncapsulatedContent = EncapsulatedContent = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], EncapsulatedContent);
+    var EncapsulatedContentInfo = class {
+      eContentType = "";
+      eContent;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.EncapsulatedContentInfo = EncapsulatedContentInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], EncapsulatedContentInfo.prototype, "eContentType", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: EncapsulatedContent,
+        context: 0,
+        optional: true
+      })
+    ], EncapsulatedContentInfo.prototype, "eContent", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/encrypted_content_info.js
+var require_encrypted_content_info = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/encrypted_content_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.EncryptedContentInfo = exports2.EncryptedContent = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var types_1 = require_types4();
+    var EncryptedContent = class EncryptedContent {
+      value;
+      constructedValue;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.EncryptedContent = EncryptedContent;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.OctetString,
+        context: 0,
+        implicit: true,
+        optional: true
+      })
+    ], EncryptedContent.prototype, "value", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.OctetString,
+        converter: asn1_schema_1.AsnConstructedOctetStringConverter,
+        context: 0,
+        implicit: true,
+        optional: true,
+        repeated: "sequence"
+      })
+    ], EncryptedContent.prototype, "constructedValue", void 0);
+    exports2.EncryptedContent = EncryptedContent = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], EncryptedContent);
+    var EncryptedContentInfo = class {
+      contentType = "";
+      contentEncryptionAlgorithm = new types_1.ContentEncryptionAlgorithmIdentifier();
+      encryptedContent;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.EncryptedContentInfo = EncryptedContentInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], EncryptedContentInfo.prototype, "contentType", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: types_1.ContentEncryptionAlgorithmIdentifier })
+    ], EncryptedContentInfo.prototype, "contentEncryptionAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: EncryptedContent,
+        optional: true
+      })
+    ], EncryptedContentInfo.prototype, "encryptedContent", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/other_key_attribute.js
+var require_other_key_attribute = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/other_key_attribute.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.OtherKeyAttribute = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var OtherKeyAttribute = class {
+      keyAttrId = "";
+      keyAttr;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.OtherKeyAttribute = OtherKeyAttribute;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], OtherKeyAttribute.prototype, "keyAttrId", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Any,
+        optional: true
+      })
+    ], OtherKeyAttribute.prototype, "keyAttr", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/key_agree_recipient_info.js
+var require_key_agree_recipient_info = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/key_agree_recipient_info.js"(exports2) {
+    "use strict";
+    var RecipientEncryptedKeys_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.KeyAgreeRecipientInfo = exports2.OriginatorIdentifierOrKey = exports2.OriginatorPublicKey = exports2.RecipientEncryptedKeys = exports2.RecipientEncryptedKey = exports2.KeyAgreeRecipientIdentifier = exports2.RecipientKeyIdentifier = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var types_1 = require_types4();
+    var issuer_and_serial_number_1 = require_issuer_and_serial_number();
+    var other_key_attribute_1 = require_other_key_attribute();
+    var RecipientKeyIdentifier = class {
+      subjectKeyIdentifier = new asn1_x509_1.SubjectKeyIdentifier();
+      date;
+      other;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.RecipientKeyIdentifier = RecipientKeyIdentifier;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.SubjectKeyIdentifier })
+    ], RecipientKeyIdentifier.prototype, "subjectKeyIdentifier", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.GeneralizedTime,
+        optional: true
+      })
+    ], RecipientKeyIdentifier.prototype, "date", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: other_key_attribute_1.OtherKeyAttribute,
+        optional: true
+      })
+    ], RecipientKeyIdentifier.prototype, "other", void 0);
+    var KeyAgreeRecipientIdentifier = class KeyAgreeRecipientIdentifier {
+      rKeyId;
+      issuerAndSerialNumber;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.KeyAgreeRecipientIdentifier = KeyAgreeRecipientIdentifier;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: RecipientKeyIdentifier,
+        context: 0,
+        implicit: true,
+        optional: true
+      })
+    ], KeyAgreeRecipientIdentifier.prototype, "rKeyId", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: issuer_and_serial_number_1.IssuerAndSerialNumber,
+        optional: true
+      })
+    ], KeyAgreeRecipientIdentifier.prototype, "issuerAndSerialNumber", void 0);
+    exports2.KeyAgreeRecipientIdentifier = KeyAgreeRecipientIdentifier = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], KeyAgreeRecipientIdentifier);
+    var RecipientEncryptedKey = class {
+      rid = new KeyAgreeRecipientIdentifier();
+      encryptedKey = new asn1_schema_1.OctetString();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.RecipientEncryptedKey = RecipientEncryptedKey;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: KeyAgreeRecipientIdentifier })
+    ], RecipientEncryptedKey.prototype, "rid", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.OctetString })
+    ], RecipientEncryptedKey.prototype, "encryptedKey", void 0);
+    var RecipientEncryptedKeys = RecipientEncryptedKeys_1 = class RecipientEncryptedKeys extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, RecipientEncryptedKeys_1.prototype);
+      }
+    };
+    exports2.RecipientEncryptedKeys = RecipientEncryptedKeys;
+    exports2.RecipientEncryptedKeys = RecipientEncryptedKeys = RecipientEncryptedKeys_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: RecipientEncryptedKey
+      })
+    ], RecipientEncryptedKeys);
+    var OriginatorPublicKey = class {
+      algorithm = new asn1_x509_1.AlgorithmIdentifier();
+      publicKey = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.OriginatorPublicKey = OriginatorPublicKey;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.AlgorithmIdentifier })
+    ], OriginatorPublicKey.prototype, "algorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.BitString })
+    ], OriginatorPublicKey.prototype, "publicKey", void 0);
+    var OriginatorIdentifierOrKey = class OriginatorIdentifierOrKey {
+      subjectKeyIdentifier;
+      originatorKey;
+      issuerAndSerialNumber;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.OriginatorIdentifierOrKey = OriginatorIdentifierOrKey;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.SubjectKeyIdentifier,
+        context: 0,
+        implicit: true,
+        optional: true
+      })
+    ], OriginatorIdentifierOrKey.prototype, "subjectKeyIdentifier", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: OriginatorPublicKey,
+        context: 1,
+        implicit: true,
+        optional: true
+      })
+    ], OriginatorIdentifierOrKey.prototype, "originatorKey", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: issuer_and_serial_number_1.IssuerAndSerialNumber,
+        optional: true
+      })
+    ], OriginatorIdentifierOrKey.prototype, "issuerAndSerialNumber", void 0);
+    exports2.OriginatorIdentifierOrKey = OriginatorIdentifierOrKey = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], OriginatorIdentifierOrKey);
+    var KeyAgreeRecipientInfo = class {
+      version = types_1.CMSVersion.v3;
+      originator = new OriginatorIdentifierOrKey();
+      ukm;
+      keyEncryptionAlgorithm = new types_1.KeyEncryptionAlgorithmIdentifier();
+      recipientEncryptedKeys = new RecipientEncryptedKeys();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.KeyAgreeRecipientInfo = KeyAgreeRecipientInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], KeyAgreeRecipientInfo.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: OriginatorIdentifierOrKey,
+        context: 0
+      })
+    ], KeyAgreeRecipientInfo.prototype, "originator", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.OctetString,
+        context: 1,
+        optional: true
+      })
+    ], KeyAgreeRecipientInfo.prototype, "ukm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: types_1.KeyEncryptionAlgorithmIdentifier })
+    ], KeyAgreeRecipientInfo.prototype, "keyEncryptionAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: RecipientEncryptedKeys })
+    ], KeyAgreeRecipientInfo.prototype, "recipientEncryptedKeys", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/key_trans_recipient_info.js
+var require_key_trans_recipient_info = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/key_trans_recipient_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.KeyTransRecipientInfo = exports2.RecipientIdentifier = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var types_1 = require_types4();
+    var issuer_and_serial_number_1 = require_issuer_and_serial_number();
+    var RecipientIdentifier = class RecipientIdentifier {
+      subjectKeyIdentifier;
+      issuerAndSerialNumber;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.RecipientIdentifier = RecipientIdentifier;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.SubjectKeyIdentifier,
+        context: 0,
+        implicit: true
+      })
+    ], RecipientIdentifier.prototype, "subjectKeyIdentifier", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: issuer_and_serial_number_1.IssuerAndSerialNumber })
+    ], RecipientIdentifier.prototype, "issuerAndSerialNumber", void 0);
+    exports2.RecipientIdentifier = RecipientIdentifier = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], RecipientIdentifier);
+    var KeyTransRecipientInfo = class {
+      version = types_1.CMSVersion.v0;
+      rid = new RecipientIdentifier();
+      keyEncryptionAlgorithm = new types_1.KeyEncryptionAlgorithmIdentifier();
+      encryptedKey = new asn1_schema_1.OctetString();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.KeyTransRecipientInfo = KeyTransRecipientInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], KeyTransRecipientInfo.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: RecipientIdentifier })
+    ], KeyTransRecipientInfo.prototype, "rid", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: types_1.KeyEncryptionAlgorithmIdentifier })
+    ], KeyTransRecipientInfo.prototype, "keyEncryptionAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.OctetString })
+    ], KeyTransRecipientInfo.prototype, "encryptedKey", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/kek_recipient_info.js
+var require_kek_recipient_info = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/kek_recipient_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.KEKRecipientInfo = exports2.KEKIdentifier = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var other_key_attribute_1 = require_other_key_attribute();
+    var types_1 = require_types4();
+    var KEKIdentifier = class {
+      keyIdentifier = new asn1_schema_1.OctetString();
+      date;
+      other;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.KEKIdentifier = KEKIdentifier;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.OctetString })
+    ], KEKIdentifier.prototype, "keyIdentifier", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.GeneralizedTime,
+        optional: true
+      })
+    ], KEKIdentifier.prototype, "date", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: other_key_attribute_1.OtherKeyAttribute,
+        optional: true
+      })
+    ], KEKIdentifier.prototype, "other", void 0);
+    var KEKRecipientInfo = class {
+      version = types_1.CMSVersion.v4;
+      kekid = new KEKIdentifier();
+      keyEncryptionAlgorithm = new types_1.KeyEncryptionAlgorithmIdentifier();
+      encryptedKey = new asn1_schema_1.OctetString();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.KEKRecipientInfo = KEKRecipientInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], KEKRecipientInfo.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: KEKIdentifier })
+    ], KEKRecipientInfo.prototype, "kekid", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: types_1.KeyEncryptionAlgorithmIdentifier })
+    ], KEKRecipientInfo.prototype, "keyEncryptionAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.OctetString })
+    ], KEKRecipientInfo.prototype, "encryptedKey", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/password_recipient_info.js
+var require_password_recipient_info = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/password_recipient_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.PasswordRecipientInfo = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var types_1 = require_types4();
+    var PasswordRecipientInfo = class {
+      version = types_1.CMSVersion.v0;
+      keyDerivationAlgorithm;
+      keyEncryptionAlgorithm = new types_1.KeyEncryptionAlgorithmIdentifier();
+      encryptedKey = new asn1_schema_1.OctetString();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.PasswordRecipientInfo = PasswordRecipientInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], PasswordRecipientInfo.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: types_1.KeyDerivationAlgorithmIdentifier,
+        context: 0,
+        optional: true
+      })
+    ], PasswordRecipientInfo.prototype, "keyDerivationAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: types_1.KeyEncryptionAlgorithmIdentifier })
+    ], PasswordRecipientInfo.prototype, "keyEncryptionAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.OctetString })
+    ], PasswordRecipientInfo.prototype, "encryptedKey", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/recipient_info.js
+var require_recipient_info = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/recipient_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.RecipientInfo = exports2.OtherRecipientInfo = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var key_agree_recipient_info_1 = require_key_agree_recipient_info();
+    var key_trans_recipient_info_1 = require_key_trans_recipient_info();
+    var kek_recipient_info_1 = require_kek_recipient_info();
+    var password_recipient_info_1 = require_password_recipient_info();
+    var OtherRecipientInfo = class {
+      oriType = "";
+      oriValue = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.OtherRecipientInfo = OtherRecipientInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], OtherRecipientInfo.prototype, "oriType", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Any })
+    ], OtherRecipientInfo.prototype, "oriValue", void 0);
+    var RecipientInfo = class RecipientInfo {
+      ktri;
+      kari;
+      kekri;
+      pwri;
+      ori;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.RecipientInfo = RecipientInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: key_trans_recipient_info_1.KeyTransRecipientInfo,
+        optional: true
+      })
+    ], RecipientInfo.prototype, "ktri", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: key_agree_recipient_info_1.KeyAgreeRecipientInfo,
+        context: 1,
+        implicit: true,
+        optional: true
+      })
+    ], RecipientInfo.prototype, "kari", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: kek_recipient_info_1.KEKRecipientInfo,
+        context: 2,
+        implicit: true,
+        optional: true
+      })
+    ], RecipientInfo.prototype, "kekri", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: password_recipient_info_1.PasswordRecipientInfo,
+        context: 3,
+        implicit: true,
+        optional: true
+      })
+    ], RecipientInfo.prototype, "pwri", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: OtherRecipientInfo,
+        context: 4,
+        implicit: true,
+        optional: true
+      })
+    ], RecipientInfo.prototype, "ori", void 0);
+    exports2.RecipientInfo = RecipientInfo = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], RecipientInfo);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/recipient_infos.js
+var require_recipient_infos = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/recipient_infos.js"(exports2) {
+    "use strict";
+    var RecipientInfos_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.RecipientInfos = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var recipient_info_1 = require_recipient_info();
+    var RecipientInfos = RecipientInfos_1 = class RecipientInfos extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, RecipientInfos_1.prototype);
+      }
+    };
+    exports2.RecipientInfos = RecipientInfos;
+    exports2.RecipientInfos = RecipientInfos = RecipientInfos_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Set,
+        itemType: recipient_info_1.RecipientInfo
+      })
+    ], RecipientInfos);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/revocation_info_choice.js
+var require_revocation_info_choice = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/revocation_info_choice.js"(exports2) {
+    "use strict";
+    var RevocationInfoChoices_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.RevocationInfoChoices = exports2.RevocationInfoChoice = exports2.OtherRevocationInfoFormat = exports2.id_ri_scvp = exports2.id_ri_ocsp_response = exports2.id_ri = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    exports2.id_ri = `${asn1_x509_1.id_pkix}.16`;
+    exports2.id_ri_ocsp_response = `${exports2.id_ri}.2`;
+    exports2.id_ri_scvp = `${exports2.id_ri}.4`;
+    var OtherRevocationInfoFormat = class {
+      otherRevInfoFormat = "";
+      otherRevInfo = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.OtherRevocationInfoFormat = OtherRevocationInfoFormat;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], OtherRevocationInfoFormat.prototype, "otherRevInfoFormat", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Any })
+    ], OtherRevocationInfoFormat.prototype, "otherRevInfo", void 0);
+    var RevocationInfoChoice = class RevocationInfoChoice {
+      other = new OtherRevocationInfoFormat();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.RevocationInfoChoice = RevocationInfoChoice;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: OtherRevocationInfoFormat,
+        context: 1,
+        implicit: true
+      })
+    ], RevocationInfoChoice.prototype, "other", void 0);
+    exports2.RevocationInfoChoice = RevocationInfoChoice = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], RevocationInfoChoice);
+    var RevocationInfoChoices = RevocationInfoChoices_1 = class RevocationInfoChoices extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, RevocationInfoChoices_1.prototype);
+      }
+    };
+    exports2.RevocationInfoChoices = RevocationInfoChoices;
+    exports2.RevocationInfoChoices = RevocationInfoChoices = RevocationInfoChoices_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Set,
+        itemType: RevocationInfoChoice
+      })
+    ], RevocationInfoChoices);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/originator_info.js
+var require_originator_info = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/originator_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.OriginatorInfo = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var certificate_choices_1 = require_certificate_choices();
+    var revocation_info_choice_1 = require_revocation_info_choice();
+    var OriginatorInfo = class {
+      certs;
+      crls;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.OriginatorInfo = OriginatorInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: certificate_choices_1.CertificateSet,
+        context: 0,
+        implicit: true,
+        optional: true
+      })
+    ], OriginatorInfo.prototype, "certs", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: revocation_info_choice_1.RevocationInfoChoices,
+        context: 1,
+        implicit: true,
+        optional: true
+      })
+    ], OriginatorInfo.prototype, "crls", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/enveloped_data.js
+var require_enveloped_data = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/enveloped_data.js"(exports2) {
+    "use strict";
+    var UnprotectedAttributes_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.EnvelopedData = exports2.UnprotectedAttributes = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var types_1 = require_types4();
+    var attribute_1 = require_attribute2();
+    var recipient_infos_1 = require_recipient_infos();
+    var originator_info_1 = require_originator_info();
+    var encrypted_content_info_1 = require_encrypted_content_info();
+    var UnprotectedAttributes = UnprotectedAttributes_1 = class UnprotectedAttributes extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, UnprotectedAttributes_1.prototype);
+      }
+    };
+    exports2.UnprotectedAttributes = UnprotectedAttributes;
+    exports2.UnprotectedAttributes = UnprotectedAttributes = UnprotectedAttributes_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Set,
+        itemType: attribute_1.Attribute
+      })
+    ], UnprotectedAttributes);
+    var EnvelopedData = class {
+      version = types_1.CMSVersion.v0;
+      originatorInfo;
+      recipientInfos = new recipient_infos_1.RecipientInfos();
+      encryptedContentInfo = new encrypted_content_info_1.EncryptedContentInfo();
+      unprotectedAttrs;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.EnvelopedData = EnvelopedData;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], EnvelopedData.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: originator_info_1.OriginatorInfo,
+        context: 0,
+        implicit: true,
+        optional: true
+      })
+    ], EnvelopedData.prototype, "originatorInfo", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: recipient_infos_1.RecipientInfos })
+    ], EnvelopedData.prototype, "recipientInfos", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: encrypted_content_info_1.EncryptedContentInfo })
+    ], EnvelopedData.prototype, "encryptedContentInfo", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: UnprotectedAttributes,
+        context: 1,
+        implicit: true,
+        optional: true
+      })
+    ], EnvelopedData.prototype, "unprotectedAttrs", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/object_identifiers.js
+var require_object_identifiers3 = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/object_identifiers.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.id_authData = exports2.id_encryptedData = exports2.id_digestedData = exports2.id_envelopedData = exports2.id_signedData = exports2.id_data = exports2.id_ct_contentInfo = void 0;
+    exports2.id_ct_contentInfo = "1.2.840.113549.1.9.16.1.6";
+    exports2.id_data = "1.2.840.113549.1.7.1";
+    exports2.id_signedData = "1.2.840.113549.1.7.2";
+    exports2.id_envelopedData = "1.2.840.113549.1.7.3";
+    exports2.id_digestedData = "1.2.840.113549.1.7.5";
+    exports2.id_encryptedData = "1.2.840.113549.1.7.6";
+    exports2.id_authData = "1.2.840.113549.1.9.16.1.2";
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/signed_data.js
+var require_signed_data = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/signed_data.js"(exports2) {
+    "use strict";
+    var DigestAlgorithmIdentifiers_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SignedData = exports2.DigestAlgorithmIdentifiers = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var certificate_choices_1 = require_certificate_choices();
+    var types_1 = require_types4();
+    var encapsulated_content_info_1 = require_encapsulated_content_info();
+    var revocation_info_choice_1 = require_revocation_info_choice();
+    var signer_info_1 = require_signer_info();
+    var DigestAlgorithmIdentifiers = DigestAlgorithmIdentifiers_1 = class DigestAlgorithmIdentifiers extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, DigestAlgorithmIdentifiers_1.prototype);
+      }
+    };
+    exports2.DigestAlgorithmIdentifiers = DigestAlgorithmIdentifiers;
+    exports2.DigestAlgorithmIdentifiers = DigestAlgorithmIdentifiers = DigestAlgorithmIdentifiers_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Set,
+        itemType: types_1.DigestAlgorithmIdentifier
+      })
+    ], DigestAlgorithmIdentifiers);
+    var SignedData = class {
+      version = types_1.CMSVersion.v0;
+      digestAlgorithms = new DigestAlgorithmIdentifiers();
+      encapContentInfo = new encapsulated_content_info_1.EncapsulatedContentInfo();
+      certificates;
+      crls;
+      signerInfos = new signer_info_1.SignerInfos();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.SignedData = SignedData;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], SignedData.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: DigestAlgorithmIdentifiers })
+    ], SignedData.prototype, "digestAlgorithms", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: encapsulated_content_info_1.EncapsulatedContentInfo })
+    ], SignedData.prototype, "encapContentInfo", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: certificate_choices_1.CertificateSet,
+        context: 0,
+        implicit: true,
+        optional: true
+      })
+    ], SignedData.prototype, "certificates", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: revocation_info_choice_1.RevocationInfoChoices,
+        context: 1,
+        implicit: true,
+        optional: true
+      })
+    ], SignedData.prototype, "crls", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: signer_info_1.SignerInfos })
+    ], SignedData.prototype, "signerInfos", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-cms/build/cjs/index.js
+var require_cjs5 = __commonJS({
+  "node_modules/@peculiar/asn1-cms/build/cjs/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_attributes(), exports2);
+    tslib_1.__exportStar(require_attribute2(), exports2);
+    tslib_1.__exportStar(require_certificate_choices(), exports2);
+    tslib_1.__exportStar(require_content_info(), exports2);
+    tslib_1.__exportStar(require_encapsulated_content_info(), exports2);
+    tslib_1.__exportStar(require_encrypted_content_info(), exports2);
+    tslib_1.__exportStar(require_enveloped_data(), exports2);
+    tslib_1.__exportStar(require_issuer_and_serial_number(), exports2);
+    tslib_1.__exportStar(require_kek_recipient_info(), exports2);
+    tslib_1.__exportStar(require_key_agree_recipient_info(), exports2);
+    tslib_1.__exportStar(require_key_trans_recipient_info(), exports2);
+    tslib_1.__exportStar(require_object_identifiers3(), exports2);
+    tslib_1.__exportStar(require_originator_info(), exports2);
+    tslib_1.__exportStar(require_password_recipient_info(), exports2);
+    tslib_1.__exportStar(require_recipient_info(), exports2);
+    tslib_1.__exportStar(require_recipient_infos(), exports2);
+    tslib_1.__exportStar(require_revocation_info_choice(), exports2);
+    tslib_1.__exportStar(require_signed_data(), exports2);
+    tslib_1.__exportStar(require_signer_identifier(), exports2);
+    tslib_1.__exportStar(require_signer_info(), exports2);
+    tslib_1.__exportStar(require_types4(), exports2);
+  }
+});
+
+// node_modules/@peculiar/asn1-ecc/build/cjs/object_identifiers.js
+var require_object_identifiers4 = __commonJS({
+  "node_modules/@peculiar/asn1-ecc/build/cjs/object_identifiers.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.id_sect571r1 = exports2.id_sect571k1 = exports2.id_secp521r1 = exports2.id_sect409r1 = exports2.id_sect409k1 = exports2.id_secp384r1 = exports2.id_sect283r1 = exports2.id_sect283k1 = exports2.id_secp256r1 = exports2.id_sect233r1 = exports2.id_sect233k1 = exports2.id_secp224r1 = exports2.id_sect163r2 = exports2.id_sect163k1 = exports2.id_secp192r1 = exports2.id_ecdsaWithSHA512 = exports2.id_ecdsaWithSHA384 = exports2.id_ecdsaWithSHA256 = exports2.id_ecdsaWithSHA224 = exports2.id_ecdsaWithSHA1 = exports2.id_ecMQV = exports2.id_ecDH = exports2.id_ecPublicKey = void 0;
+    exports2.id_ecPublicKey = "1.2.840.10045.2.1";
+    exports2.id_ecDH = "1.3.132.1.12";
+    exports2.id_ecMQV = "1.3.132.1.13";
+    exports2.id_ecdsaWithSHA1 = "1.2.840.10045.4.1";
+    exports2.id_ecdsaWithSHA224 = "1.2.840.10045.4.3.1";
+    exports2.id_ecdsaWithSHA256 = "1.2.840.10045.4.3.2";
+    exports2.id_ecdsaWithSHA384 = "1.2.840.10045.4.3.3";
+    exports2.id_ecdsaWithSHA512 = "1.2.840.10045.4.3.4";
+    exports2.id_secp192r1 = "1.2.840.10045.3.1.1";
+    exports2.id_sect163k1 = "1.3.132.0.1";
+    exports2.id_sect163r2 = "1.3.132.0.15";
+    exports2.id_secp224r1 = "1.3.132.0.33";
+    exports2.id_sect233k1 = "1.3.132.0.26";
+    exports2.id_sect233r1 = "1.3.132.0.27";
+    exports2.id_secp256r1 = "1.2.840.10045.3.1.7";
+    exports2.id_sect283k1 = "1.3.132.0.16";
+    exports2.id_sect283r1 = "1.3.132.0.17";
+    exports2.id_secp384r1 = "1.3.132.0.34";
+    exports2.id_sect409k1 = "1.3.132.0.36";
+    exports2.id_sect409r1 = "1.3.132.0.37";
+    exports2.id_secp521r1 = "1.3.132.0.35";
+    exports2.id_sect571k1 = "1.3.132.0.38";
+    exports2.id_sect571r1 = "1.3.132.0.39";
+  }
+});
+
+// node_modules/@peculiar/asn1-ecc/build/cjs/algorithms.js
+var require_algorithms = __commonJS({
+  "node_modules/@peculiar/asn1-ecc/build/cjs/algorithms.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.ecdsaWithSHA512 = exports2.ecdsaWithSHA384 = exports2.ecdsaWithSHA256 = exports2.ecdsaWithSHA224 = exports2.ecdsaWithSHA1 = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_x509_1 = require_cjs3();
+    var oid = tslib_1.__importStar(require_object_identifiers4());
+    function create(algorithm) {
+      return new asn1_x509_1.AlgorithmIdentifier({ algorithm });
+    }
+    exports2.ecdsaWithSHA1 = create(oid.id_ecdsaWithSHA1);
+    exports2.ecdsaWithSHA224 = create(oid.id_ecdsaWithSHA224);
+    exports2.ecdsaWithSHA256 = create(oid.id_ecdsaWithSHA256);
+    exports2.ecdsaWithSHA384 = create(oid.id_ecdsaWithSHA384);
+    exports2.ecdsaWithSHA512 = create(oid.id_ecdsaWithSHA512);
+  }
+});
+
+// node_modules/@peculiar/asn1-ecc/build/cjs/rfc3279.js
+var require_rfc3279 = __commonJS({
+  "node_modules/@peculiar/asn1-ecc/build/cjs/rfc3279.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SpecifiedECDomain = exports2.ECPVer = exports2.Curve = exports2.FieldElement = exports2.ECPoint = exports2.FieldID = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var FieldID = class FieldID {
+      fieldType;
+      parameters;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.FieldID = FieldID;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], FieldID.prototype, "fieldType", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Any })
+    ], FieldID.prototype, "parameters", void 0);
+    exports2.FieldID = FieldID = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], FieldID);
+    var ECPoint = class extends asn1_schema_1.OctetString {
+    };
+    exports2.ECPoint = ECPoint;
+    var FieldElement = class extends asn1_schema_1.OctetString {
+    };
+    exports2.FieldElement = FieldElement;
+    var Curve = class Curve {
+      a;
+      b;
+      seed;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.Curve = Curve;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.OctetString })
+    ], Curve.prototype, "a", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.OctetString })
+    ], Curve.prototype, "b", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.BitString,
+        optional: true
+      })
+    ], Curve.prototype, "seed", void 0);
+    exports2.Curve = Curve = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], Curve);
+    var ECPVer;
+    (function(ECPVer2) {
+      ECPVer2[ECPVer2["ecpVer1"] = 1] = "ecpVer1";
+    })(ECPVer || (exports2.ECPVer = ECPVer = {}));
+    var SpecifiedECDomain = class SpecifiedECDomain {
+      version = ECPVer.ecpVer1;
+      fieldID;
+      curve;
+      base;
+      order;
+      cofactor;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.SpecifiedECDomain = SpecifiedECDomain;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], SpecifiedECDomain.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: FieldID })
+    ], SpecifiedECDomain.prototype, "fieldID", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: Curve })
+    ], SpecifiedECDomain.prototype, "curve", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: ECPoint })
+    ], SpecifiedECDomain.prototype, "base", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], SpecifiedECDomain.prototype, "order", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        optional: true
+      })
+    ], SpecifiedECDomain.prototype, "cofactor", void 0);
+    exports2.SpecifiedECDomain = SpecifiedECDomain = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], SpecifiedECDomain);
+  }
+});
+
+// node_modules/@peculiar/asn1-ecc/build/cjs/ec_parameters.js
+var require_ec_parameters = __commonJS({
+  "node_modules/@peculiar/asn1-ecc/build/cjs/ec_parameters.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.ECParameters = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var rfc3279_1 = require_rfc3279();
+    var ECParameters = class ECParameters {
+      namedCurve;
+      implicitCurve;
+      specifiedCurve;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.ECParameters = ECParameters;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], ECParameters.prototype, "namedCurve", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Null })
+    ], ECParameters.prototype, "implicitCurve", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: rfc3279_1.SpecifiedECDomain })
+    ], ECParameters.prototype, "specifiedCurve", void 0);
+    exports2.ECParameters = ECParameters = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], ECParameters);
+  }
+});
+
+// node_modules/@peculiar/asn1-ecc/build/cjs/ec_private_key.js
+var require_ec_private_key = __commonJS({
+  "node_modules/@peculiar/asn1-ecc/build/cjs/ec_private_key.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.ECPrivateKey = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var ec_parameters_1 = require_ec_parameters();
+    var ECPrivateKey = class {
+      version = 1;
+      privateKey = new asn1_schema_1.OctetString();
+      parameters;
+      publicKey;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.ECPrivateKey = ECPrivateKey;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], ECPrivateKey.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.OctetString })
+    ], ECPrivateKey.prototype, "privateKey", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: ec_parameters_1.ECParameters,
+        context: 0,
+        optional: true
+      })
+    ], ECPrivateKey.prototype, "parameters", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.BitString,
+        context: 1,
+        optional: true
+      })
+    ], ECPrivateKey.prototype, "publicKey", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-ecc/build/cjs/ec_signature_value.js
+var require_ec_signature_value = __commonJS({
+  "node_modules/@peculiar/asn1-ecc/build/cjs/ec_signature_value.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.ECDSASigValue = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var ECDSASigValue = class {
+      r = new ArrayBuffer(0);
+      s = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.ECDSASigValue = ECDSASigValue;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], ECDSASigValue.prototype, "r", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], ECDSASigValue.prototype, "s", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-ecc/build/cjs/index.js
+var require_cjs6 = __commonJS({
+  "node_modules/@peculiar/asn1-ecc/build/cjs/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_algorithms(), exports2);
+    tslib_1.__exportStar(require_ec_parameters(), exports2);
+    tslib_1.__exportStar(require_ec_private_key(), exports2);
+    tslib_1.__exportStar(require_ec_signature_value(), exports2);
+    tslib_1.__exportStar(require_object_identifiers4(), exports2);
+    tslib_1.__exportStar(require_rfc3279(), exports2);
+  }
+});
+
+// node_modules/@peculiar/asn1-rsa/build/cjs/object_identifiers.js
+var require_object_identifiers5 = __commonJS({
+  "node_modules/@peculiar/asn1-rsa/build/cjs/object_identifiers.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.id_mgf1 = exports2.id_md5 = exports2.id_md2 = exports2.id_sha512_256 = exports2.id_sha512_224 = exports2.id_sha512 = exports2.id_sha384 = exports2.id_sha256 = exports2.id_sha224 = exports2.id_sha1 = exports2.id_sha512_256WithRSAEncryption = exports2.id_sha512_224WithRSAEncryption = exports2.id_sha512WithRSAEncryption = exports2.id_sha384WithRSAEncryption = exports2.id_sha256WithRSAEncryption = exports2.id_ssha224WithRSAEncryption = exports2.id_sha224WithRSAEncryption = exports2.id_sha1WithRSAEncryption = exports2.id_md5WithRSAEncryption = exports2.id_md2WithRSAEncryption = exports2.id_RSASSA_PSS = exports2.id_pSpecified = exports2.id_RSAES_OAEP = exports2.id_rsaEncryption = exports2.id_pkcs_1 = void 0;
+    exports2.id_pkcs_1 = "1.2.840.113549.1.1";
+    exports2.id_rsaEncryption = `${exports2.id_pkcs_1}.1`;
+    exports2.id_RSAES_OAEP = `${exports2.id_pkcs_1}.7`;
+    exports2.id_pSpecified = `${exports2.id_pkcs_1}.9`;
+    exports2.id_RSASSA_PSS = `${exports2.id_pkcs_1}.10`;
+    exports2.id_md2WithRSAEncryption = `${exports2.id_pkcs_1}.2`;
+    exports2.id_md5WithRSAEncryption = `${exports2.id_pkcs_1}.4`;
+    exports2.id_sha1WithRSAEncryption = `${exports2.id_pkcs_1}.5`;
+    exports2.id_sha224WithRSAEncryption = `${exports2.id_pkcs_1}.14`;
+    exports2.id_ssha224WithRSAEncryption = exports2.id_sha224WithRSAEncryption;
+    exports2.id_sha256WithRSAEncryption = `${exports2.id_pkcs_1}.11`;
+    exports2.id_sha384WithRSAEncryption = `${exports2.id_pkcs_1}.12`;
+    exports2.id_sha512WithRSAEncryption = `${exports2.id_pkcs_1}.13`;
+    exports2.id_sha512_224WithRSAEncryption = `${exports2.id_pkcs_1}.15`;
+    exports2.id_sha512_256WithRSAEncryption = `${exports2.id_pkcs_1}.16`;
+    exports2.id_sha1 = "1.3.14.3.2.26";
+    exports2.id_sha224 = "2.16.840.1.101.3.4.2.4";
+    exports2.id_sha256 = "2.16.840.1.101.3.4.2.1";
+    exports2.id_sha384 = "2.16.840.1.101.3.4.2.2";
+    exports2.id_sha512 = "2.16.840.1.101.3.4.2.3";
+    exports2.id_sha512_224 = "2.16.840.1.101.3.4.2.5";
+    exports2.id_sha512_256 = "2.16.840.1.101.3.4.2.6";
+    exports2.id_md2 = "1.2.840.113549.2.2";
+    exports2.id_md5 = "1.2.840.113549.2.5";
+    exports2.id_mgf1 = `${exports2.id_pkcs_1}.8`;
+  }
+});
+
+// node_modules/@peculiar/asn1-rsa/build/cjs/algorithms.js
+var require_algorithms2 = __commonJS({
+  "node_modules/@peculiar/asn1-rsa/build/cjs/algorithms.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.sha512_256WithRSAEncryption = exports2.sha512_224WithRSAEncryption = exports2.sha512WithRSAEncryption = exports2.sha384WithRSAEncryption = exports2.sha256WithRSAEncryption = exports2.sha224WithRSAEncryption = exports2.sha1WithRSAEncryption = exports2.md5WithRSAEncryption = exports2.md2WithRSAEncryption = exports2.rsaEncryption = exports2.pSpecifiedEmpty = exports2.mgf1SHA1 = exports2.sha512_256 = exports2.sha512_224 = exports2.sha512 = exports2.sha384 = exports2.sha256 = exports2.sha224 = exports2.sha1 = exports2.md4 = exports2.md2 = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var oid = tslib_1.__importStar(require_object_identifiers5());
+    function create(algorithm) {
+      return new asn1_x509_1.AlgorithmIdentifier({
+        algorithm,
+        parameters: null
+      });
+    }
+    exports2.md2 = create(oid.id_md2);
+    exports2.md4 = create(oid.id_md5);
+    exports2.sha1 = create(oid.id_sha1);
+    exports2.sha224 = create(oid.id_sha224);
+    exports2.sha256 = create(oid.id_sha256);
+    exports2.sha384 = create(oid.id_sha384);
+    exports2.sha512 = create(oid.id_sha512);
+    exports2.sha512_224 = create(oid.id_sha512_224);
+    exports2.sha512_256 = create(oid.id_sha512_256);
+    exports2.mgf1SHA1 = new asn1_x509_1.AlgorithmIdentifier({
+      algorithm: oid.id_mgf1,
+      parameters: asn1_schema_1.AsnConvert.serialize(exports2.sha1)
+    });
+    exports2.pSpecifiedEmpty = new asn1_x509_1.AlgorithmIdentifier({
+      algorithm: oid.id_pSpecified,
+      parameters: asn1_schema_1.AsnConvert.serialize(asn1_schema_1.AsnOctetStringConverter.toASN(new Uint8Array([218, 57, 163, 238, 94, 107, 75, 13, 50, 85, 191, 239, 149, 96, 24, 144, 175, 216, 7, 9]).buffer))
+    });
+    exports2.rsaEncryption = create(oid.id_rsaEncryption);
+    exports2.md2WithRSAEncryption = create(oid.id_md2WithRSAEncryption);
+    exports2.md5WithRSAEncryption = create(oid.id_md5WithRSAEncryption);
+    exports2.sha1WithRSAEncryption = create(oid.id_sha1WithRSAEncryption);
+    exports2.sha224WithRSAEncryption = create(oid.id_sha512_224WithRSAEncryption);
+    exports2.sha256WithRSAEncryption = create(oid.id_sha512_256WithRSAEncryption);
+    exports2.sha384WithRSAEncryption = create(oid.id_sha384WithRSAEncryption);
+    exports2.sha512WithRSAEncryption = create(oid.id_sha512WithRSAEncryption);
+    exports2.sha512_224WithRSAEncryption = create(oid.id_sha512_224WithRSAEncryption);
+    exports2.sha512_256WithRSAEncryption = create(oid.id_sha512_256WithRSAEncryption);
+  }
+});
+
+// node_modules/@peculiar/asn1-rsa/build/cjs/parameters/rsaes_oaep.js
+var require_rsaes_oaep = __commonJS({
+  "node_modules/@peculiar/asn1-rsa/build/cjs/parameters/rsaes_oaep.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.RSAES_OAEP = exports2.RsaEsOaepParams = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var object_identifiers_1 = require_object_identifiers5();
+    var algorithms_1 = require_algorithms2();
+    var RsaEsOaepParams = class {
+      hashAlgorithm = new asn1_x509_1.AlgorithmIdentifier(algorithms_1.sha1);
+      maskGenAlgorithm = new asn1_x509_1.AlgorithmIdentifier({
+        algorithm: object_identifiers_1.id_mgf1,
+        parameters: asn1_schema_1.AsnConvert.serialize(algorithms_1.sha1)
+      });
+      pSourceAlgorithm = new asn1_x509_1.AlgorithmIdentifier(algorithms_1.pSpecifiedEmpty);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.RsaEsOaepParams = RsaEsOaepParams;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.AlgorithmIdentifier,
+        context: 0,
+        defaultValue: algorithms_1.sha1
+      })
+    ], RsaEsOaepParams.prototype, "hashAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.AlgorithmIdentifier,
+        context: 1,
+        defaultValue: algorithms_1.mgf1SHA1
+      })
+    ], RsaEsOaepParams.prototype, "maskGenAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.AlgorithmIdentifier,
+        context: 2,
+        defaultValue: algorithms_1.pSpecifiedEmpty
+      })
+    ], RsaEsOaepParams.prototype, "pSourceAlgorithm", void 0);
+    exports2.RSAES_OAEP = new asn1_x509_1.AlgorithmIdentifier({
+      algorithm: object_identifiers_1.id_RSAES_OAEP,
+      parameters: asn1_schema_1.AsnConvert.serialize(new RsaEsOaepParams())
+    });
+  }
+});
+
+// node_modules/@peculiar/asn1-rsa/build/cjs/parameters/rsassa_pss.js
+var require_rsassa_pss = __commonJS({
+  "node_modules/@peculiar/asn1-rsa/build/cjs/parameters/rsassa_pss.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.RSASSA_PSS = exports2.RsaSaPssParams = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var object_identifiers_1 = require_object_identifiers5();
+    var algorithms_1 = require_algorithms2();
+    var RsaSaPssParams = class {
+      hashAlgorithm = new asn1_x509_1.AlgorithmIdentifier(algorithms_1.sha1);
+      maskGenAlgorithm = new asn1_x509_1.AlgorithmIdentifier({
+        algorithm: object_identifiers_1.id_mgf1,
+        parameters: asn1_schema_1.AsnConvert.serialize(algorithms_1.sha1)
+      });
+      saltLength = 20;
+      trailerField = 1;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.RsaSaPssParams = RsaSaPssParams;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.AlgorithmIdentifier,
+        context: 0,
+        defaultValue: algorithms_1.sha1
+      })
+    ], RsaSaPssParams.prototype, "hashAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_x509_1.AlgorithmIdentifier,
+        context: 1,
+        defaultValue: algorithms_1.mgf1SHA1
+      })
+    ], RsaSaPssParams.prototype, "maskGenAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        context: 2,
+        defaultValue: 20
+      })
+    ], RsaSaPssParams.prototype, "saltLength", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        context: 3,
+        defaultValue: 1
+      })
+    ], RsaSaPssParams.prototype, "trailerField", void 0);
+    exports2.RSASSA_PSS = new asn1_x509_1.AlgorithmIdentifier({
+      algorithm: object_identifiers_1.id_RSASSA_PSS,
+      parameters: asn1_schema_1.AsnConvert.serialize(new RsaSaPssParams())
+    });
+  }
+});
+
+// node_modules/@peculiar/asn1-rsa/build/cjs/parameters/rsassa_pkcs1_v1_5.js
+var require_rsassa_pkcs1_v1_5 = __commonJS({
+  "node_modules/@peculiar/asn1-rsa/build/cjs/parameters/rsassa_pkcs1_v1_5.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.DigestInfo = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_x509_1 = require_cjs3();
+    var asn1_schema_1 = require_cjs2();
+    var DigestInfo = class {
+      digestAlgorithm = new asn1_x509_1.AlgorithmIdentifier();
+      digest = new asn1_schema_1.OctetString();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.DigestInfo = DigestInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.AlgorithmIdentifier })
+    ], DigestInfo.prototype, "digestAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.OctetString })
+    ], DigestInfo.prototype, "digest", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-rsa/build/cjs/parameters/index.js
+var require_parameters = __commonJS({
+  "node_modules/@peculiar/asn1-rsa/build/cjs/parameters/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_rsaes_oaep(), exports2);
+    tslib_1.__exportStar(require_rsassa_pss(), exports2);
+    tslib_1.__exportStar(require_rsassa_pkcs1_v1_5(), exports2);
+  }
+});
+
+// node_modules/@peculiar/asn1-rsa/build/cjs/other_prime_info.js
+var require_other_prime_info = __commonJS({
+  "node_modules/@peculiar/asn1-rsa/build/cjs/other_prime_info.js"(exports2) {
+    "use strict";
+    var OtherPrimeInfos_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.OtherPrimeInfos = exports2.OtherPrimeInfo = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var OtherPrimeInfo = class {
+      prime = new ArrayBuffer(0);
+      exponent = new ArrayBuffer(0);
+      coefficient = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.OtherPrimeInfo = OtherPrimeInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], OtherPrimeInfo.prototype, "prime", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], OtherPrimeInfo.prototype, "exponent", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], OtherPrimeInfo.prototype, "coefficient", void 0);
+    var OtherPrimeInfos = OtherPrimeInfos_1 = class OtherPrimeInfos extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, OtherPrimeInfos_1.prototype);
+      }
+    };
+    exports2.OtherPrimeInfos = OtherPrimeInfos;
+    exports2.OtherPrimeInfos = OtherPrimeInfos = OtherPrimeInfos_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: OtherPrimeInfo
+      })
+    ], OtherPrimeInfos);
+  }
+});
+
+// node_modules/@peculiar/asn1-rsa/build/cjs/rsa_private_key.js
+var require_rsa_private_key = __commonJS({
+  "node_modules/@peculiar/asn1-rsa/build/cjs/rsa_private_key.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.RSAPrivateKey = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var other_prime_info_1 = require_other_prime_info();
+    var RSAPrivateKey = class {
+      version = 0;
+      modulus = new ArrayBuffer(0);
+      publicExponent = new ArrayBuffer(0);
+      privateExponent = new ArrayBuffer(0);
+      prime1 = new ArrayBuffer(0);
+      prime2 = new ArrayBuffer(0);
+      exponent1 = new ArrayBuffer(0);
+      exponent2 = new ArrayBuffer(0);
+      coefficient = new ArrayBuffer(0);
+      otherPrimeInfos;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.RSAPrivateKey = RSAPrivateKey;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], RSAPrivateKey.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], RSAPrivateKey.prototype, "modulus", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], RSAPrivateKey.prototype, "publicExponent", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], RSAPrivateKey.prototype, "privateExponent", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], RSAPrivateKey.prototype, "prime1", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], RSAPrivateKey.prototype, "prime2", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], RSAPrivateKey.prototype, "exponent1", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], RSAPrivateKey.prototype, "exponent2", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], RSAPrivateKey.prototype, "coefficient", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: other_prime_info_1.OtherPrimeInfos,
+        optional: true
+      })
+    ], RSAPrivateKey.prototype, "otherPrimeInfos", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-rsa/build/cjs/rsa_public_key.js
+var require_rsa_public_key = __commonJS({
+  "node_modules/@peculiar/asn1-rsa/build/cjs/rsa_public_key.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.RSAPublicKey = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var RSAPublicKey = class {
+      modulus = new ArrayBuffer(0);
+      publicExponent = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.RSAPublicKey = RSAPublicKey;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], RSAPublicKey.prototype, "modulus", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        converter: asn1_schema_1.AsnIntegerArrayBufferConverter
+      })
+    ], RSAPublicKey.prototype, "publicExponent", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-rsa/build/cjs/index.js
+var require_cjs7 = __commonJS({
+  "node_modules/@peculiar/asn1-rsa/build/cjs/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_parameters(), exports2);
+    tslib_1.__exportStar(require_algorithms2(), exports2);
+    tslib_1.__exportStar(require_object_identifiers5(), exports2);
+    tslib_1.__exportStar(require_other_prime_info(), exports2);
+    tslib_1.__exportStar(require_rsa_private_key(), exports2);
+    tslib_1.__exportStar(require_rsa_public_key(), exports2);
+  }
+});
+
+// node_modules/tsyringe/node_modules/tslib/tslib.es6.js
+var tslib_es6_exports2 = {};
+__export(tslib_es6_exports2, {
+  __assign: () => __assign2,
+  __asyncDelegator: () => __asyncDelegator2,
+  __asyncGenerator: () => __asyncGenerator2,
+  __asyncValues: () => __asyncValues2,
+  __await: () => __await2,
+  __awaiter: () => __awaiter2,
+  __classPrivateFieldGet: () => __classPrivateFieldGet2,
+  __classPrivateFieldSet: () => __classPrivateFieldSet2,
+  __createBinding: () => __createBinding2,
+  __decorate: () => __decorate2,
+  __exportStar: () => __exportStar2,
+  __extends: () => __extends2,
+  __generator: () => __generator2,
+  __importDefault: () => __importDefault2,
+  __importStar: () => __importStar2,
+  __makeTemplateObject: () => __makeTemplateObject2,
+  __metadata: () => __metadata2,
+  __param: () => __param2,
+  __read: () => __read2,
+  __rest: () => __rest2,
+  __spread: () => __spread2,
+  __spreadArrays: () => __spreadArrays2,
+  __values: () => __values2
+});
+function __extends2(d, b) {
+  extendStatics2(d, b);
+  function __() {
+    this.constructor = d;
+  }
+  d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+function __rest2(s, e) {
+  var t = {};
+  for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+    t[p] = s[p];
+  if (s != null && typeof Object.getOwnPropertySymbols === "function")
+    for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+      if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+        t[p[i]] = s[p[i]];
+    }
+  return t;
+}
+function __decorate2(decorators, target, key, desc) {
+  var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+  if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+  else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+  return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+function __param2(paramIndex, decorator) {
+  return function(target, key) {
+    decorator(target, key, paramIndex);
+  };
+}
+function __metadata2(metadataKey, metadataValue) {
+  if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+}
+function __awaiter2(thisArg, _arguments, P, generator) {
+  function adopt(value) {
+    return value instanceof P ? value : new P(function(resolve4) {
+      resolve4(value);
+    });
+  }
+  return new (P || (P = Promise))(function(resolve4, reject) {
+    function fulfilled(value) {
+      try {
+        step(generator.next(value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function rejected(value) {
+      try {
+        step(generator["throw"](value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function step(result) {
+      result.done ? resolve4(result.value) : adopt(result.value).then(fulfilled, rejected);
+    }
+    step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
+}
+function __generator2(thisArg, body) {
+  var _ = { label: 0, sent: function() {
+    if (t[0] & 1) throw t[1];
+    return t[1];
+  }, trys: [], ops: [] }, f, y, t, g;
+  return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() {
+    return this;
+  }), g;
+  function verb(n) {
+    return function(v) {
+      return step([n, v]);
+    };
+  }
+  function step(op) {
+    if (f) throw new TypeError("Generator is already executing.");
+    while (_) try {
+      if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+      if (y = 0, t) op = [op[0] & 2, t.value];
+      switch (op[0]) {
+        case 0:
+        case 1:
+          t = op;
+          break;
+        case 4:
+          _.label++;
+          return { value: op[1], done: false };
+        case 5:
+          _.label++;
+          y = op[1];
+          op = [0];
+          continue;
+        case 7:
+          op = _.ops.pop();
+          _.trys.pop();
+          continue;
+        default:
+          if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
+            _ = 0;
+            continue;
+          }
+          if (op[0] === 3 && (!t || op[1] > t[0] && op[1] < t[3])) {
+            _.label = op[1];
+            break;
+          }
+          if (op[0] === 6 && _.label < t[1]) {
+            _.label = t[1];
+            t = op;
+            break;
+          }
+          if (t && _.label < t[2]) {
+            _.label = t[2];
+            _.ops.push(op);
+            break;
+          }
+          if (t[2]) _.ops.pop();
+          _.trys.pop();
+          continue;
+      }
+      op = body.call(thisArg, _);
+    } catch (e) {
+      op = [6, e];
+      y = 0;
+    } finally {
+      f = t = 0;
+    }
+    if (op[0] & 5) throw op[1];
+    return { value: op[0] ? op[1] : void 0, done: true };
+  }
+}
+function __createBinding2(o, m, k, k2) {
+  if (k2 === void 0) k2 = k;
+  o[k2] = m[k];
+}
+function __exportStar2(m, exports2) {
+  for (var p in m) if (p !== "default" && !exports2.hasOwnProperty(p)) exports2[p] = m[p];
+}
+function __values2(o) {
+  var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+  if (m) return m.call(o);
+  if (o && typeof o.length === "number") return {
+    next: function() {
+      if (o && i >= o.length) o = void 0;
+      return { value: o && o[i++], done: !o };
+    }
+  };
+  throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+}
+function __read2(o, n) {
+  var m = typeof Symbol === "function" && o[Symbol.iterator];
+  if (!m) return o;
+  var i = m.call(o), r, ar = [], e;
+  try {
+    while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+  } catch (error48) {
+    e = { error: error48 };
+  } finally {
+    try {
+      if (r && !r.done && (m = i["return"])) m.call(i);
+    } finally {
+      if (e) throw e.error;
+    }
+  }
+  return ar;
+}
+function __spread2() {
+  for (var ar = [], i = 0; i < arguments.length; i++)
+    ar = ar.concat(__read2(arguments[i]));
+  return ar;
+}
+function __spreadArrays2() {
+  for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+  for (var r = Array(s), k = 0, i = 0; i < il; i++)
+    for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+      r[k] = a[j];
+  return r;
+}
+function __await2(v) {
+  return this instanceof __await2 ? (this.v = v, this) : new __await2(v);
+}
+function __asyncGenerator2(thisArg, _arguments, generator) {
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+  var g = generator.apply(thisArg, _arguments || []), i, q = [];
+  return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function() {
+    return this;
+  }, i;
+  function verb(n) {
+    if (g[n]) i[n] = function(v) {
+      return new Promise(function(a, b) {
+        q.push([n, v, a, b]) > 1 || resume(n, v);
+      });
+    };
+  }
+  function resume(n, v) {
+    try {
+      step(g[n](v));
+    } catch (e) {
+      settle(q[0][3], e);
+    }
+  }
+  function step(r) {
+    r.value instanceof __await2 ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);
+  }
+  function fulfill(value) {
+    resume("next", value);
+  }
+  function reject(value) {
+    resume("throw", value);
+  }
+  function settle(f, v) {
+    if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]);
+  }
+}
+function __asyncDelegator2(o) {
+  var i, p;
+  return i = {}, verb("next"), verb("throw", function(e) {
+    throw e;
+  }), verb("return"), i[Symbol.iterator] = function() {
+    return this;
+  }, i;
+  function verb(n, f) {
+    i[n] = o[n] ? function(v) {
+      return (p = !p) ? { value: __await2(o[n](v)), done: n === "return" } : f ? f(v) : v;
+    } : f;
+  }
+}
+function __asyncValues2(o) {
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+  var m = o[Symbol.asyncIterator], i;
+  return m ? m.call(o) : (o = typeof __values2 === "function" ? __values2(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function() {
+    return this;
+  }, i);
+  function verb(n) {
+    i[n] = o[n] && function(v) {
+      return new Promise(function(resolve4, reject) {
+        v = o[n](v), settle(resolve4, reject, v.done, v.value);
+      });
+    };
+  }
+  function settle(resolve4, reject, d, v) {
+    Promise.resolve(v).then(function(v2) {
+      resolve4({ value: v2, done: d });
+    }, reject);
+  }
+}
+function __makeTemplateObject2(cooked, raw) {
+  if (Object.defineProperty) {
+    Object.defineProperty(cooked, "raw", { value: raw });
+  } else {
+    cooked.raw = raw;
+  }
+  return cooked;
+}
+function __importStar2(mod) {
+  if (mod && mod.__esModule) return mod;
+  var result = {};
+  if (mod != null) {
+    for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+  }
+  result.default = mod;
+  return result;
+}
+function __importDefault2(mod) {
+  return mod && mod.__esModule ? mod : { default: mod };
+}
+function __classPrivateFieldGet2(receiver, privateMap) {
+  if (!privateMap.has(receiver)) {
+    throw new TypeError("attempted to get private field on non-instance");
+  }
+  return privateMap.get(receiver);
+}
+function __classPrivateFieldSet2(receiver, privateMap, value) {
+  if (!privateMap.has(receiver)) {
+    throw new TypeError("attempted to set private field on non-instance");
+  }
+  privateMap.set(receiver, value);
+  return value;
+}
+var extendStatics2, __assign2;
+var init_tslib_es62 = __esm({
+  "node_modules/tsyringe/node_modules/tslib/tslib.es6.js"() {
+    extendStatics2 = function(d, b) {
+      extendStatics2 = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d2, b2) {
+        d2.__proto__ = b2;
+      } || function(d2, b2) {
+        for (var p in b2) if (b2.hasOwnProperty(p)) d2[p] = b2[p];
+      };
+      return extendStatics2(d, b);
+    };
+    __assign2 = function() {
+      __assign2 = Object.assign || function __assign3(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+          s = arguments[i];
+          for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
+      };
+      return __assign2.apply(this, arguments);
+    };
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/types/lifecycle.js
+var require_lifecycle = __commonJS({
+  "node_modules/tsyringe/dist/cjs/types/lifecycle.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var Lifecycle;
+    (function(Lifecycle2) {
+      Lifecycle2[Lifecycle2["Transient"] = 0] = "Transient";
+      Lifecycle2[Lifecycle2["Singleton"] = 1] = "Singleton";
+      Lifecycle2[Lifecycle2["ResolutionScoped"] = 2] = "ResolutionScoped";
+      Lifecycle2[Lifecycle2["ContainerScoped"] = 3] = "ContainerScoped";
+    })(Lifecycle || (Lifecycle = {}));
+    exports2.default = Lifecycle;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/types/index.js
+var require_types5 = __commonJS({
+  "node_modules/tsyringe/dist/cjs/types/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var lifecycle_1 = require_lifecycle();
+    Object.defineProperty(exports2, "Lifecycle", { enumerable: true, get: function() {
+      return lifecycle_1.default;
+    } });
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/reflection-helpers.js
+var require_reflection_helpers = __commonJS({
+  "node_modules/tsyringe/dist/cjs/reflection-helpers.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.defineInjectionTokenMetadata = exports2.getParamInfo = exports2.INJECTION_TOKEN_METADATA_KEY = void 0;
+    exports2.INJECTION_TOKEN_METADATA_KEY = "injectionTokens";
+    function getParamInfo(target) {
+      const params = Reflect.getMetadata("design:paramtypes", target) || [];
+      const injectionTokens = Reflect.getOwnMetadata(exports2.INJECTION_TOKEN_METADATA_KEY, target) || {};
+      Object.keys(injectionTokens).forEach((key) => {
+        params[+key] = injectionTokens[key];
+      });
+      return params;
+    }
+    exports2.getParamInfo = getParamInfo;
+    function defineInjectionTokenMetadata(data, transform2) {
+      return function(target, _propertyKey, parameterIndex) {
+        const descriptors = Reflect.getOwnMetadata(exports2.INJECTION_TOKEN_METADATA_KEY, target) || {};
+        descriptors[parameterIndex] = transform2 ? {
+          token: data,
+          transform: transform2.transformToken,
+          transformArgs: transform2.args || []
+        } : data;
+        Reflect.defineMetadata(exports2.INJECTION_TOKEN_METADATA_KEY, descriptors, target);
+      };
+    }
+    exports2.defineInjectionTokenMetadata = defineInjectionTokenMetadata;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/providers/class-provider.js
+var require_class_provider = __commonJS({
+  "node_modules/tsyringe/dist/cjs/providers/class-provider.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.isClassProvider = void 0;
+    function isClassProvider(provider) {
+      return !!provider.useClass;
+    }
+    exports2.isClassProvider = isClassProvider;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/providers/factory-provider.js
+var require_factory_provider = __commonJS({
+  "node_modules/tsyringe/dist/cjs/providers/factory-provider.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.isFactoryProvider = void 0;
+    function isFactoryProvider(provider) {
+      return !!provider.useFactory;
+    }
+    exports2.isFactoryProvider = isFactoryProvider;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/lazy-helpers.js
+var require_lazy_helpers = __commonJS({
+  "node_modules/tsyringe/dist/cjs/lazy-helpers.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.delay = exports2.DelayedConstructor = void 0;
+    var DelayedConstructor = class {
+      constructor(wrap) {
+        this.wrap = wrap;
+        this.reflectMethods = [
+          "get",
+          "getPrototypeOf",
+          "setPrototypeOf",
+          "getOwnPropertyDescriptor",
+          "defineProperty",
+          "has",
+          "set",
+          "deleteProperty",
+          "apply",
+          "construct",
+          "ownKeys"
+        ];
+      }
+      createProxy(createObject) {
+        const target = {};
+        let init = false;
+        let value;
+        const delayedObject = () => {
+          if (!init) {
+            value = createObject(this.wrap());
+            init = true;
+          }
+          return value;
+        };
+        return new Proxy(target, this.createHandler(delayedObject));
+      }
+      createHandler(delayedObject) {
+        const handler = {};
+        const install = (name) => {
+          handler[name] = (...args) => {
+            args[0] = delayedObject();
+            const method = Reflect[name];
+            return method(...args);
+          };
+        };
+        this.reflectMethods.forEach(install);
+        return handler;
+      }
+    };
+    exports2.DelayedConstructor = DelayedConstructor;
+    function delay(wrappedConstructor) {
+      if (typeof wrappedConstructor === "undefined") {
+        throw new Error("Attempt to `delay` undefined. Constructor must be wrapped in a callback");
+      }
+      return new DelayedConstructor(wrappedConstructor);
+    }
+    exports2.delay = delay;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/providers/injection-token.js
+var require_injection_token = __commonJS({
+  "node_modules/tsyringe/dist/cjs/providers/injection-token.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.isConstructorToken = exports2.isTransformDescriptor = exports2.isTokenDescriptor = exports2.isNormalToken = void 0;
+    var lazy_helpers_1 = require_lazy_helpers();
+    function isNormalToken(token) {
+      return typeof token === "string" || typeof token === "symbol";
+    }
+    exports2.isNormalToken = isNormalToken;
+    function isTokenDescriptor(descriptor) {
+      return typeof descriptor === "object" && "token" in descriptor && "multiple" in descriptor;
+    }
+    exports2.isTokenDescriptor = isTokenDescriptor;
+    function isTransformDescriptor(descriptor) {
+      return typeof descriptor === "object" && "token" in descriptor && "transform" in descriptor;
+    }
+    exports2.isTransformDescriptor = isTransformDescriptor;
+    function isConstructorToken(token) {
+      return typeof token === "function" || token instanceof lazy_helpers_1.DelayedConstructor;
+    }
+    exports2.isConstructorToken = isConstructorToken;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/providers/token-provider.js
+var require_token_provider = __commonJS({
+  "node_modules/tsyringe/dist/cjs/providers/token-provider.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.isTokenProvider = void 0;
+    function isTokenProvider(provider) {
+      return !!provider.useToken;
+    }
+    exports2.isTokenProvider = isTokenProvider;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/providers/value-provider.js
+var require_value_provider = __commonJS({
+  "node_modules/tsyringe/dist/cjs/providers/value-provider.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.isValueProvider = void 0;
+    function isValueProvider(provider) {
+      return provider.useValue != void 0;
+    }
+    exports2.isValueProvider = isValueProvider;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/providers/index.js
+var require_providers = __commonJS({
+  "node_modules/tsyringe/dist/cjs/providers/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var class_provider_1 = require_class_provider();
+    Object.defineProperty(exports2, "isClassProvider", { enumerable: true, get: function() {
+      return class_provider_1.isClassProvider;
+    } });
+    var factory_provider_1 = require_factory_provider();
+    Object.defineProperty(exports2, "isFactoryProvider", { enumerable: true, get: function() {
+      return factory_provider_1.isFactoryProvider;
+    } });
+    var injection_token_1 = require_injection_token();
+    Object.defineProperty(exports2, "isNormalToken", { enumerable: true, get: function() {
+      return injection_token_1.isNormalToken;
+    } });
+    var token_provider_1 = require_token_provider();
+    Object.defineProperty(exports2, "isTokenProvider", { enumerable: true, get: function() {
+      return token_provider_1.isTokenProvider;
+    } });
+    var value_provider_1 = require_value_provider();
+    Object.defineProperty(exports2, "isValueProvider", { enumerable: true, get: function() {
+      return value_provider_1.isValueProvider;
+    } });
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/providers/provider.js
+var require_provider = __commonJS({
+  "node_modules/tsyringe/dist/cjs/providers/provider.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.isProvider = void 0;
+    var class_provider_1 = require_class_provider();
+    var value_provider_1 = require_value_provider();
+    var token_provider_1 = require_token_provider();
+    var factory_provider_1 = require_factory_provider();
+    function isProvider(provider) {
+      return class_provider_1.isClassProvider(provider) || value_provider_1.isValueProvider(provider) || token_provider_1.isTokenProvider(provider) || factory_provider_1.isFactoryProvider(provider);
+    }
+    exports2.isProvider = isProvider;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/registry-base.js
+var require_registry_base = __commonJS({
+  "node_modules/tsyringe/dist/cjs/registry-base.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var RegistryBase = class {
+      constructor() {
+        this._registryMap = /* @__PURE__ */ new Map();
+      }
+      entries() {
+        return this._registryMap.entries();
+      }
+      getAll(key) {
+        this.ensure(key);
+        return this._registryMap.get(key);
+      }
+      get(key) {
+        this.ensure(key);
+        const value = this._registryMap.get(key);
+        return value[value.length - 1] || null;
+      }
+      set(key, value) {
+        this.ensure(key);
+        this._registryMap.get(key).push(value);
+      }
+      setAll(key, value) {
+        this._registryMap.set(key, value);
+      }
+      has(key) {
+        this.ensure(key);
+        return this._registryMap.get(key).length > 0;
+      }
+      clear() {
+        this._registryMap.clear();
+      }
+      ensure(key) {
+        if (!this._registryMap.has(key)) {
+          this._registryMap.set(key, []);
+        }
+      }
+    };
+    exports2.default = RegistryBase;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/registry.js
+var require_registry2 = __commonJS({
+  "node_modules/tsyringe/dist/cjs/registry.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var registry_base_1 = require_registry_base();
+    var Registry = class extends registry_base_1.default {
+    };
+    exports2.default = Registry;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/resolution-context.js
+var require_resolution_context = __commonJS({
+  "node_modules/tsyringe/dist/cjs/resolution-context.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var ResolutionContext = class {
+      constructor() {
+        this.scopedResolutions = /* @__PURE__ */ new Map();
+      }
+    };
+    exports2.default = ResolutionContext;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/error-helpers.js
+var require_error_helpers = __commonJS({
+  "node_modules/tsyringe/dist/cjs/error-helpers.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.formatErrorCtor = void 0;
+    function formatDependency(params, idx) {
+      if (params === null) {
+        return `at position #${idx}`;
+      }
+      const argName = params.split(",")[idx].trim();
+      return `"${argName}" at position #${idx}`;
+    }
+    function composeErrorMessage(msg, e, indent = "    ") {
+      return [msg, ...e.message.split("\n").map((l) => indent + l)].join("\n");
+    }
+    function formatErrorCtor(ctor, paramIdx, error48) {
+      const [, params = null] = ctor.toString().match(/constructor\(([\w, ]+)\)/) || [];
+      const dep = formatDependency(params, paramIdx);
+      return composeErrorMessage(`Cannot inject the dependency ${dep} of "${ctor.name}" constructor. Reason:`, error48);
+    }
+    exports2.formatErrorCtor = formatErrorCtor;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/types/disposable.js
+var require_disposable = __commonJS({
+  "node_modules/tsyringe/dist/cjs/types/disposable.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.isDisposable = void 0;
+    function isDisposable(value) {
+      if (typeof value.dispose !== "function")
+        return false;
+      const disposeFun = value.dispose;
+      if (disposeFun.length > 0) {
+        return false;
+      }
+      return true;
+    }
+    exports2.isDisposable = isDisposable;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/interceptors.js
+var require_interceptors = __commonJS({
+  "node_modules/tsyringe/dist/cjs/interceptors.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.PostResolutionInterceptors = exports2.PreResolutionInterceptors = void 0;
+    var registry_base_1 = require_registry_base();
+    var PreResolutionInterceptors = class extends registry_base_1.default {
+    };
+    exports2.PreResolutionInterceptors = PreResolutionInterceptors;
+    var PostResolutionInterceptors = class extends registry_base_1.default {
+    };
+    exports2.PostResolutionInterceptors = PostResolutionInterceptors;
+    var Interceptors = class {
+      constructor() {
+        this.preResolution = new PreResolutionInterceptors();
+        this.postResolution = new PostResolutionInterceptors();
+      }
+    };
+    exports2.default = Interceptors;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/dependency-container.js
+var require_dependency_container = __commonJS({
+  "node_modules/tsyringe/dist/cjs/dependency-container.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.instance = exports2.typeInfo = void 0;
+    var tslib_1 = (init_tslib_es62(), __toCommonJS(tslib_es6_exports2));
+    var providers_1 = require_providers();
+    var provider_1 = require_provider();
+    var injection_token_1 = require_injection_token();
+    var registry_1 = require_registry2();
+    var lifecycle_1 = require_lifecycle();
+    var resolution_context_1 = require_resolution_context();
+    var error_helpers_1 = require_error_helpers();
+    var lazy_helpers_1 = require_lazy_helpers();
+    var disposable_1 = require_disposable();
+    var interceptors_1 = require_interceptors();
+    exports2.typeInfo = /* @__PURE__ */ new Map();
+    var InternalDependencyContainer = class _InternalDependencyContainer {
+      constructor(parent) {
+        this.parent = parent;
+        this._registry = new registry_1.default();
+        this.interceptors = new interceptors_1.default();
+        this.disposed = false;
+        this.disposables = /* @__PURE__ */ new Set();
+      }
+      register(token, providerOrConstructor, options = { lifecycle: lifecycle_1.default.Transient }) {
+        this.ensureNotDisposed();
+        let provider;
+        if (!provider_1.isProvider(providerOrConstructor)) {
+          provider = { useClass: providerOrConstructor };
+        } else {
+          provider = providerOrConstructor;
+        }
+        if (providers_1.isTokenProvider(provider)) {
+          const path = [token];
+          let tokenProvider = provider;
+          while (tokenProvider != null) {
+            const currentToken = tokenProvider.useToken;
+            if (path.includes(currentToken)) {
+              throw new Error(`Token registration cycle detected! ${[...path, currentToken].join(" -> ")}`);
+            }
+            path.push(currentToken);
+            const registration = this._registry.get(currentToken);
+            if (registration && providers_1.isTokenProvider(registration.provider)) {
+              tokenProvider = registration.provider;
+            } else {
+              tokenProvider = null;
+            }
+          }
+        }
+        if (options.lifecycle === lifecycle_1.default.Singleton || options.lifecycle == lifecycle_1.default.ContainerScoped || options.lifecycle == lifecycle_1.default.ResolutionScoped) {
+          if (providers_1.isValueProvider(provider) || providers_1.isFactoryProvider(provider)) {
+            throw new Error(`Cannot use lifecycle "${lifecycle_1.default[options.lifecycle]}" with ValueProviders or FactoryProviders`);
+          }
+        }
+        this._registry.set(token, { provider, options });
+        return this;
+      }
+      registerType(from, to) {
+        this.ensureNotDisposed();
+        if (providers_1.isNormalToken(to)) {
+          return this.register(from, {
+            useToken: to
+          });
+        }
+        return this.register(from, {
+          useClass: to
+        });
+      }
+      registerInstance(token, instance) {
+        this.ensureNotDisposed();
+        return this.register(token, {
+          useValue: instance
+        });
+      }
+      registerSingleton(from, to) {
+        this.ensureNotDisposed();
+        if (providers_1.isNormalToken(from)) {
+          if (providers_1.isNormalToken(to)) {
+            return this.register(from, {
+              useToken: to
+            }, { lifecycle: lifecycle_1.default.Singleton });
+          } else if (to) {
+            return this.register(from, {
+              useClass: to
+            }, { lifecycle: lifecycle_1.default.Singleton });
+          }
+          throw new Error('Cannot register a type name as a singleton without a "to" token');
+        }
+        let useClass = from;
+        if (to && !providers_1.isNormalToken(to)) {
+          useClass = to;
+        }
+        return this.register(from, {
+          useClass
+        }, { lifecycle: lifecycle_1.default.Singleton });
+      }
+      resolve(token, context = new resolution_context_1.default(), isOptional = false) {
+        this.ensureNotDisposed();
+        const registration = this.getRegistration(token);
+        if (!registration && providers_1.isNormalToken(token)) {
+          if (isOptional) {
+            return void 0;
+          }
+          throw new Error(`Attempted to resolve unregistered dependency token: "${token.toString()}"`);
+        }
+        this.executePreResolutionInterceptor(token, "Single");
+        if (registration) {
+          const result = this.resolveRegistration(registration, context);
+          this.executePostResolutionInterceptor(token, result, "Single");
+          return result;
+        }
+        if (injection_token_1.isConstructorToken(token)) {
+          const result = this.construct(token, context);
+          this.executePostResolutionInterceptor(token, result, "Single");
+          return result;
+        }
+        throw new Error("Attempted to construct an undefined constructor. Could mean a circular dependency problem. Try using `delay` function.");
+      }
+      executePreResolutionInterceptor(token, resolutionType) {
+        if (this.interceptors.preResolution.has(token)) {
+          const remainingInterceptors = [];
+          for (const interceptor of this.interceptors.preResolution.getAll(token)) {
+            if (interceptor.options.frequency != "Once") {
+              remainingInterceptors.push(interceptor);
+            }
+            interceptor.callback(token, resolutionType);
+          }
+          this.interceptors.preResolution.setAll(token, remainingInterceptors);
+        }
+      }
+      executePostResolutionInterceptor(token, result, resolutionType) {
+        if (this.interceptors.postResolution.has(token)) {
+          const remainingInterceptors = [];
+          for (const interceptor of this.interceptors.postResolution.getAll(token)) {
+            if (interceptor.options.frequency != "Once") {
+              remainingInterceptors.push(interceptor);
+            }
+            interceptor.callback(token, result, resolutionType);
+          }
+          this.interceptors.postResolution.setAll(token, remainingInterceptors);
+        }
+      }
+      resolveRegistration(registration, context) {
+        this.ensureNotDisposed();
+        if (registration.options.lifecycle === lifecycle_1.default.ResolutionScoped && context.scopedResolutions.has(registration)) {
+          return context.scopedResolutions.get(registration);
+        }
+        const isSingleton = registration.options.lifecycle === lifecycle_1.default.Singleton;
+        const isContainerScoped = registration.options.lifecycle === lifecycle_1.default.ContainerScoped;
+        const returnInstance = isSingleton || isContainerScoped;
+        let resolved;
+        if (providers_1.isValueProvider(registration.provider)) {
+          resolved = registration.provider.useValue;
+        } else if (providers_1.isTokenProvider(registration.provider)) {
+          resolved = returnInstance ? registration.instance || (registration.instance = this.resolve(registration.provider.useToken, context)) : this.resolve(registration.provider.useToken, context);
+        } else if (providers_1.isClassProvider(registration.provider)) {
+          resolved = returnInstance ? registration.instance || (registration.instance = this.construct(registration.provider.useClass, context)) : this.construct(registration.provider.useClass, context);
+        } else if (providers_1.isFactoryProvider(registration.provider)) {
+          resolved = registration.provider.useFactory(this);
+        } else {
+          resolved = this.construct(registration.provider, context);
+        }
+        if (registration.options.lifecycle === lifecycle_1.default.ResolutionScoped) {
+          context.scopedResolutions.set(registration, resolved);
+        }
+        return resolved;
+      }
+      resolveAll(token, context = new resolution_context_1.default(), isOptional = false) {
+        this.ensureNotDisposed();
+        const registrations = this.getAllRegistrations(token);
+        if (!registrations && providers_1.isNormalToken(token)) {
+          if (isOptional) {
+            return [];
+          }
+          throw new Error(`Attempted to resolve unregistered dependency token: "${token.toString()}"`);
+        }
+        this.executePreResolutionInterceptor(token, "All");
+        if (registrations) {
+          const result2 = registrations.map((item) => this.resolveRegistration(item, context));
+          this.executePostResolutionInterceptor(token, result2, "All");
+          return result2;
+        }
+        const result = [this.construct(token, context)];
+        this.executePostResolutionInterceptor(token, result, "All");
+        return result;
+      }
+      isRegistered(token, recursive = false) {
+        this.ensureNotDisposed();
+        return this._registry.has(token) || recursive && (this.parent || false) && this.parent.isRegistered(token, true);
+      }
+      reset() {
+        this.ensureNotDisposed();
+        this._registry.clear();
+        this.interceptors.preResolution.clear();
+        this.interceptors.postResolution.clear();
+      }
+      clearInstances() {
+        this.ensureNotDisposed();
+        for (const [token, registrations] of this._registry.entries()) {
+          this._registry.setAll(token, registrations.filter((registration) => !providers_1.isValueProvider(registration.provider)).map((registration) => {
+            registration.instance = void 0;
+            return registration;
+          }));
+        }
+      }
+      createChildContainer() {
+        this.ensureNotDisposed();
+        const childContainer = new _InternalDependencyContainer(this);
+        for (const [token, registrations] of this._registry.entries()) {
+          if (registrations.some(({ options }) => options.lifecycle === lifecycle_1.default.ContainerScoped)) {
+            childContainer._registry.setAll(token, registrations.map((registration) => {
+              if (registration.options.lifecycle === lifecycle_1.default.ContainerScoped) {
+                return {
+                  provider: registration.provider,
+                  options: registration.options
+                };
+              }
+              return registration;
+            }));
+          }
+        }
+        return childContainer;
+      }
+      beforeResolution(token, callback, options = { frequency: "Always" }) {
+        this.interceptors.preResolution.set(token, {
+          callback,
+          options
+        });
+      }
+      afterResolution(token, callback, options = { frequency: "Always" }) {
+        this.interceptors.postResolution.set(token, {
+          callback,
+          options
+        });
+      }
+      dispose() {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
+          this.disposed = true;
+          const promises = [];
+          this.disposables.forEach((disposable) => {
+            const maybePromise = disposable.dispose();
+            if (maybePromise) {
+              promises.push(maybePromise);
+            }
+          });
+          yield Promise.all(promises);
+        });
+      }
+      getRegistration(token) {
+        if (this.isRegistered(token)) {
+          return this._registry.get(token);
+        }
+        if (this.parent) {
+          return this.parent.getRegistration(token);
+        }
+        return null;
+      }
+      getAllRegistrations(token) {
+        if (this.isRegistered(token)) {
+          return this._registry.getAll(token);
+        }
+        if (this.parent) {
+          return this.parent.getAllRegistrations(token);
+        }
+        return null;
+      }
+      construct(ctor, context) {
+        if (ctor instanceof lazy_helpers_1.DelayedConstructor) {
+          return ctor.createProxy((target) => this.resolve(target, context));
+        }
+        const instance = (() => {
+          const paramInfo = exports2.typeInfo.get(ctor);
+          if (!paramInfo || paramInfo.length === 0) {
+            if (ctor.length === 0) {
+              return new ctor();
+            } else {
+              throw new Error(`TypeInfo not known for "${ctor.name}"`);
+            }
+          }
+          const params = paramInfo.map(this.resolveParams(context, ctor));
+          return new ctor(...params);
+        })();
+        if (disposable_1.isDisposable(instance)) {
+          this.disposables.add(instance);
+        }
+        return instance;
+      }
+      resolveParams(context, ctor) {
+        return (param, idx) => {
+          try {
+            if (injection_token_1.isTokenDescriptor(param)) {
+              if (injection_token_1.isTransformDescriptor(param)) {
+                return param.multiple ? this.resolve(param.transform).transform(this.resolveAll(param.token, new resolution_context_1.default(), param.isOptional), ...param.transformArgs) : this.resolve(param.transform).transform(this.resolve(param.token, context, param.isOptional), ...param.transformArgs);
+              } else {
+                return param.multiple ? this.resolveAll(param.token, new resolution_context_1.default(), param.isOptional) : this.resolve(param.token, context, param.isOptional);
+              }
+            } else if (injection_token_1.isTransformDescriptor(param)) {
+              return this.resolve(param.transform, context).transform(this.resolve(param.token, context), ...param.transformArgs);
+            }
+            return this.resolve(param, context);
+          } catch (e) {
+            throw new Error(error_helpers_1.formatErrorCtor(ctor, idx, e));
+          }
+        };
+      }
+      ensureNotDisposed() {
+        if (this.disposed) {
+          throw new Error("This container has been disposed, you cannot interact with a disposed container");
+        }
+      }
+    };
+    exports2.instance = new InternalDependencyContainer();
+    exports2.default = exports2.instance;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/decorators/auto-injectable.js
+var require_auto_injectable = __commonJS({
+  "node_modules/tsyringe/dist/cjs/decorators/auto-injectable.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var reflection_helpers_1 = require_reflection_helpers();
+    var dependency_container_1 = require_dependency_container();
+    var injection_token_1 = require_injection_token();
+    var error_helpers_1 = require_error_helpers();
+    function autoInjectable() {
+      return function(target) {
+        const paramInfo = reflection_helpers_1.getParamInfo(target);
+        return class extends target {
+          constructor(...args) {
+            super(...args.concat(paramInfo.slice(args.length).map((type, index) => {
+              try {
+                if (injection_token_1.isTokenDescriptor(type)) {
+                  if (injection_token_1.isTransformDescriptor(type)) {
+                    return type.multiple ? dependency_container_1.instance.resolve(type.transform).transform(dependency_container_1.instance.resolveAll(type.token), ...type.transformArgs) : dependency_container_1.instance.resolve(type.transform).transform(dependency_container_1.instance.resolve(type.token), ...type.transformArgs);
+                  } else {
+                    return type.multiple ? dependency_container_1.instance.resolveAll(type.token) : dependency_container_1.instance.resolve(type.token);
+                  }
+                } else if (injection_token_1.isTransformDescriptor(type)) {
+                  return dependency_container_1.instance.resolve(type.transform).transform(dependency_container_1.instance.resolve(type.token), ...type.transformArgs);
+                }
+                return dependency_container_1.instance.resolve(type);
+              } catch (e) {
+                const argIndex = index + args.length;
+                throw new Error(error_helpers_1.formatErrorCtor(target, argIndex, e));
+              }
+            })));
+          }
+        };
+      };
+    }
+    exports2.default = autoInjectable;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/decorators/inject.js
+var require_inject = __commonJS({
+  "node_modules/tsyringe/dist/cjs/decorators/inject.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var reflection_helpers_1 = require_reflection_helpers();
+    function inject(token, options) {
+      const data = {
+        token,
+        multiple: false,
+        isOptional: options && options.isOptional
+      };
+      return reflection_helpers_1.defineInjectionTokenMetadata(data);
+    }
+    exports2.default = inject;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/decorators/injectable.js
+var require_injectable = __commonJS({
+  "node_modules/tsyringe/dist/cjs/decorators/injectable.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var reflection_helpers_1 = require_reflection_helpers();
+    var dependency_container_1 = require_dependency_container();
+    var dependency_container_2 = require_dependency_container();
+    function injectable(options) {
+      return function(target) {
+        dependency_container_1.typeInfo.set(target, reflection_helpers_1.getParamInfo(target));
+        if (options && options.token) {
+          if (!Array.isArray(options.token)) {
+            dependency_container_2.instance.register(options.token, target);
+          } else {
+            options.token.forEach((token) => {
+              dependency_container_2.instance.register(token, target);
+            });
+          }
+        }
+      };
+    }
+    exports2.default = injectable;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/decorators/registry.js
+var require_registry3 = __commonJS({
+  "node_modules/tsyringe/dist/cjs/decorators/registry.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es62(), __toCommonJS(tslib_es6_exports2));
+    var dependency_container_1 = require_dependency_container();
+    function registry2(registrations = []) {
+      return function(target) {
+        registrations.forEach((_a2) => {
+          var { token, options } = _a2, provider = tslib_1.__rest(_a2, ["token", "options"]);
+          return dependency_container_1.instance.register(token, provider, options);
+        });
+        return target;
+      };
+    }
+    exports2.default = registry2;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/decorators/singleton.js
+var require_singleton = __commonJS({
+  "node_modules/tsyringe/dist/cjs/decorators/singleton.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var injectable_1 = require_injectable();
+    var dependency_container_1 = require_dependency_container();
+    function singleton() {
+      return function(target) {
+        injectable_1.default()(target);
+        dependency_container_1.instance.registerSingleton(target);
+      };
+    }
+    exports2.default = singleton;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/decorators/inject-all.js
+var require_inject_all = __commonJS({
+  "node_modules/tsyringe/dist/cjs/decorators/inject-all.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var reflection_helpers_1 = require_reflection_helpers();
+    function injectAll(token, options) {
+      const data = {
+        token,
+        multiple: true,
+        isOptional: options && options.isOptional
+      };
+      return reflection_helpers_1.defineInjectionTokenMetadata(data);
+    }
+    exports2.default = injectAll;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/decorators/inject-all-with-transform.js
+var require_inject_all_with_transform = __commonJS({
+  "node_modules/tsyringe/dist/cjs/decorators/inject-all-with-transform.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var reflection_helpers_1 = require_reflection_helpers();
+    function injectAllWithTransform(token, transformer, ...args) {
+      const data = {
+        token,
+        multiple: true,
+        transform: transformer,
+        transformArgs: args
+      };
+      return reflection_helpers_1.defineInjectionTokenMetadata(data);
+    }
+    exports2.default = injectAllWithTransform;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/decorators/inject-with-transform.js
+var require_inject_with_transform = __commonJS({
+  "node_modules/tsyringe/dist/cjs/decorators/inject-with-transform.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var reflection_helpers_1 = require_reflection_helpers();
+    function injectWithTransform(token, transformer, ...args) {
+      return reflection_helpers_1.defineInjectionTokenMetadata(token, {
+        transformToken: transformer,
+        args
+      });
+    }
+    exports2.default = injectWithTransform;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/decorators/scoped.js
+var require_scoped = __commonJS({
+  "node_modules/tsyringe/dist/cjs/decorators/scoped.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var injectable_1 = require_injectable();
+    var dependency_container_1 = require_dependency_container();
+    function scoped(lifecycle, token) {
+      return function(target) {
+        injectable_1.default()(target);
+        dependency_container_1.instance.register(token || target, target, {
+          lifecycle
+        });
+      };
+    }
+    exports2.default = scoped;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/decorators/index.js
+var require_decorators2 = __commonJS({
+  "node_modules/tsyringe/dist/cjs/decorators/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var auto_injectable_1 = require_auto_injectable();
+    Object.defineProperty(exports2, "autoInjectable", { enumerable: true, get: function() {
+      return auto_injectable_1.default;
+    } });
+    var inject_1 = require_inject();
+    Object.defineProperty(exports2, "inject", { enumerable: true, get: function() {
+      return inject_1.default;
+    } });
+    var injectable_1 = require_injectable();
+    Object.defineProperty(exports2, "injectable", { enumerable: true, get: function() {
+      return injectable_1.default;
+    } });
+    var registry_1 = require_registry3();
+    Object.defineProperty(exports2, "registry", { enumerable: true, get: function() {
+      return registry_1.default;
+    } });
+    var singleton_1 = require_singleton();
+    Object.defineProperty(exports2, "singleton", { enumerable: true, get: function() {
+      return singleton_1.default;
+    } });
+    var inject_all_1 = require_inject_all();
+    Object.defineProperty(exports2, "injectAll", { enumerable: true, get: function() {
+      return inject_all_1.default;
+    } });
+    var inject_all_with_transform_1 = require_inject_all_with_transform();
+    Object.defineProperty(exports2, "injectAllWithTransform", { enumerable: true, get: function() {
+      return inject_all_with_transform_1.default;
+    } });
+    var inject_with_transform_1 = require_inject_with_transform();
+    Object.defineProperty(exports2, "injectWithTransform", { enumerable: true, get: function() {
+      return inject_with_transform_1.default;
+    } });
+    var scoped_1 = require_scoped();
+    Object.defineProperty(exports2, "scoped", { enumerable: true, get: function() {
+      return scoped_1.default;
+    } });
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/factories/instance-caching-factory.js
+var require_instance_caching_factory = __commonJS({
+  "node_modules/tsyringe/dist/cjs/factories/instance-caching-factory.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    function instanceCachingFactory(factoryFunc) {
+      let instance;
+      return (dependencyContainer) => {
+        if (instance == void 0) {
+          instance = factoryFunc(dependencyContainer);
+        }
+        return instance;
+      };
+    }
+    exports2.default = instanceCachingFactory;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/factories/instance-per-container-caching-factory.js
+var require_instance_per_container_caching_factory = __commonJS({
+  "node_modules/tsyringe/dist/cjs/factories/instance-per-container-caching-factory.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    function instancePerContainerCachingFactory(factoryFunc) {
+      const cache = /* @__PURE__ */ new WeakMap();
+      return (dependencyContainer) => {
+        let instance = cache.get(dependencyContainer);
+        if (instance == void 0) {
+          instance = factoryFunc(dependencyContainer);
+          cache.set(dependencyContainer, instance);
+        }
+        return instance;
+      };
+    }
+    exports2.default = instancePerContainerCachingFactory;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/factories/predicate-aware-class-factory.js
+var require_predicate_aware_class_factory = __commonJS({
+  "node_modules/tsyringe/dist/cjs/factories/predicate-aware-class-factory.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    function predicateAwareClassFactory(predicate, trueConstructor, falseConstructor, useCaching = true) {
+      let instance;
+      let previousPredicate;
+      return (dependencyContainer) => {
+        const currentPredicate = predicate(dependencyContainer);
+        if (!useCaching || previousPredicate !== currentPredicate) {
+          if (previousPredicate = currentPredicate) {
+            instance = dependencyContainer.resolve(trueConstructor);
+          } else {
+            instance = dependencyContainer.resolve(falseConstructor);
+          }
+        }
+        return instance;
+      };
+    }
+    exports2.default = predicateAwareClassFactory;
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/factories/index.js
+var require_factories = __commonJS({
+  "node_modules/tsyringe/dist/cjs/factories/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var instance_caching_factory_1 = require_instance_caching_factory();
+    Object.defineProperty(exports2, "instanceCachingFactory", { enumerable: true, get: function() {
+      return instance_caching_factory_1.default;
+    } });
+    var instance_per_container_caching_factory_1 = require_instance_per_container_caching_factory();
+    Object.defineProperty(exports2, "instancePerContainerCachingFactory", { enumerable: true, get: function() {
+      return instance_per_container_caching_factory_1.default;
+    } });
+    var predicate_aware_class_factory_1 = require_predicate_aware_class_factory();
+    Object.defineProperty(exports2, "predicateAwareClassFactory", { enumerable: true, get: function() {
+      return predicate_aware_class_factory_1.default;
+    } });
+  }
+});
+
+// node_modules/tsyringe/dist/cjs/index.js
+var require_cjs8 = __commonJS({
+  "node_modules/tsyringe/dist/cjs/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es62(), __toCommonJS(tslib_es6_exports2));
+    if (typeof Reflect === "undefined" || !Reflect.getMetadata) {
+      throw new Error(`tsyringe requires a reflect polyfill. Please add 'import "reflect-metadata"' to the top of your entry point.`);
+    }
+    var types_1 = require_types5();
+    Object.defineProperty(exports2, "Lifecycle", { enumerable: true, get: function() {
+      return types_1.Lifecycle;
+    } });
+    tslib_1.__exportStar(require_decorators2(), exports2);
+    tslib_1.__exportStar(require_factories(), exports2);
+    tslib_1.__exportStar(require_providers(), exports2);
+    var lazy_helpers_1 = require_lazy_helpers();
+    Object.defineProperty(exports2, "delay", { enumerable: true, get: function() {
+      return lazy_helpers_1.delay;
+    } });
+    var dependency_container_1 = require_dependency_container();
+    Object.defineProperty(exports2, "container", { enumerable: true, get: function() {
+      return dependency_container_1.instance;
+    } });
+  }
+});
+
+// node_modules/@peculiar/asn1-pfx/build/cjs/attribute.js
+var require_attribute3 = __commonJS({
+  "node_modules/@peculiar/asn1-pfx/build/cjs/attribute.js"(exports2) {
+    "use strict";
+    var PKCS12AttrSet_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.PKCS12AttrSet = exports2.PKCS12Attribute = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var PKCS12Attribute = class {
+      attrId = "";
+      attrValues = [];
+      constructor(params = {}) {
+        Object.assign(params);
+      }
+    };
+    exports2.PKCS12Attribute = PKCS12Attribute;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], PKCS12Attribute.prototype, "attrId", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Any,
+        repeated: "set"
+      })
+    ], PKCS12Attribute.prototype, "attrValues", void 0);
+    var PKCS12AttrSet = PKCS12AttrSet_1 = class PKCS12AttrSet extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, PKCS12AttrSet_1.prototype);
+      }
+    };
+    exports2.PKCS12AttrSet = PKCS12AttrSet;
+    exports2.PKCS12AttrSet = PKCS12AttrSet = PKCS12AttrSet_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: PKCS12Attribute
+      })
+    ], PKCS12AttrSet);
+  }
+});
+
+// node_modules/@peculiar/asn1-pfx/build/cjs/authenticated_safe.js
+var require_authenticated_safe = __commonJS({
+  "node_modules/@peculiar/asn1-pfx/build/cjs/authenticated_safe.js"(exports2) {
+    "use strict";
+    var AuthenticatedSafe_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.AuthenticatedSafe = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_cms_1 = require_cjs5();
+    var AuthenticatedSafe = AuthenticatedSafe_1 = class AuthenticatedSafe extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, AuthenticatedSafe_1.prototype);
+      }
+    };
+    exports2.AuthenticatedSafe = AuthenticatedSafe;
+    exports2.AuthenticatedSafe = AuthenticatedSafe = AuthenticatedSafe_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: asn1_cms_1.ContentInfo
+      })
+    ], AuthenticatedSafe);
+  }
+});
+
+// node_modules/@peculiar/asn1-pfx/build/cjs/object_identifiers.js
+var require_object_identifiers6 = __commonJS({
+  "node_modules/@peculiar/asn1-pfx/build/cjs/object_identifiers.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.id_bagtypes = exports2.id_pbewithSHAAnd40BitRC2_CBC = exports2.id_pbeWithSHAAnd128BitRC2_CBC = exports2.id_pbeWithSHAAnd2_KeyTripleDES_CBC = exports2.id_pbeWithSHAAnd3_KeyTripleDES_CBC = exports2.id_pbeWithSHAAnd40BitRC4 = exports2.id_pbeWithSHAAnd128BitRC4 = exports2.id_pkcs_12PbeIds = exports2.id_pkcs_12 = exports2.id_pkcs = exports2.id_rsadsi = void 0;
+    exports2.id_rsadsi = "1.2.840.113549";
+    exports2.id_pkcs = `${exports2.id_rsadsi}.1`;
+    exports2.id_pkcs_12 = `${exports2.id_pkcs}.12`;
+    exports2.id_pkcs_12PbeIds = `${exports2.id_pkcs_12}.1`;
+    exports2.id_pbeWithSHAAnd128BitRC4 = `${exports2.id_pkcs_12PbeIds}.1`;
+    exports2.id_pbeWithSHAAnd40BitRC4 = `${exports2.id_pkcs_12PbeIds}.2`;
+    exports2.id_pbeWithSHAAnd3_KeyTripleDES_CBC = `${exports2.id_pkcs_12PbeIds}.3`;
+    exports2.id_pbeWithSHAAnd2_KeyTripleDES_CBC = `${exports2.id_pkcs_12PbeIds}.4`;
+    exports2.id_pbeWithSHAAnd128BitRC2_CBC = `${exports2.id_pkcs_12PbeIds}.5`;
+    exports2.id_pbewithSHAAnd40BitRC2_CBC = `${exports2.id_pkcs_12PbeIds}.6`;
+    exports2.id_bagtypes = `${exports2.id_pkcs_12}.10.1`;
+  }
+});
+
+// node_modules/@peculiar/asn1-pfx/build/cjs/bags/types.js
+var require_types6 = __commonJS({
+  "node_modules/@peculiar/asn1-pfx/build/cjs/bags/types.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.id_pkcs_9 = exports2.id_SafeContents = exports2.id_SecretBag = exports2.id_CRLBag = exports2.id_certBag = exports2.id_pkcs8ShroudedKeyBag = exports2.id_keyBag = void 0;
+    var object_identifiers_1 = require_object_identifiers6();
+    exports2.id_keyBag = `${object_identifiers_1.id_bagtypes}.1`;
+    exports2.id_pkcs8ShroudedKeyBag = `${object_identifiers_1.id_bagtypes}.2`;
+    exports2.id_certBag = `${object_identifiers_1.id_bagtypes}.3`;
+    exports2.id_CRLBag = `${object_identifiers_1.id_bagtypes}.4`;
+    exports2.id_SecretBag = `${object_identifiers_1.id_bagtypes}.5`;
+    exports2.id_SafeContents = `${object_identifiers_1.id_bagtypes}.6`;
+    exports2.id_pkcs_9 = "1.2.840.113549.1.9";
+  }
+});
+
+// node_modules/@peculiar/asn1-pfx/build/cjs/bags/cert_bag.js
+var require_cert_bag = __commonJS({
+  "node_modules/@peculiar/asn1-pfx/build/cjs/bags/cert_bag.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.id_sdsiCertificate = exports2.id_x509Certificate = exports2.id_certTypes = exports2.CertBag = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var types_1 = require_types6();
+    var CertBag = class {
+      certId = "";
+      certValue = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.CertBag = CertBag;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], CertBag.prototype, "certId", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Any,
+        context: 0
+      })
+    ], CertBag.prototype, "certValue", void 0);
+    exports2.id_certTypes = `${types_1.id_pkcs_9}.22`;
+    exports2.id_x509Certificate = `${exports2.id_certTypes}.1`;
+    exports2.id_sdsiCertificate = `${exports2.id_certTypes}.2`;
+  }
+});
+
+// node_modules/@peculiar/asn1-pfx/build/cjs/bags/crl_bag.js
+var require_crl_bag = __commonJS({
+  "node_modules/@peculiar/asn1-pfx/build/cjs/bags/crl_bag.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.id_x509CRL = exports2.id_crlTypes = exports2.CRLBag = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var types_1 = require_types6();
+    var CRLBag = class {
+      crlId = "";
+      crltValue = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.CRLBag = CRLBag;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], CRLBag.prototype, "crlId", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Any,
+        context: 0
+      })
+    ], CRLBag.prototype, "crltValue", void 0);
+    exports2.id_crlTypes = `${types_1.id_pkcs_9}.23`;
+    exports2.id_x509CRL = `${exports2.id_crlTypes}.1`;
+  }
+});
+
+// node_modules/@peculiar/asn1-pkcs8/build/cjs/encrypted_private_key_info.js
+var require_encrypted_private_key_info = __commonJS({
+  "node_modules/@peculiar/asn1-pkcs8/build/cjs/encrypted_private_key_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.EncryptedPrivateKeyInfo = exports2.EncryptedData = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var EncryptedData = class extends asn1_schema_1.OctetString {
+    };
+    exports2.EncryptedData = EncryptedData;
+    var EncryptedPrivateKeyInfo = class {
+      encryptionAlgorithm = new asn1_x509_1.AlgorithmIdentifier();
+      encryptedData = new EncryptedData();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.EncryptedPrivateKeyInfo = EncryptedPrivateKeyInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.AlgorithmIdentifier })
+    ], EncryptedPrivateKeyInfo.prototype, "encryptionAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: EncryptedData })
+    ], EncryptedPrivateKeyInfo.prototype, "encryptedData", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-pkcs8/build/cjs/private_key_info.js
+var require_private_key_info = __commonJS({
+  "node_modules/@peculiar/asn1-pkcs8/build/cjs/private_key_info.js"(exports2) {
+    "use strict";
+    var Attributes_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.PrivateKeyInfo = exports2.Attributes = exports2.PrivateKey = exports2.Version = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var Version;
+    (function(Version2) {
+      Version2[Version2["v1"] = 0] = "v1";
+    })(Version || (exports2.Version = Version = {}));
+    var PrivateKey = class extends asn1_schema_1.OctetString {
+    };
+    exports2.PrivateKey = PrivateKey;
+    var Attributes = Attributes_1 = class Attributes extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, Attributes_1.prototype);
+      }
+    };
+    exports2.Attributes = Attributes;
+    exports2.Attributes = Attributes = Attributes_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: asn1_x509_1.Attribute
+      })
+    ], Attributes);
+    var PrivateKeyInfo = class {
+      version = Version.v1;
+      privateKeyAlgorithm = new asn1_x509_1.AlgorithmIdentifier();
+      privateKey = new PrivateKey();
+      attributes;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.PrivateKeyInfo = PrivateKeyInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], PrivateKeyInfo.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.AlgorithmIdentifier })
+    ], PrivateKeyInfo.prototype, "privateKeyAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: PrivateKey })
+    ], PrivateKeyInfo.prototype, "privateKey", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: Attributes,
+        implicit: true,
+        context: 0,
+        optional: true
+      })
+    ], PrivateKeyInfo.prototype, "attributes", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-pkcs8/build/cjs/index.js
+var require_cjs9 = __commonJS({
+  "node_modules/@peculiar/asn1-pkcs8/build/cjs/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_encrypted_private_key_info(), exports2);
+    tslib_1.__exportStar(require_private_key_info(), exports2);
+  }
+});
+
+// node_modules/@peculiar/asn1-pfx/build/cjs/bags/key_bag.js
+var require_key_bag = __commonJS({
+  "node_modules/@peculiar/asn1-pfx/build/cjs/bags/key_bag.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.KeyBag = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_pkcs8_1 = require_cjs9();
+    var asn1_schema_1 = require_cjs2();
+    var KeyBag = class KeyBag extends asn1_pkcs8_1.PrivateKeyInfo {
+    };
+    exports2.KeyBag = KeyBag;
+    exports2.KeyBag = KeyBag = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], KeyBag);
+  }
+});
+
+// node_modules/@peculiar/asn1-pfx/build/cjs/bags/pkcs8_shrouded_key_bag.js
+var require_pkcs8_shrouded_key_bag = __commonJS({
+  "node_modules/@peculiar/asn1-pfx/build/cjs/bags/pkcs8_shrouded_key_bag.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.PKCS8ShroudedKeyBag = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_pkcs8_1 = require_cjs9();
+    var asn1_schema_1 = require_cjs2();
+    var PKCS8ShroudedKeyBag = class PKCS8ShroudedKeyBag extends asn1_pkcs8_1.EncryptedPrivateKeyInfo {
+    };
+    exports2.PKCS8ShroudedKeyBag = PKCS8ShroudedKeyBag;
+    exports2.PKCS8ShroudedKeyBag = PKCS8ShroudedKeyBag = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], PKCS8ShroudedKeyBag);
+  }
+});
+
+// node_modules/@peculiar/asn1-pfx/build/cjs/bags/secret_bag.js
+var require_secret_bag = __commonJS({
+  "node_modules/@peculiar/asn1-pfx/build/cjs/bags/secret_bag.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SecretBag = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var SecretBag = class {
+      secretTypeId = "";
+      secretValue = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.SecretBag = SecretBag;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], SecretBag.prototype, "secretTypeId", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Any,
+        context: 0
+      })
+    ], SecretBag.prototype, "secretValue", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-pfx/build/cjs/bags/index.js
+var require_bags = __commonJS({
+  "node_modules/@peculiar/asn1-pfx/build/cjs/bags/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_cert_bag(), exports2);
+    tslib_1.__exportStar(require_crl_bag(), exports2);
+    tslib_1.__exportStar(require_key_bag(), exports2);
+    tslib_1.__exportStar(require_pkcs8_shrouded_key_bag(), exports2);
+    tslib_1.__exportStar(require_secret_bag(), exports2);
+    tslib_1.__exportStar(require_types6(), exports2);
+  }
+});
+
+// node_modules/@peculiar/asn1-pfx/build/cjs/mac_data.js
+var require_mac_data = __commonJS({
+  "node_modules/@peculiar/asn1-pfx/build/cjs/mac_data.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.MacData = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_rsa_1 = require_cjs7();
+    var asn1_schema_1 = require_cjs2();
+    var MacData = class {
+      mac = new asn1_rsa_1.DigestInfo();
+      macSalt = new asn1_schema_1.OctetString();
+      iterations = 1;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.MacData = MacData;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_rsa_1.DigestInfo })
+    ], MacData.prototype, "mac", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.OctetString })
+    ], MacData.prototype, "macSalt", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Integer,
+        defaultValue: 1
+      })
+    ], MacData.prototype, "iterations", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-pfx/build/cjs/pfx.js
+var require_pfx = __commonJS({
+  "node_modules/@peculiar/asn1-pfx/build/cjs/pfx.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.PFX = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_cms_1 = require_cjs5();
+    var mac_data_1 = require_mac_data();
+    var PFX = class {
+      version = 3;
+      authSafe = new asn1_cms_1.ContentInfo();
+      macData = new mac_data_1.MacData();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.PFX = PFX;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], PFX.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_cms_1.ContentInfo })
+    ], PFX.prototype, "authSafe", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: mac_data_1.MacData,
+        optional: true
+      })
+    ], PFX.prototype, "macData", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-pfx/build/cjs/safe_bag.js
+var require_safe_bag = __commonJS({
+  "node_modules/@peculiar/asn1-pfx/build/cjs/safe_bag.js"(exports2) {
+    "use strict";
+    var SafeContents_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SafeContents = exports2.SafeBag = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var attribute_1 = require_attribute3();
+    var SafeBag = class {
+      bagId = "";
+      bagValue = new ArrayBuffer(0);
+      bagAttributes;
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.SafeBag = SafeBag;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], SafeBag.prototype, "bagId", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: asn1_schema_1.AsnPropTypes.Any,
+        context: 0
+      })
+    ], SafeBag.prototype, "bagValue", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: attribute_1.PKCS12Attribute,
+        repeated: "set",
+        optional: true
+      })
+    ], SafeBag.prototype, "bagAttributes", void 0);
+    var SafeContents = SafeContents_1 = class SafeContents extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, SafeContents_1.prototype);
+      }
+    };
+    exports2.SafeContents = SafeContents;
+    exports2.SafeContents = SafeContents = SafeContents_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: SafeBag
+      })
+    ], SafeContents);
+  }
+});
+
+// node_modules/@peculiar/asn1-pfx/build/cjs/index.js
+var require_cjs10 = __commonJS({
+  "node_modules/@peculiar/asn1-pfx/build/cjs/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_attribute3(), exports2);
+    tslib_1.__exportStar(require_authenticated_safe(), exports2);
+    tslib_1.__exportStar(require_bags(), exports2);
+    tslib_1.__exportStar(require_mac_data(), exports2);
+    tslib_1.__exportStar(require_object_identifiers6(), exports2);
+    tslib_1.__exportStar(require_pfx(), exports2);
+    tslib_1.__exportStar(require_safe_bag(), exports2);
+  }
+});
+
+// node_modules/@peculiar/asn1-pkcs9/build/cjs/index.js
+var require_cjs11 = __commonJS({
+  "node_modules/@peculiar/asn1-pkcs9/build/cjs/index.js"(exports2) {
+    "use strict";
+    var ExtensionRequest_1;
+    var ExtendedCertificateAttributes_1;
+    var SMIMECapabilities_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.DateOfBirth = exports2.UnstructuredAddress = exports2.UnstructuredName = exports2.EmailAddress = exports2.EncryptedPrivateKeyInfo = exports2.UserPKCS12 = exports2.Pkcs7PDU = exports2.PKCS9String = exports2.id_at_pseudonym = exports2.crlTypes = exports2.id_certTypes = exports2.id_smime = exports2.id_pkcs9_mr_signingTimeMatch = exports2.id_pkcs9_mr_caseIgnoreMatch = exports2.id_pkcs9_sx_signingTime = exports2.id_pkcs9_sx_pkcs9String = exports2.id_pkcs9_at_countryOfResidence = exports2.id_pkcs9_at_countryOfCitizenship = exports2.id_pkcs9_at_gender = exports2.id_pkcs9_at_placeOfBirth = exports2.id_pkcs9_at_dateOfBirth = exports2.id_ietf_at = exports2.id_pkcs9_at_pkcs7PDU = exports2.id_pkcs9_at_sequenceNumber = exports2.id_pkcs9_at_randomNonce = exports2.id_pkcs9_at_encryptedPrivateKeyInfo = exports2.id_pkcs9_at_pkcs15Token = exports2.id_pkcs9_at_userPKCS12 = exports2.id_pkcs9_at_localKeyId = exports2.id_pkcs9_at_friendlyName = exports2.id_pkcs9_at_smimeCapabilities = exports2.id_pkcs9_at_extensionRequest = exports2.id_pkcs9_at_signingDescription = exports2.id_pkcs9_at_extendedCertificateAttributes = exports2.id_pkcs9_at_unstructuredAddress = exports2.id_pkcs9_at_challengePassword = exports2.id_pkcs9_at_counterSignature = exports2.id_pkcs9_at_signingTime = exports2.id_pkcs9_at_messageDigest = exports2.id_pkcs9_at_contentType = exports2.id_pkcs9_at_unstructuredName = exports2.id_pkcs9_at_emailAddress = exports2.id_pkcs9_oc_naturalPerson = exports2.id_pkcs9_oc_pkcsEntity = exports2.id_pkcs9_mr = exports2.id_pkcs9_sx = exports2.id_pkcs9_at = exports2.id_pkcs9_oc = exports2.id_pkcs9_mo = exports2.id_pkcs9 = void 0;
+    exports2.SMIMECapabilities = exports2.SMIMECapability = exports2.SigningDescription = exports2.LocalKeyId = exports2.FriendlyName = exports2.ExtendedCertificateAttributes = exports2.ExtensionRequest = exports2.ChallengePassword = exports2.CounterSignature = exports2.SequenceNumber = exports2.RandomNonce = exports2.SigningTime = exports2.MessageDigest = exports2.ContentType = exports2.Pseudonym = exports2.CountryOfResidence = exports2.CountryOfCitizenship = exports2.Gender = exports2.PlaceOfBirth = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var cms = tslib_1.__importStar(require_cjs5());
+    var pfx = tslib_1.__importStar(require_cjs10());
+    var pkcs8 = tslib_1.__importStar(require_cjs9());
+    var x509 = tslib_1.__importStar(require_cjs3());
+    var attr = tslib_1.__importStar(require_cjs4());
+    exports2.id_pkcs9 = "1.2.840.113549.1.9";
+    exports2.id_pkcs9_mo = `${exports2.id_pkcs9}.0`;
+    exports2.id_pkcs9_oc = `${exports2.id_pkcs9}.24`;
+    exports2.id_pkcs9_at = `${exports2.id_pkcs9}.25`;
+    exports2.id_pkcs9_sx = `${exports2.id_pkcs9}.26`;
+    exports2.id_pkcs9_mr = `${exports2.id_pkcs9}.27`;
+    exports2.id_pkcs9_oc_pkcsEntity = `${exports2.id_pkcs9_oc}.1`;
+    exports2.id_pkcs9_oc_naturalPerson = `${exports2.id_pkcs9_oc}.2`;
+    exports2.id_pkcs9_at_emailAddress = `${exports2.id_pkcs9}.1`;
+    exports2.id_pkcs9_at_unstructuredName = `${exports2.id_pkcs9}.2`;
+    exports2.id_pkcs9_at_contentType = `${exports2.id_pkcs9}.3`;
+    exports2.id_pkcs9_at_messageDigest = `${exports2.id_pkcs9}.4`;
+    exports2.id_pkcs9_at_signingTime = `${exports2.id_pkcs9}.5`;
+    exports2.id_pkcs9_at_counterSignature = `${exports2.id_pkcs9}.6`;
+    exports2.id_pkcs9_at_challengePassword = `${exports2.id_pkcs9}.7`;
+    exports2.id_pkcs9_at_unstructuredAddress = `${exports2.id_pkcs9}.8`;
+    exports2.id_pkcs9_at_extendedCertificateAttributes = `${exports2.id_pkcs9}.9`;
+    exports2.id_pkcs9_at_signingDescription = `${exports2.id_pkcs9}.13`;
+    exports2.id_pkcs9_at_extensionRequest = `${exports2.id_pkcs9}.14`;
+    exports2.id_pkcs9_at_smimeCapabilities = `${exports2.id_pkcs9}.15`;
+    exports2.id_pkcs9_at_friendlyName = `${exports2.id_pkcs9}.20`;
+    exports2.id_pkcs9_at_localKeyId = `${exports2.id_pkcs9}.21`;
+    exports2.id_pkcs9_at_userPKCS12 = "2.16.840.1.113730.3.1.216";
+    exports2.id_pkcs9_at_pkcs15Token = `${exports2.id_pkcs9_at}.1`;
+    exports2.id_pkcs9_at_encryptedPrivateKeyInfo = `${exports2.id_pkcs9_at}.2`;
+    exports2.id_pkcs9_at_randomNonce = `${exports2.id_pkcs9_at}.3`;
+    exports2.id_pkcs9_at_sequenceNumber = `${exports2.id_pkcs9_at}.4`;
+    exports2.id_pkcs9_at_pkcs7PDU = `${exports2.id_pkcs9_at}.5`;
+    exports2.id_ietf_at = "1.3.6.1.5.5.7.9";
+    exports2.id_pkcs9_at_dateOfBirth = `${exports2.id_ietf_at}.1`;
+    exports2.id_pkcs9_at_placeOfBirth = `${exports2.id_ietf_at}.2`;
+    exports2.id_pkcs9_at_gender = `${exports2.id_ietf_at}.3`;
+    exports2.id_pkcs9_at_countryOfCitizenship = `${exports2.id_ietf_at}.4`;
+    exports2.id_pkcs9_at_countryOfResidence = `${exports2.id_ietf_at}.5`;
+    exports2.id_pkcs9_sx_pkcs9String = `${exports2.id_pkcs9_sx}.1`;
+    exports2.id_pkcs9_sx_signingTime = `${exports2.id_pkcs9_sx}.2`;
+    exports2.id_pkcs9_mr_caseIgnoreMatch = `${exports2.id_pkcs9_mr}.1`;
+    exports2.id_pkcs9_mr_signingTimeMatch = `${exports2.id_pkcs9_mr}.2`;
+    exports2.id_smime = `${exports2.id_pkcs9}.16`;
+    exports2.id_certTypes = `${exports2.id_pkcs9}.22`;
+    exports2.crlTypes = `${exports2.id_pkcs9}.23`;
+    exports2.id_at_pseudonym = `${attr.id_at}.65`;
+    var PKCS9String = class PKCS9String extends x509.DirectoryString {
+      ia5String;
+      constructor(params = {}) {
+        super(params);
+      }
+      toString() {
+        const o = {};
+        o.toString();
+        return this.ia5String || super.toString();
+      }
+    };
+    exports2.PKCS9String = PKCS9String;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.IA5String })
+    ], PKCS9String.prototype, "ia5String", void 0);
+    exports2.PKCS9String = PKCS9String = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], PKCS9String);
+    var Pkcs7PDU = class Pkcs7PDU extends cms.ContentInfo {
+    };
+    exports2.Pkcs7PDU = Pkcs7PDU;
+    exports2.Pkcs7PDU = Pkcs7PDU = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], Pkcs7PDU);
+    var UserPKCS12 = class UserPKCS12 extends pfx.PFX {
+    };
+    exports2.UserPKCS12 = UserPKCS12;
+    exports2.UserPKCS12 = UserPKCS12 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], UserPKCS12);
+    var EncryptedPrivateKeyInfo = class EncryptedPrivateKeyInfo extends pkcs8.EncryptedPrivateKeyInfo {
+    };
+    exports2.EncryptedPrivateKeyInfo = EncryptedPrivateKeyInfo;
+    exports2.EncryptedPrivateKeyInfo = EncryptedPrivateKeyInfo = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], EncryptedPrivateKeyInfo);
+    var EmailAddress = class EmailAddress {
+      value;
+      constructor(value = "") {
+        this.value = value;
+      }
+      toString() {
+        return this.value;
+      }
+    };
+    exports2.EmailAddress = EmailAddress;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.IA5String })
+    ], EmailAddress.prototype, "value", void 0);
+    exports2.EmailAddress = EmailAddress = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], EmailAddress);
+    var UnstructuredName = class UnstructuredName extends PKCS9String {
+    };
+    exports2.UnstructuredName = UnstructuredName;
+    exports2.UnstructuredName = UnstructuredName = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], UnstructuredName);
+    var UnstructuredAddress = class UnstructuredAddress extends x509.DirectoryString {
+    };
+    exports2.UnstructuredAddress = UnstructuredAddress;
+    exports2.UnstructuredAddress = UnstructuredAddress = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], UnstructuredAddress);
+    var DateOfBirth = class DateOfBirth {
+      value;
+      constructor(value = /* @__PURE__ */ new Date()) {
+        this.value = value;
+      }
+    };
+    exports2.DateOfBirth = DateOfBirth;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.GeneralizedTime })
+    ], DateOfBirth.prototype, "value", void 0);
+    exports2.DateOfBirth = DateOfBirth = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], DateOfBirth);
+    var PlaceOfBirth = class PlaceOfBirth extends x509.DirectoryString {
+    };
+    exports2.PlaceOfBirth = PlaceOfBirth;
+    exports2.PlaceOfBirth = PlaceOfBirth = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], PlaceOfBirth);
+    var Gender = class Gender {
+      value;
+      constructor(value = "M") {
+        this.value = value;
+      }
+      toString() {
+        return this.value;
+      }
+    };
+    exports2.Gender = Gender;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.PrintableString })
+    ], Gender.prototype, "value", void 0);
+    exports2.Gender = Gender = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], Gender);
+    var CountryOfCitizenship = class CountryOfCitizenship {
+      value;
+      constructor(value = "") {
+        this.value = value;
+      }
+      toString() {
+        return this.value;
+      }
+    };
+    exports2.CountryOfCitizenship = CountryOfCitizenship;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.PrintableString })
+    ], CountryOfCitizenship.prototype, "value", void 0);
+    exports2.CountryOfCitizenship = CountryOfCitizenship = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], CountryOfCitizenship);
+    var CountryOfResidence = class CountryOfResidence extends CountryOfCitizenship {
+    };
+    exports2.CountryOfResidence = CountryOfResidence;
+    exports2.CountryOfResidence = CountryOfResidence = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], CountryOfResidence);
+    var Pseudonym = class Pseudonym extends x509.DirectoryString {
+    };
+    exports2.Pseudonym = Pseudonym;
+    exports2.Pseudonym = Pseudonym = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], Pseudonym);
+    var ContentType = class ContentType {
+      value;
+      constructor(value = "") {
+        this.value = value;
+      }
+      toString() {
+        return this.value;
+      }
+    };
+    exports2.ContentType = ContentType;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.ObjectIdentifier })
+    ], ContentType.prototype, "value", void 0);
+    exports2.ContentType = ContentType = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], ContentType);
+    var MessageDigest = class extends asn1_schema_1.OctetString {
+    };
+    exports2.MessageDigest = MessageDigest;
+    var SigningTime = class SigningTime extends x509.Time {
+    };
+    exports2.SigningTime = SigningTime;
+    exports2.SigningTime = SigningTime = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], SigningTime);
+    var RandomNonce = class extends asn1_schema_1.OctetString {
+    };
+    exports2.RandomNonce = RandomNonce;
+    var SequenceNumber = class SequenceNumber {
+      value;
+      constructor(value = 0) {
+        this.value = value;
+      }
+      toString() {
+        return this.value.toString();
+      }
+    };
+    exports2.SequenceNumber = SequenceNumber;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], SequenceNumber.prototype, "value", void 0);
+    exports2.SequenceNumber = SequenceNumber = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], SequenceNumber);
+    var CounterSignature = class CounterSignature extends cms.SignerInfo {
+    };
+    exports2.CounterSignature = CounterSignature;
+    exports2.CounterSignature = CounterSignature = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], CounterSignature);
+    var ChallengePassword = class ChallengePassword extends x509.DirectoryString {
+    };
+    exports2.ChallengePassword = ChallengePassword;
+    exports2.ChallengePassword = ChallengePassword = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], ChallengePassword);
+    var ExtensionRequest = ExtensionRequest_1 = class ExtensionRequest extends x509.Extensions {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, ExtensionRequest_1.prototype);
+      }
+    };
+    exports2.ExtensionRequest = ExtensionRequest;
+    exports2.ExtensionRequest = ExtensionRequest = ExtensionRequest_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], ExtensionRequest);
+    var ExtendedCertificateAttributes = ExtendedCertificateAttributes_1 = class ExtendedCertificateAttributes extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, ExtendedCertificateAttributes_1.prototype);
+      }
+    };
+    exports2.ExtendedCertificateAttributes = ExtendedCertificateAttributes;
+    exports2.ExtendedCertificateAttributes = ExtendedCertificateAttributes = ExtendedCertificateAttributes_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Set,
+        itemType: cms.Attribute
+      })
+    ], ExtendedCertificateAttributes);
+    var FriendlyName = class FriendlyName {
+      value;
+      constructor(value = "") {
+        this.value = value;
+      }
+      toString() {
+        return this.value;
+      }
+    };
+    exports2.FriendlyName = FriendlyName;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.BmpString })
+    ], FriendlyName.prototype, "value", void 0);
+    exports2.FriendlyName = FriendlyName = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Choice })
+    ], FriendlyName);
+    var LocalKeyId = class extends asn1_schema_1.OctetString {
+    };
+    exports2.LocalKeyId = LocalKeyId;
+    var SigningDescription = class extends x509.DirectoryString {
+    };
+    exports2.SigningDescription = SigningDescription;
+    var SMIMECapability = class SMIMECapability extends x509.AlgorithmIdentifier {
+    };
+    exports2.SMIMECapability = SMIMECapability;
+    exports2.SMIMECapability = SMIMECapability = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({ type: asn1_schema_1.AsnTypeTypes.Sequence })
+    ], SMIMECapability);
+    var SMIMECapabilities = SMIMECapabilities_1 = class SMIMECapabilities extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, SMIMECapabilities_1.prototype);
+      }
+    };
+    exports2.SMIMECapabilities = SMIMECapabilities;
+    exports2.SMIMECapabilities = SMIMECapabilities = SMIMECapabilities_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: SMIMECapability
+      })
+    ], SMIMECapabilities);
+  }
+});
+
+// node_modules/@peculiar/asn1-csr/build/cjs/attributes.js
+var require_attributes2 = __commonJS({
+  "node_modules/@peculiar/asn1-csr/build/cjs/attributes.js"(exports2) {
+    "use strict";
+    var Attributes_1;
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Attributes = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var Attributes = Attributes_1 = class Attributes extends asn1_schema_1.AsnArray {
+      constructor(items) {
+        super(items);
+        Object.setPrototypeOf(this, Attributes_1.prototype);
+      }
+    };
+    exports2.Attributes = Attributes;
+    exports2.Attributes = Attributes = Attributes_1 = tslib_1.__decorate([
+      (0, asn1_schema_1.AsnType)({
+        type: asn1_schema_1.AsnTypeTypes.Sequence,
+        itemType: asn1_x509_1.Attribute
+      })
+    ], Attributes);
+  }
+});
+
+// node_modules/@peculiar/asn1-csr/build/cjs/certification_request_info.js
+var require_certification_request_info = __commonJS({
+  "node_modules/@peculiar/asn1-csr/build/cjs/certification_request_info.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.CertificationRequestInfo = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var attributes_1 = require_attributes2();
+    var CertificationRequestInfo = class {
+      version = 0;
+      subject = new asn1_x509_1.Name();
+      subjectPKInfo = new asn1_x509_1.SubjectPublicKeyInfo();
+      attributes = new attributes_1.Attributes();
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.CertificationRequestInfo = CertificationRequestInfo;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.Integer })
+    ], CertificationRequestInfo.prototype, "version", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.Name })
+    ], CertificationRequestInfo.prototype, "subject", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.SubjectPublicKeyInfo })
+    ], CertificationRequestInfo.prototype, "subjectPKInfo", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: attributes_1.Attributes,
+        implicit: true,
+        context: 0,
+        optional: true
+      })
+    ], CertificationRequestInfo.prototype, "attributes", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-csr/build/cjs/certification_request.js
+var require_certification_request = __commonJS({
+  "node_modules/@peculiar/asn1-csr/build/cjs/certification_request.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.CertificationRequest = void 0;
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1_schema_1 = require_cjs2();
+    var asn1_x509_1 = require_cjs3();
+    var certification_request_info_1 = require_certification_request_info();
+    var CertificationRequest = class {
+      certificationRequestInfo = new certification_request_info_1.CertificationRequestInfo();
+      certificationRequestInfoRaw;
+      signatureAlgorithm = new asn1_x509_1.AlgorithmIdentifier();
+      signature = new ArrayBuffer(0);
+      constructor(params = {}) {
+        Object.assign(this, params);
+      }
+    };
+    exports2.CertificationRequest = CertificationRequest;
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({
+        type: certification_request_info_1.CertificationRequestInfo,
+        raw: true
+      })
+    ], CertificationRequest.prototype, "certificationRequestInfo", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_x509_1.AlgorithmIdentifier })
+    ], CertificationRequest.prototype, "signatureAlgorithm", void 0);
+    tslib_1.__decorate([
+      (0, asn1_schema_1.AsnProp)({ type: asn1_schema_1.AsnPropTypes.BitString })
+    ], CertificationRequest.prototype, "signature", void 0);
+  }
+});
+
+// node_modules/@peculiar/asn1-csr/build/cjs/index.js
+var require_cjs12 = __commonJS({
+  "node_modules/@peculiar/asn1-csr/build/cjs/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    tslib_1.__exportStar(require_attributes2(), exports2);
+    tslib_1.__exportStar(require_certification_request(), exports2);
+    tslib_1.__exportStar(require_certification_request_info(), exports2);
+  }
+});
+
+// node_modules/@peculiar/x509/build/x509.cjs.js
+var require_x509_cjs = __commonJS({
+  "node_modules/@peculiar/x509/build/x509.cjs.js"(exports2) {
+    "use strict";
+    require_Reflect();
+    var asn1Schema = require_cjs2();
+    var asn1X509 = require_cjs3();
+    var pvtsutils = require_build();
+    var tslib = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+    var asn1Cms = require_cjs5();
+    var asn1Ecc = require_cjs6();
+    var asn1Rsa = require_cjs7();
+    var tsyringe = require_cjs8();
+    var asnPkcs9 = require_cjs11();
+    var asn1Csr = require_cjs12();
+    function _interopNamespaceDefault(e) {
+      var n = /* @__PURE__ */ Object.create(null);
+      if (e) {
+        Object.keys(e).forEach(function(k) {
+          if (k !== "default") {
+            var d = Object.getOwnPropertyDescriptor(e, k);
+            Object.defineProperty(n, k, d.get ? d : {
+              enumerable: true,
+              get: function() {
+                return e[k];
+              }
+            });
+          }
+        });
+      }
+      n.default = e;
+      return Object.freeze(n);
+    }
+    var asn1X509__namespace = /* @__PURE__ */ _interopNamespaceDefault(asn1X509);
+    var asn1Cms__namespace = /* @__PURE__ */ _interopNamespaceDefault(asn1Cms);
+    var asn1Ecc__namespace = /* @__PURE__ */ _interopNamespaceDefault(asn1Ecc);
+    var asn1Rsa__namespace = /* @__PURE__ */ _interopNamespaceDefault(asn1Rsa);
+    var asnPkcs9__namespace = /* @__PURE__ */ _interopNamespaceDefault(asnPkcs9);
+    var diAlgorithm = "crypto.algorithm";
+    var AlgorithmProvider = class {
+      getAlgorithms() {
+        return tsyringe.container.resolveAll(diAlgorithm);
+      }
+      toAsnAlgorithm(alg) {
+        ({ ...alg });
+        for (const algorithm of this.getAlgorithms()) {
+          const res = algorithm.toAsnAlgorithm(alg);
+          if (res) {
+            return res;
+          }
+        }
+        if (/^[0-9.]+$/.test(alg.name)) {
+          const res = new asn1X509.AlgorithmIdentifier({ algorithm: alg.name });
+          if ("parameters" in alg) {
+            const unknown2 = alg;
+            res.parameters = unknown2.parameters;
+          }
+          return res;
+        }
+        throw new Error("Cannot convert WebCrypto algorithm to ASN.1 algorithm");
+      }
+      toWebAlgorithm(alg) {
+        for (const algorithm of this.getAlgorithms()) {
+          const res = algorithm.toWebAlgorithm(alg);
+          if (res) {
+            return res;
+          }
+        }
+        const unknown2 = {
+          name: alg.algorithm,
+          parameters: alg.parameters
+        };
+        return unknown2;
+      }
+    };
+    var diAlgorithmProvider = "crypto.algorithmProvider";
+    tsyringe.container.registerSingleton(diAlgorithmProvider, AlgorithmProvider);
+    var EcAlgorithm_1;
+    var idVersionOne = "1.3.36.3.3.2.8.1.1";
+    var idBrainpoolP160r1 = `${idVersionOne}.1`;
+    var idBrainpoolP160t1 = `${idVersionOne}.2`;
+    var idBrainpoolP192r1 = `${idVersionOne}.3`;
+    var idBrainpoolP192t1 = `${idVersionOne}.4`;
+    var idBrainpoolP224r1 = `${idVersionOne}.5`;
+    var idBrainpoolP224t1 = `${idVersionOne}.6`;
+    var idBrainpoolP256r1 = `${idVersionOne}.7`;
+    var idBrainpoolP256t1 = `${idVersionOne}.8`;
+    var idBrainpoolP320r1 = `${idVersionOne}.9`;
+    var idBrainpoolP320t1 = `${idVersionOne}.10`;
+    var idBrainpoolP384r1 = `${idVersionOne}.11`;
+    var idBrainpoolP384t1 = `${idVersionOne}.12`;
+    var idBrainpoolP512r1 = `${idVersionOne}.13`;
+    var idBrainpoolP512t1 = `${idVersionOne}.14`;
+    var brainpoolP160r1 = "brainpoolP160r1";
+    var brainpoolP160t1 = "brainpoolP160t1";
+    var brainpoolP192r1 = "brainpoolP192r1";
+    var brainpoolP192t1 = "brainpoolP192t1";
+    var brainpoolP224r1 = "brainpoolP224r1";
+    var brainpoolP224t1 = "brainpoolP224t1";
+    var brainpoolP256r1 = "brainpoolP256r1";
+    var brainpoolP256t1 = "brainpoolP256t1";
+    var brainpoolP320r1 = "brainpoolP320r1";
+    var brainpoolP320t1 = "brainpoolP320t1";
+    var brainpoolP384r1 = "brainpoolP384r1";
+    var brainpoolP384t1 = "brainpoolP384t1";
+    var brainpoolP512r1 = "brainpoolP512r1";
+    var brainpoolP512t1 = "brainpoolP512t1";
+    var ECDSA = "ECDSA";
+    exports2.EcAlgorithm = EcAlgorithm_1 = class EcAlgorithm {
+      toAsnAlgorithm(alg) {
+        switch (alg.name.toLowerCase()) {
+          case ECDSA.toLowerCase():
+            if ("hash" in alg) {
+              const hash2 = typeof alg.hash === "string" ? alg.hash : alg.hash.name;
+              switch (hash2.toLowerCase()) {
+                case "sha-1":
+                  return asn1Ecc__namespace.ecdsaWithSHA1;
+                case "sha-256":
+                  return asn1Ecc__namespace.ecdsaWithSHA256;
+                case "sha-384":
+                  return asn1Ecc__namespace.ecdsaWithSHA384;
+                case "sha-512":
+                  return asn1Ecc__namespace.ecdsaWithSHA512;
+              }
+            } else if ("namedCurve" in alg) {
+              let parameters = "";
+              switch (alg.namedCurve) {
+                case "P-256":
+                  parameters = asn1Ecc__namespace.id_secp256r1;
+                  break;
+                case "K-256":
+                  parameters = EcAlgorithm_1.SECP256K1;
+                  break;
+                case "P-384":
+                  parameters = asn1Ecc__namespace.id_secp384r1;
+                  break;
+                case "P-521":
+                  parameters = asn1Ecc__namespace.id_secp521r1;
+                  break;
+                case brainpoolP160r1:
+                  parameters = idBrainpoolP160r1;
+                  break;
+                case brainpoolP160t1:
+                  parameters = idBrainpoolP160t1;
+                  break;
+                case brainpoolP192r1:
+                  parameters = idBrainpoolP192r1;
+                  break;
+                case brainpoolP192t1:
+                  parameters = idBrainpoolP192t1;
+                  break;
+                case brainpoolP224r1:
+                  parameters = idBrainpoolP224r1;
+                  break;
+                case brainpoolP224t1:
+                  parameters = idBrainpoolP224t1;
+                  break;
+                case brainpoolP256r1:
+                  parameters = idBrainpoolP256r1;
+                  break;
+                case brainpoolP256t1:
+                  parameters = idBrainpoolP256t1;
+                  break;
+                case brainpoolP320r1:
+                  parameters = idBrainpoolP320r1;
+                  break;
+                case brainpoolP320t1:
+                  parameters = idBrainpoolP320t1;
+                  break;
+                case brainpoolP384r1:
+                  parameters = idBrainpoolP384r1;
+                  break;
+                case brainpoolP384t1:
+                  parameters = idBrainpoolP384t1;
+                  break;
+                case brainpoolP512r1:
+                  parameters = idBrainpoolP512r1;
+                  break;
+                case brainpoolP512t1:
+                  parameters = idBrainpoolP512t1;
+                  break;
+              }
+              if (parameters) {
+                return new asn1X509.AlgorithmIdentifier({
+                  algorithm: asn1Ecc__namespace.id_ecPublicKey,
+                  parameters: asn1Schema.AsnConvert.serialize(new asn1Ecc__namespace.ECParameters({ namedCurve: parameters }))
+                });
+              }
+            }
+        }
+        return null;
+      }
+      toWebAlgorithm(alg) {
+        switch (alg.algorithm) {
+          case asn1Ecc__namespace.id_ecdsaWithSHA1:
+            return {
+              name: ECDSA,
+              hash: { name: "SHA-1" }
+            };
+          case asn1Ecc__namespace.id_ecdsaWithSHA256:
+            return {
+              name: ECDSA,
+              hash: { name: "SHA-256" }
+            };
+          case asn1Ecc__namespace.id_ecdsaWithSHA384:
+            return {
+              name: ECDSA,
+              hash: { name: "SHA-384" }
+            };
+          case asn1Ecc__namespace.id_ecdsaWithSHA512:
+            return {
+              name: ECDSA,
+              hash: { name: "SHA-512" }
+            };
+          case asn1Ecc__namespace.id_ecPublicKey: {
+            if (!alg.parameters) {
+              throw new TypeError("Cannot get required parameters from EC algorithm");
+            }
+            const parameters = asn1Schema.AsnConvert.parse(alg.parameters, asn1Ecc__namespace.ECParameters);
+            switch (parameters.namedCurve) {
+              case asn1Ecc__namespace.id_secp256r1:
+                return {
+                  name: ECDSA,
+                  namedCurve: "P-256"
+                };
+              case EcAlgorithm_1.SECP256K1:
+                return {
+                  name: ECDSA,
+                  namedCurve: "K-256"
+                };
+              case asn1Ecc__namespace.id_secp384r1:
+                return {
+                  name: ECDSA,
+                  namedCurve: "P-384"
+                };
+              case asn1Ecc__namespace.id_secp521r1:
+                return {
+                  name: ECDSA,
+                  namedCurve: "P-521"
+                };
+              case idBrainpoolP160r1:
+                return {
+                  name: ECDSA,
+                  namedCurve: brainpoolP160r1
+                };
+              case idBrainpoolP160t1:
+                return {
+                  name: ECDSA,
+                  namedCurve: brainpoolP160t1
+                };
+              case idBrainpoolP192r1:
+                return {
+                  name: ECDSA,
+                  namedCurve: brainpoolP192r1
+                };
+              case idBrainpoolP192t1:
+                return {
+                  name: ECDSA,
+                  namedCurve: brainpoolP192t1
+                };
+              case idBrainpoolP224r1:
+                return {
+                  name: ECDSA,
+                  namedCurve: brainpoolP224r1
+                };
+              case idBrainpoolP224t1:
+                return {
+                  name: ECDSA,
+                  namedCurve: brainpoolP224t1
+                };
+              case idBrainpoolP256r1:
+                return {
+                  name: ECDSA,
+                  namedCurve: brainpoolP256r1
+                };
+              case idBrainpoolP256t1:
+                return {
+                  name: ECDSA,
+                  namedCurve: brainpoolP256t1
+                };
+              case idBrainpoolP320r1:
+                return {
+                  name: ECDSA,
+                  namedCurve: brainpoolP320r1
+                };
+              case idBrainpoolP320t1:
+                return {
+                  name: ECDSA,
+                  namedCurve: brainpoolP320t1
+                };
+              case idBrainpoolP384r1:
+                return {
+                  name: ECDSA,
+                  namedCurve: brainpoolP384r1
+                };
+              case idBrainpoolP384t1:
+                return {
+                  name: ECDSA,
+                  namedCurve: brainpoolP384t1
+                };
+              case idBrainpoolP512r1:
+                return {
+                  name: ECDSA,
+                  namedCurve: brainpoolP512r1
+                };
+              case idBrainpoolP512t1:
+                return {
+                  name: ECDSA,
+                  namedCurve: brainpoolP512t1
+                };
+            }
+          }
+        }
+        return null;
+      }
+    };
+    exports2.EcAlgorithm.SECP256K1 = "1.3.132.0.10";
+    exports2.EcAlgorithm = EcAlgorithm_1 = tslib.__decorate([
+      tsyringe.injectable()
+    ], exports2.EcAlgorithm);
+    tsyringe.container.registerSingleton(diAlgorithm, exports2.EcAlgorithm);
+    var NAME = /* @__PURE__ */ Symbol("name");
+    var VALUE = /* @__PURE__ */ Symbol("value");
+    var TextObject = class {
+      constructor(name, items = {}, value = "") {
+        this[NAME] = name;
+        this[VALUE] = value;
+        for (const key in items) {
+          this[key] = items[key];
+        }
+      }
+    };
+    TextObject.NAME = NAME;
+    TextObject.VALUE = VALUE;
+    var DefaultAlgorithmSerializer = class {
+      static toTextObject(alg) {
+        const obj = new TextObject("Algorithm Identifier", {}, OidSerializer.toString(alg.algorithm));
+        if (alg.parameters) {
+          switch (alg.algorithm) {
+            case asn1Ecc__namespace.id_ecPublicKey: {
+              const ecAlg = new exports2.EcAlgorithm().toWebAlgorithm(alg);
+              if (ecAlg && "namedCurve" in ecAlg) {
+                obj["Named Curve"] = ecAlg.namedCurve;
+              } else {
+                obj["Parameters"] = alg.parameters;
+              }
+              break;
+            }
+            default:
+              obj["Parameters"] = alg.parameters;
+          }
+        }
+        return obj;
+      }
+    };
+    var OidSerializer = class {
+      static toString(oid) {
+        const name = this.items[oid];
+        if (name) {
+          return name;
+        }
+        return oid;
+      }
+    };
+    OidSerializer.items = {
+      [asn1Rsa__namespace.id_sha1]: "sha1",
+      [asn1Rsa__namespace.id_sha224]: "sha224",
+      [asn1Rsa__namespace.id_sha256]: "sha256",
+      [asn1Rsa__namespace.id_sha384]: "sha384",
+      [asn1Rsa__namespace.id_sha512]: "sha512",
+      [asn1Rsa__namespace.id_rsaEncryption]: "rsaEncryption",
+      [asn1Rsa__namespace.id_sha1WithRSAEncryption]: "sha1WithRSAEncryption",
+      [asn1Rsa__namespace.id_sha224WithRSAEncryption]: "sha224WithRSAEncryption",
+      [asn1Rsa__namespace.id_sha256WithRSAEncryption]: "sha256WithRSAEncryption",
+      [asn1Rsa__namespace.id_sha384WithRSAEncryption]: "sha384WithRSAEncryption",
+      [asn1Rsa__namespace.id_sha512WithRSAEncryption]: "sha512WithRSAEncryption",
+      [asn1Ecc__namespace.id_ecPublicKey]: "ecPublicKey",
+      [asn1Ecc__namespace.id_ecdsaWithSHA1]: "ecdsaWithSHA1",
+      [asn1Ecc__namespace.id_ecdsaWithSHA224]: "ecdsaWithSHA224",
+      [asn1Ecc__namespace.id_ecdsaWithSHA256]: "ecdsaWithSHA256",
+      [asn1Ecc__namespace.id_ecdsaWithSHA384]: "ecdsaWithSHA384",
+      [asn1Ecc__namespace.id_ecdsaWithSHA512]: "ecdsaWithSHA512",
+      [asn1X509__namespace.id_kp_serverAuth]: "TLS WWW server authentication",
+      [asn1X509__namespace.id_kp_clientAuth]: "TLS WWW client authentication",
+      [asn1X509__namespace.id_kp_codeSigning]: "Code Signing",
+      [asn1X509__namespace.id_kp_emailProtection]: "E-mail Protection",
+      [asn1X509__namespace.id_kp_timeStamping]: "Time Stamping",
+      [asn1X509__namespace.id_kp_OCSPSigning]: "OCSP Signing",
+      [asn1Cms__namespace.id_signedData]: "Signed Data"
+    };
+    var TextConverter = class {
+      static serialize(obj) {
+        return this.serializeObj(obj).join("\n");
+      }
+      static pad(deep = 0) {
+        return "".padStart(2 * deep, " ");
+      }
+      static serializeObj(obj, deep = 0) {
+        const res = [];
+        let pad = this.pad(deep++);
+        let value = "";
+        const objValue = obj[TextObject.VALUE];
+        if (objValue) {
+          value = ` ${objValue}`;
+        }
+        res.push(`${pad}${obj[TextObject.NAME]}:${value}`);
+        pad = this.pad(deep);
+        for (const key in obj) {
+          if (typeof key === "symbol") {
+            continue;
+          }
+          const value2 = obj[key];
+          const keyValue = key ? `${key}: ` : "";
+          if (typeof value2 === "string" || typeof value2 === "number" || typeof value2 === "boolean") {
+            res.push(`${pad}${keyValue}${value2}`);
+          } else if (value2 instanceof Date) {
+            res.push(`${pad}${keyValue}${value2.toUTCString()}`);
+          } else if (Array.isArray(value2)) {
+            for (const obj2 of value2) {
+              obj2[TextObject.NAME] = key;
+              res.push(...this.serializeObj(obj2, deep));
+            }
+          } else if (value2 instanceof TextObject) {
+            value2[TextObject.NAME] = key;
+            res.push(...this.serializeObj(value2, deep));
+          } else if (pvtsutils.BufferSourceConverter.isBufferSource(value2)) {
+            if (key) {
+              res.push(`${pad}${keyValue}`);
+              res.push(...this.serializeBufferSource(value2, deep + 1));
+            } else {
+              res.push(...this.serializeBufferSource(value2, deep));
+            }
+          } else if ("toTextObject" in value2) {
+            const obj2 = value2.toTextObject();
+            obj2[TextObject.NAME] = key;
+            res.push(...this.serializeObj(obj2, deep));
+          } else {
+            throw new TypeError("Cannot serialize data in text format. Unsupported type.");
+          }
+        }
+        return res;
+      }
+      static serializeBufferSource(buffer, deep = 0) {
+        const pad = this.pad(deep);
+        const view = pvtsutils.BufferSourceConverter.toUint8Array(buffer);
+        const res = [];
+        for (let i = 0; i < view.length; ) {
+          const row = [];
+          for (let j = 0; j < 16 && i < view.length; j++) {
+            if (j === 8) {
+              row.push("");
+            }
+            const hex3 = view[i++].toString(16).padStart(2, "0");
+            row.push(hex3);
+          }
+          res.push(`${pad}${row.join(" ")}`);
+        }
+        return res;
+      }
+      static serializeAlgorithm(alg) {
+        return this.algorithmSerializer.toTextObject(alg);
+      }
+    };
+    TextConverter.oidSerializer = OidSerializer;
+    TextConverter.algorithmSerializer = DefaultAlgorithmSerializer;
+    var _AsnData_rawData;
+    var AsnData = class _AsnData {
+      get rawData() {
+        if (!tslib.__classPrivateFieldGet(this, _AsnData_rawData, "f")) {
+          tslib.__classPrivateFieldSet(this, _AsnData_rawData, asn1Schema.AsnConvert.serialize(this.asn), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _AsnData_rawData, "f");
+      }
+      constructor(...args) {
+        _AsnData_rawData.set(this, void 0);
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          this.asn = asn1Schema.AsnConvert.parse(args[0], args[1]);
+          tslib.__classPrivateFieldSet(this, _AsnData_rawData, pvtsutils.BufferSourceConverter.toArrayBuffer(args[0]), "f");
+          this.onInit(this.asn);
+        } else {
+          this.asn = args[0];
+          this.onInit(this.asn);
+        }
+      }
+      equal(data) {
+        if (data instanceof _AsnData) {
+          return pvtsutils.isEqual(data.rawData, this.rawData);
+        }
+        return false;
+      }
+      toString(format = "text") {
+        switch (format) {
+          case "asn":
+            return asn1Schema.AsnConvert.toString(this.rawData);
+          case "text":
+            return TextConverter.serialize(this.toTextObject());
+          case "hex":
+            return pvtsutils.Convert.ToHex(this.rawData);
+          case "base64":
+            return pvtsutils.Convert.ToBase64(this.rawData);
+          case "base64url":
+            return pvtsutils.Convert.ToBase64Url(this.rawData);
+          default:
+            throw TypeError("Argument 'format' is unsupported value");
+        }
+      }
+      getTextName() {
+        const constructor = this.constructor;
+        return constructor.NAME;
+      }
+      toTextObject() {
+        const obj = this.toTextObjectEmpty();
+        obj[""] = this.rawData;
+        return obj;
+      }
+      toTextObjectEmpty(value) {
+        return new TextObject(this.getTextName(), {}, value);
+      }
+    };
+    _AsnData_rawData = /* @__PURE__ */ new WeakMap();
+    AsnData.NAME = "ASN";
+    var Extension = class _Extension extends AsnData {
+      constructor(...args) {
+        let raw;
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          raw = pvtsutils.BufferSourceConverter.toArrayBuffer(args[0]);
+        } else {
+          raw = asn1Schema.AsnConvert.serialize(new asn1X509.Extension({
+            extnID: args[0],
+            critical: args[1],
+            extnValue: new asn1Schema.OctetString(pvtsutils.BufferSourceConverter.toArrayBuffer(args[2]))
+          }));
+        }
+        super(raw, asn1X509.Extension);
+      }
+      onInit(asn) {
+        this.type = asn.extnID;
+        this.critical = asn.critical;
+        this.value = asn.extnValue.buffer;
+      }
+      toTextObject() {
+        const obj = this.toTextObjectWithoutValue();
+        obj[""] = this.value;
+        return obj;
+      }
+      toTextObjectWithoutValue() {
+        const obj = this.toTextObjectEmpty(this.critical ? "critical" : void 0);
+        if (obj[TextObject.NAME] === _Extension.NAME) {
+          obj[TextObject.NAME] = OidSerializer.toString(this.type);
+        }
+        return obj;
+      }
+    };
+    var _a2;
+    var CryptoProvider = class _CryptoProvider {
+      static isCryptoKeyPair(data) {
+        return data && data.privateKey && data.publicKey;
+      }
+      static isCryptoKey(data) {
+        return data && data.usages && data.type && data.algorithm && data.extractable !== void 0;
+      }
+      constructor() {
+        this.items = /* @__PURE__ */ new Map();
+        this[_a2] = "CryptoProvider";
+        if (typeof self !== "undefined" && typeof crypto !== "undefined") {
+          this.set(_CryptoProvider.DEFAULT, crypto);
+        } else if (typeof global !== "undefined" && global.crypto && global.crypto.subtle) {
+          this.set(_CryptoProvider.DEFAULT, global.crypto);
+        }
+      }
+      clear() {
+        this.items.clear();
+      }
+      delete(key) {
+        return this.items.delete(key);
+      }
+      forEach(callbackfn, thisArg) {
+        return this.items.forEach(callbackfn, thisArg);
+      }
+      has(key) {
+        return this.items.has(key);
+      }
+      get size() {
+        return this.items.size;
+      }
+      entries() {
+        return this.items.entries();
+      }
+      keys() {
+        return this.items.keys();
+      }
+      values() {
+        return this.items.values();
+      }
+      [Symbol.iterator]() {
+        return this.items[Symbol.iterator]();
+      }
+      get(key = _CryptoProvider.DEFAULT) {
+        const crypto2 = this.items.get(key.toLowerCase());
+        if (!crypto2) {
+          throw new Error(`Cannot get Crypto by name '${key}'`);
+        }
+        return crypto2;
+      }
+      set(key, value) {
+        if (typeof key === "string") {
+          if (!value) {
+            throw new TypeError("Argument 'value' is required");
+          }
+          this.items.set(key.toLowerCase(), value);
+        } else {
+          this.items.set(_CryptoProvider.DEFAULT, key);
+        }
+        return this;
+      }
+    };
+    _a2 = Symbol.toStringTag;
+    CryptoProvider.DEFAULT = "default";
+    var cryptoProvider = new CryptoProvider();
+    var OID_REGEX = /^[0-2](?:\.[1-9][0-9]*)+$/;
+    function isOID(id) {
+      return new RegExp(OID_REGEX).test(id);
+    }
+    var NameIdentifier = class {
+      constructor(names2 = {}) {
+        this.items = {};
+        for (const id in names2) {
+          this.register(id, names2[id]);
+        }
+      }
+      get(idOrName) {
+        return this.items[idOrName] || null;
+      }
+      findId(idOrName) {
+        if (!isOID(idOrName)) {
+          return this.get(idOrName);
+        }
+        return idOrName;
+      }
+      register(id, name) {
+        this.items[id] = name;
+        this.items[name] = id;
+      }
+    };
+    var names = new NameIdentifier();
+    names.register("CN", "2.5.4.3");
+    names.register("L", "2.5.4.7");
+    names.register("ST", "2.5.4.8");
+    names.register("O", "2.5.4.10");
+    names.register("OU", "2.5.4.11");
+    names.register("C", "2.5.4.6");
+    names.register("DC", "0.9.2342.19200300.100.1.25");
+    names.register("E", "1.2.840.113549.1.9.1");
+    names.register("G", "2.5.4.42");
+    names.register("I", "2.5.4.43");
+    names.register("SN", "2.5.4.4");
+    names.register("T", "2.5.4.12");
+    function replaceUnknownCharacter(text, char) {
+      return `\\${pvtsutils.Convert.ToHex(pvtsutils.Convert.FromUtf8String(char)).toUpperCase()}`;
+    }
+    function escape2(data) {
+      return data.replace(/([,+"\\<>;])/g, "\\$1").replace(/^([ #])/, "\\$1").replace(/([ ]$)/, "\\$1").replace(/([\r\n\t])/, replaceUnknownCharacter);
+    }
+    var Name = class _Name {
+      static isASCII(text) {
+        for (let i = 0; i < text.length; i++) {
+          const code = text.charCodeAt(i);
+          if (code > 255) {
+            return false;
+          }
+        }
+        return true;
+      }
+      static isPrintableString(text) {
+        return /^[A-Za-z0-9 '()+,-./:=?]*$/g.test(text);
+      }
+      constructor(data, extraNames = {}) {
+        this.extraNames = new NameIdentifier();
+        this.asn = new asn1X509.Name();
+        for (const key in extraNames) {
+          if (Object.prototype.hasOwnProperty.call(extraNames, key)) {
+            const value = extraNames[key];
+            this.extraNames.register(key, value);
+          }
+        }
+        if (typeof data === "string") {
+          this.asn = this.fromString(data);
+        } else if (data instanceof asn1X509.Name) {
+          this.asn = data;
+        } else if (pvtsutils.BufferSourceConverter.isBufferSource(data)) {
+          this.asn = asn1Schema.AsnConvert.parse(data, asn1X509.Name);
+        } else {
+          this.asn = this.fromJSON(data);
+        }
+      }
+      getField(idOrName) {
+        const id = this.extraNames.findId(idOrName) || names.findId(idOrName);
+        const res = [];
+        for (const name of this.asn) {
+          for (const rdn of name) {
+            if (rdn.type === id) {
+              res.push(rdn.value.toString());
+            }
+          }
+        }
+        return res;
+      }
+      getName(idOrName) {
+        return this.extraNames.get(idOrName) || names.get(idOrName);
+      }
+      toString() {
+        return this.asn.map((rdn) => rdn.map((o) => {
+          const type = this.getName(o.type) || o.type;
+          const value = o.value.anyValue ? `#${pvtsutils.Convert.ToHex(o.value.anyValue)}` : escape2(o.value.toString());
+          return `${type}=${value}`;
+        }).join("+")).join(", ");
+      }
+      toJSON() {
+        var _a3;
+        const json3 = [];
+        for (const rdn of this.asn) {
+          const jsonItem = {};
+          for (const attr of rdn) {
+            const type = this.getName(attr.type) || attr.type;
+            (_a3 = jsonItem[type]) !== null && _a3 !== void 0 ? _a3 : jsonItem[type] = [];
+            jsonItem[type].push(attr.value.anyValue ? `#${pvtsutils.Convert.ToHex(attr.value.anyValue)}` : attr.value.toString());
+          }
+          json3.push(jsonItem);
+        }
+        return json3;
+      }
+      fromString(data) {
+        const asn = new asn1X509.Name();
+        const regex = /(\d\.[\d.]*\d|[A-Za-z]+)=((?:"")|(?:".*?[^\\]")|(?:[^,+"\\](?=[,+]|$))|(?:[^,+].*?(?:[^\\][,+]))|(?:))([,+])?/g;
+        let matches = null;
+        let level = ",";
+        while (matches = regex.exec(`${data},`)) {
+          let [, type, value] = matches;
+          const lastChar = value[value.length - 1];
+          if (lastChar === "," || lastChar === "+") {
+            value = value.slice(0, value.length - 1);
+            matches[3] = lastChar;
+          }
+          const next = matches[3];
+          type = this.getTypeOid(type);
+          const attr = this.createAttribute(type, value);
+          if (level === "+") {
+            asn[asn.length - 1].push(attr);
+          } else {
+            asn.push(new asn1X509.RelativeDistinguishedName([attr]));
+          }
+          level = next;
+        }
+        return asn;
+      }
+      fromJSON(data) {
+        const asn = new asn1X509.Name();
+        for (const item of data) {
+          const asnRdn = new asn1X509.RelativeDistinguishedName();
+          for (const type in item) {
+            const typeId = this.getTypeOid(type);
+            const values = item[type];
+            for (const value of values) {
+              const asnAttr = this.createAttribute(typeId, value);
+              asnRdn.push(asnAttr);
+            }
+          }
+          asn.push(asnRdn);
+        }
+        return asn;
+      }
+      getTypeOid(type) {
+        if (!/[\d.]+/.test(type)) {
+          type = this.getName(type) || "";
+        }
+        if (!type) {
+          throw new Error(`Cannot get OID for name type '${type}'`);
+        }
+        return type;
+      }
+      createAttribute(type, value) {
+        const attr = new asn1X509.AttributeTypeAndValue({ type });
+        if (typeof value === "object") {
+          for (const key in value) {
+            switch (key) {
+              case "ia5String":
+                attr.value.ia5String = value[key];
+                break;
+              case "utf8String":
+                attr.value.utf8String = value[key];
+                break;
+              case "universalString":
+                attr.value.universalString = value[key];
+                break;
+              case "bmpString":
+                attr.value.bmpString = value[key];
+                break;
+              case "printableString":
+                attr.value.printableString = value[key];
+                break;
+            }
+          }
+        } else if (value[0] === "#") {
+          attr.value.anyValue = pvtsutils.Convert.FromHex(value.slice(1));
+        } else {
+          const processedValue = this.processStringValue(value);
+          if (type === this.getName("E") || type === this.getName("DC")) {
+            attr.value.ia5String = processedValue;
+          } else {
+            if (_Name.isPrintableString(processedValue)) {
+              attr.value.printableString = processedValue;
+            } else {
+              attr.value.utf8String = processedValue;
+            }
+          }
+        }
+        return attr;
+      }
+      processStringValue(value) {
+        const quotedMatches = /"(.*?[^\\])?"/.exec(value);
+        if (quotedMatches) {
+          value = quotedMatches[1];
+        }
+        return value.replace(/\\0a/ig, "\n").replace(/\\0d/ig, "\r").replace(/\\0g/ig, "	").replace(/\\(.)/g, "$1");
+      }
+      toArrayBuffer() {
+        return asn1Schema.AsnConvert.serialize(this.asn);
+      }
+      async getThumbprint(...args) {
+        var _a3;
+        let crypto2;
+        let algorithm = "SHA-1";
+        if (args.length >= 1 && !((_a3 = args[0]) === null || _a3 === void 0 ? void 0 : _a3.subtle)) {
+          algorithm = args[0] || algorithm;
+          crypto2 = args[1] || cryptoProvider.get();
+        } else {
+          crypto2 = args[0] || cryptoProvider.get();
+        }
+        return await crypto2.subtle.digest(algorithm, this.toArrayBuffer());
+      }
+    };
+    var ERR_GN_CONSTRUCTOR = "Cannot initialize GeneralName from ASN.1 data.";
+    var ERR_GN_STRING_FORMAT = `${ERR_GN_CONSTRUCTOR} Unsupported string format in use.`;
+    var ERR_GUID = `${ERR_GN_CONSTRUCTOR} Value doesn't match to GUID regular expression.`;
+    var GUID_REGEX = /^([0-9a-f]{8})-?([0-9a-f]{4})-?([0-9a-f]{4})-?([0-9a-f]{4})-?([0-9a-f]{12})$/i;
+    var id_GUID = "1.3.6.1.4.1.311.25.1";
+    var id_UPN = "1.3.6.1.4.1.311.20.2.3";
+    var DNS = "dns";
+    var DN = "dn";
+    var EMAIL = "email";
+    var IP = "ip";
+    var URL2 = "url";
+    var GUID = "guid";
+    var UPN = "upn";
+    var REGISTERED_ID = "id";
+    var GeneralName = class extends AsnData {
+      constructor(...args) {
+        let name;
+        if (args.length === 2) {
+          switch (args[0]) {
+            case DN: {
+              const derName = new Name(args[1]).toArrayBuffer();
+              const asnName = asn1Schema.AsnConvert.parse(derName, asn1X509__namespace.Name);
+              name = new asn1X509__namespace.GeneralName({ directoryName: asnName });
+              break;
+            }
+            case DNS:
+              name = new asn1X509__namespace.GeneralName({ dNSName: args[1] });
+              break;
+            case EMAIL:
+              name = new asn1X509__namespace.GeneralName({ rfc822Name: args[1] });
+              break;
+            case GUID: {
+              const matches = new RegExp(GUID_REGEX, "i").exec(args[1]);
+              if (!matches) {
+                throw new Error("Cannot parse GUID value. Value doesn't match to regular expression");
+              }
+              const hex3 = matches.slice(1).map((o, i) => {
+                if (i < 3) {
+                  return pvtsutils.Convert.ToHex(new Uint8Array(pvtsutils.Convert.FromHex(o)).reverse());
+                }
+                return o;
+              }).join("");
+              name = new asn1X509__namespace.GeneralName({
+                otherName: new asn1X509__namespace.OtherName({
+                  typeId: id_GUID,
+                  value: asn1Schema.AsnConvert.serialize(new asn1Schema.OctetString(pvtsutils.Convert.FromHex(hex3)))
+                })
+              });
+              break;
+            }
+            case IP:
+              name = new asn1X509__namespace.GeneralName({ iPAddress: args[1] });
+              break;
+            case REGISTERED_ID:
+              name = new asn1X509__namespace.GeneralName({ registeredID: args[1] });
+              break;
+            case UPN: {
+              name = new asn1X509__namespace.GeneralName({
+                otherName: new asn1X509__namespace.OtherName({
+                  typeId: id_UPN,
+                  value: asn1Schema.AsnConvert.serialize(asn1Schema.AsnUtf8StringConverter.toASN(args[1]))
+                })
+              });
+              break;
+            }
+            case URL2:
+              name = new asn1X509__namespace.GeneralName({ uniformResourceIdentifier: args[1] });
+              break;
+            default:
+              throw new Error("Cannot create GeneralName. Unsupported type of the name");
+          }
+        } else if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          name = asn1Schema.AsnConvert.parse(args[0], asn1X509__namespace.GeneralName);
+        } else {
+          name = args[0];
+        }
+        super(name);
+      }
+      onInit(asn) {
+        if (asn.dNSName != void 0) {
+          this.type = DNS;
+          this.value = asn.dNSName;
+        } else if (asn.rfc822Name != void 0) {
+          this.type = EMAIL;
+          this.value = asn.rfc822Name;
+        } else if (asn.iPAddress != void 0) {
+          this.type = IP;
+          this.value = asn.iPAddress;
+        } else if (asn.uniformResourceIdentifier != void 0) {
+          this.type = URL2;
+          this.value = asn.uniformResourceIdentifier;
+        } else if (asn.registeredID != void 0) {
+          this.type = REGISTERED_ID;
+          this.value = asn.registeredID;
+        } else if (asn.directoryName != void 0) {
+          this.type = DN;
+          this.value = new Name(asn.directoryName).toString();
+        } else if (asn.otherName != void 0) {
+          if (asn.otherName.typeId === id_GUID) {
+            this.type = GUID;
+            const guid3 = asn1Schema.AsnConvert.parse(asn.otherName.value, asn1Schema.OctetString);
+            const matches = new RegExp(GUID_REGEX, "i").exec(pvtsutils.Convert.ToHex(guid3));
+            if (!matches) {
+              throw new Error(ERR_GUID);
+            }
+            this.value = matches.slice(1).map((o, i) => {
+              if (i < 3) {
+                return pvtsutils.Convert.ToHex(new Uint8Array(pvtsutils.Convert.FromHex(o)).reverse());
+              }
+              return o;
+            }).join("-");
+          } else if (asn.otherName.typeId === id_UPN) {
+            this.type = UPN;
+            this.value = asn1Schema.AsnConvert.parse(asn.otherName.value, asn1X509__namespace.DirectoryString).toString();
+          } else {
+            throw new Error(ERR_GN_STRING_FORMAT);
+          }
+        } else {
+          throw new Error(ERR_GN_STRING_FORMAT);
+        }
+      }
+      toJSON() {
+        return {
+          type: this.type,
+          value: this.value
+        };
+      }
+      toTextObject() {
+        let type;
+        switch (this.type) {
+          case DN:
+          case DNS:
+          case GUID:
+          case IP:
+          case REGISTERED_ID:
+          case UPN:
+          case URL2:
+            type = this.type.toUpperCase();
+            break;
+          case EMAIL:
+            type = "Email";
+            break;
+          default:
+            throw new Error("Unsupported GeneralName type");
+        }
+        let value = this.value;
+        if (this.type === REGISTERED_ID) {
+          value = OidSerializer.toString(value);
+        }
+        return new TextObject(type, void 0, value);
+      }
+    };
+    var GeneralNames = class extends AsnData {
+      constructor(params) {
+        let names2;
+        if (params instanceof asn1X509__namespace.GeneralNames) {
+          names2 = params;
+        } else if (Array.isArray(params)) {
+          const items = [];
+          for (const name of params) {
+            if (name instanceof asn1X509__namespace.GeneralName) {
+              items.push(name);
+            } else {
+              const asnName = asn1Schema.AsnConvert.parse(new GeneralName(name.type, name.value).rawData, asn1X509__namespace.GeneralName);
+              items.push(asnName);
+            }
+          }
+          names2 = new asn1X509__namespace.GeneralNames(items);
+        } else if (pvtsutils.BufferSourceConverter.isBufferSource(params)) {
+          names2 = asn1Schema.AsnConvert.parse(params, asn1X509__namespace.GeneralNames);
+        } else {
+          throw new Error("Cannot initialize GeneralNames. Incorrect incoming arguments");
+        }
+        super(names2);
+      }
+      onInit(asn) {
+        const items = [];
+        for (const asnName of asn) {
+          let name = null;
+          try {
+            name = new GeneralName(asnName);
+          } catch {
+            continue;
+          }
+          items.push(name);
+        }
+        this.items = items;
+      }
+      toJSON() {
+        return this.items.map((o) => o.toJSON());
+      }
+      toTextObject() {
+        const res = super.toTextObjectEmpty();
+        for (const name of this.items) {
+          const nameObj = name.toTextObject();
+          let field = res[nameObj[TextObject.NAME]];
+          if (!Array.isArray(field)) {
+            field = [];
+            res[nameObj[TextObject.NAME]] = field;
+          }
+          field.push(nameObj);
+        }
+        return res;
+      }
+    };
+    GeneralNames.NAME = "GeneralNames";
+    var rPaddingTag = "-{5}";
+    var rEolChars = "\\n";
+    var rNameTag = `[^${rEolChars}]+`;
+    var rBeginTag = `${rPaddingTag}BEGIN (${rNameTag}(?=${rPaddingTag}))${rPaddingTag}`;
+    var rEndTag = `${rPaddingTag}END \\1${rPaddingTag}`;
+    var rEolGroup = "\\n";
+    var rHeaderKey = `[^:${rEolChars}]+`;
+    var rHeaderValue = `(?:[^${rEolChars}]+${rEolGroup}(?: +[^${rEolChars}]+${rEolGroup})*)`;
+    var rBase64Chars = "[a-zA-Z0-9=+/]+";
+    var rBase64 = `(?:${rBase64Chars}${rEolGroup})+`;
+    var rPem = `${rBeginTag}${rEolGroup}(?:((?:${rHeaderKey}: ${rHeaderValue})+))?${rEolGroup}?(${rBase64})${rEndTag}`;
+    var PemConverter = class {
+      static isPem(data) {
+        return typeof data === "string" && new RegExp(rPem, "g").test(data.replace(/\r/g, ""));
+      }
+      static decodeWithHeaders(pem) {
+        pem = pem.replace(/\r/g, "");
+        const pattern = new RegExp(rPem, "g");
+        const res = [];
+        let matches = null;
+        while (matches = pattern.exec(pem)) {
+          const base643 = matches[3].replace(new RegExp(`[${rEolChars}]+`, "g"), "");
+          const pemStruct = {
+            type: matches[1],
+            headers: [],
+            rawData: pvtsutils.Convert.FromBase64(base643)
+          };
+          const headersString = matches[2];
+          if (headersString) {
+            const headers = headersString.split(new RegExp(rEolGroup, "g"));
+            let lastHeader = null;
+            for (const header of headers) {
+              const [key, value] = header.split(/:(.*)/);
+              if (value === void 0) {
+                if (!lastHeader) {
+                  throw new Error("Cannot parse PEM string. Incorrect header value");
+                }
+                lastHeader.value += key.trim();
+              } else {
+                if (lastHeader) {
+                  pemStruct.headers.push(lastHeader);
+                }
+                lastHeader = {
+                  key,
+                  value: value.trim()
+                };
+              }
+            }
+            if (lastHeader) {
+              pemStruct.headers.push(lastHeader);
+            }
+          }
+          res.push(pemStruct);
+        }
+        return res;
+      }
+      static decode(pem) {
+        const blocks = this.decodeWithHeaders(pem);
+        return blocks.map((o) => o.rawData);
+      }
+      static decodeFirst(pem) {
+        const items = this.decode(pem);
+        if (!items.length) {
+          throw new RangeError("PEM string doesn't contain any objects");
+        }
+        return items[0];
+      }
+      static encode(rawData, tag) {
+        if (Array.isArray(rawData)) {
+          const raws = new Array();
+          if (tag) {
+            rawData.forEach((element) => {
+              if (!pvtsutils.BufferSourceConverter.isBufferSource(element)) {
+                throw new TypeError("Cannot encode array of BufferSource in PEM format. Not all items of the array are BufferSource");
+              }
+              raws.push(this.encodeStruct({
+                type: tag,
+                rawData: pvtsutils.BufferSourceConverter.toArrayBuffer(element)
+              }));
+            });
+          } else {
+            rawData.forEach((element) => {
+              if (!("type" in element)) {
+                throw new TypeError("Cannot encode array of PemStruct in PEM format. Not all items of the array are PemStrut");
+              }
+              raws.push(this.encodeStruct(element));
+            });
+          }
+          return raws.join("\n");
+        } else {
+          if (!tag) {
+            throw new Error("Required argument 'tag' is missed");
+          }
+          return this.encodeStruct({
+            type: tag,
+            rawData: pvtsutils.BufferSourceConverter.toArrayBuffer(rawData)
+          });
+        }
+      }
+      static encodeStruct(pem) {
+        var _a3;
+        const upperCaseType = pem.type.toLocaleUpperCase();
+        const res = [];
+        res.push(`-----BEGIN ${upperCaseType}-----`);
+        if ((_a3 = pem.headers) === null || _a3 === void 0 ? void 0 : _a3.length) {
+          for (const header of pem.headers) {
+            res.push(`${header.key}: ${header.value}`);
+          }
+          res.push("");
+        }
+        const base643 = pvtsutils.Convert.ToBase64(pem.rawData);
+        let sliced;
+        let offset = 0;
+        const rows = Array();
+        while (offset < base643.length) {
+          if (base643.length - offset < 64) {
+            sliced = base643.substring(offset);
+          } else {
+            sliced = base643.substring(offset, offset + 64);
+            offset += 64;
+          }
+          if (sliced.length !== 0) {
+            rows.push(sliced);
+            if (sliced.length < 64) {
+              break;
+            }
+          } else {
+            break;
+          }
+        }
+        res.push(...rows);
+        res.push(`-----END ${upperCaseType}-----`);
+        return res.join("\n");
+      }
+    };
+    PemConverter.CertificateTag = "CERTIFICATE";
+    PemConverter.CrlTag = "CRL";
+    PemConverter.CertificateRequestTag = "CERTIFICATE REQUEST";
+    PemConverter.PublicKeyTag = "PUBLIC KEY";
+    PemConverter.PrivateKeyTag = "PRIVATE KEY";
+    var PemData = class _PemData extends AsnData {
+      static isAsnEncoded(data) {
+        return pvtsutils.BufferSourceConverter.isBufferSource(data) || typeof data === "string";
+      }
+      static toArrayBuffer(raw) {
+        if (typeof raw === "string") {
+          if (PemConverter.isPem(raw)) {
+            return PemConverter.decode(raw)[0];
+          } else if (pvtsutils.Convert.isHex(raw)) {
+            return pvtsutils.Convert.FromHex(raw);
+          } else if (pvtsutils.Convert.isBase64(raw)) {
+            return pvtsutils.Convert.FromBase64(raw);
+          } else if (pvtsutils.Convert.isBase64Url(raw)) {
+            return pvtsutils.Convert.FromBase64Url(raw);
+          } else {
+            throw new TypeError("Unsupported format of 'raw' argument. Must be one of DER, PEM, HEX, Base64, or Base4Url");
+          }
+        } else {
+          const buffer = pvtsutils.BufferSourceConverter.toUint8Array(raw);
+          if (buffer.length > 0 && buffer[0] === 48) {
+            return pvtsutils.BufferSourceConverter.toArrayBuffer(raw);
+          }
+          const stringRaw = pvtsutils.Convert.ToBinary(raw);
+          if (PemConverter.isPem(stringRaw)) {
+            return PemConverter.decode(stringRaw)[0];
+          } else if (pvtsutils.Convert.isHex(stringRaw)) {
+            return pvtsutils.Convert.FromHex(stringRaw);
+          } else if (pvtsutils.Convert.isBase64(stringRaw)) {
+            return pvtsutils.Convert.FromBase64(stringRaw);
+          } else if (pvtsutils.Convert.isBase64Url(stringRaw)) {
+            return pvtsutils.Convert.FromBase64Url(stringRaw);
+          }
+          throw new TypeError("Unsupported format of 'raw' argument. Must be one of DER, PEM, HEX, Base64, or Base4Url");
+        }
+      }
+      constructor(...args) {
+        if (_PemData.isAsnEncoded(args[0])) {
+          super(_PemData.toArrayBuffer(args[0]), args[1]);
+        } else {
+          super(args[0]);
+        }
+      }
+      toString(format = "pem") {
+        switch (format) {
+          case "pem":
+            return PemConverter.encode(this.rawData, this.tag);
+          default:
+            return super.toString(format);
+        }
+      }
+    };
+    var PublicKey = class _PublicKey extends PemData {
+      static async create(data, crypto2 = cryptoProvider.get()) {
+        if (data instanceof _PublicKey) {
+          return data;
+        } else if (CryptoProvider.isCryptoKey(data)) {
+          if (data.type !== "public") {
+            throw new TypeError("Public key is required");
+          }
+          const spki = await crypto2.subtle.exportKey("spki", data);
+          return new _PublicKey(spki);
+        } else if (data.publicKey) {
+          return data.publicKey;
+        } else if (pvtsutils.BufferSourceConverter.isBufferSource(data)) {
+          return new _PublicKey(data);
+        } else {
+          throw new TypeError("Unsupported PublicKeyType");
+        }
+      }
+      constructor(param) {
+        if (PemData.isAsnEncoded(param)) {
+          super(param, asn1X509.SubjectPublicKeyInfo);
+        } else {
+          super(param);
+        }
+        this.tag = PemConverter.PublicKeyTag;
+      }
+      async export(...args) {
+        let crypto2;
+        let keyUsages = ["verify"];
+        let algorithm = {
+          hash: "SHA-256",
+          ...this.algorithm
+        };
+        if (args.length > 1) {
+          algorithm = args[0] || algorithm;
+          keyUsages = args[1] || keyUsages;
+          crypto2 = args[2] || cryptoProvider.get();
+        } else {
+          crypto2 = args[0] || cryptoProvider.get();
+        }
+        let raw = this.rawData;
+        const asnSpki = asn1Schema.AsnConvert.parse(this.rawData, asn1X509.SubjectPublicKeyInfo);
+        if (asnSpki.algorithm.algorithm === asn1Rsa.id_RSASSA_PSS) {
+          raw = convertSpkiToRsaPkcs1(asnSpki, raw);
+        }
+        return crypto2.subtle.importKey("spki", raw, algorithm, true, keyUsages);
+      }
+      onInit(asn) {
+        const algProv = tsyringe.container.resolve(diAlgorithmProvider);
+        const algorithm = this.algorithm = algProv.toWebAlgorithm(asn.algorithm);
+        switch (asn.algorithm.algorithm) {
+          case asn1Rsa.id_rsaEncryption: {
+            const rsaPublicKey = asn1Schema.AsnConvert.parse(asn.subjectPublicKey, asn1Rsa.RSAPublicKey);
+            const modulus = pvtsutils.BufferSourceConverter.toUint8Array(rsaPublicKey.modulus);
+            algorithm.publicExponent = pvtsutils.BufferSourceConverter.toUint8Array(rsaPublicKey.publicExponent);
+            algorithm.modulusLength = (!modulus[0] ? modulus.slice(1) : modulus).byteLength << 3;
+            break;
+          }
+        }
+      }
+      async getThumbprint(...args) {
+        var _a3;
+        let crypto2;
+        let algorithm = "SHA-1";
+        if (args.length >= 1 && !((_a3 = args[0]) === null || _a3 === void 0 ? void 0 : _a3.subtle)) {
+          algorithm = args[0] || algorithm;
+          crypto2 = args[1] || cryptoProvider.get();
+        } else {
+          crypto2 = args[0] || cryptoProvider.get();
+        }
+        return await crypto2.subtle.digest(algorithm, this.rawData);
+      }
+      async getKeyIdentifier(...args) {
+        let crypto2;
+        let algorithm = "SHA-1";
+        if (args.length === 1) {
+          if (typeof args[0] === "string") {
+            algorithm = args[0];
+            crypto2 = cryptoProvider.get();
+          } else {
+            crypto2 = args[0];
+          }
+        } else if (args.length === 2) {
+          algorithm = args[0];
+          crypto2 = args[1];
+        } else {
+          crypto2 = cryptoProvider.get();
+        }
+        const asn = asn1Schema.AsnConvert.parse(this.rawData, asn1X509.SubjectPublicKeyInfo);
+        return await crypto2.subtle.digest(algorithm, asn.subjectPublicKey);
+      }
+      toTextObject() {
+        const obj = this.toTextObjectEmpty();
+        const asn = asn1Schema.AsnConvert.parse(this.rawData, asn1X509.SubjectPublicKeyInfo);
+        obj["Algorithm"] = TextConverter.serializeAlgorithm(asn.algorithm);
+        switch (asn.algorithm.algorithm) {
+          case asn1Ecc.id_ecPublicKey:
+            obj["EC Point"] = asn.subjectPublicKey;
+            break;
+          case asn1Rsa.id_rsaEncryption:
+          default:
+            obj["Raw Data"] = asn.subjectPublicKey;
+        }
+        return obj;
+      }
+    };
+    function convertSpkiToRsaPkcs1(asnSpki, raw) {
+      asnSpki.algorithm = new asn1X509.AlgorithmIdentifier({
+        algorithm: asn1Rsa.id_rsaEncryption,
+        parameters: null
+      });
+      raw = asn1Schema.AsnConvert.serialize(asnSpki);
+      return raw;
+    }
+    var AuthorityKeyIdentifierExtension = class _AuthorityKeyIdentifierExtension extends Extension {
+      static async create(param, critical = false, crypto2 = cryptoProvider.get()) {
+        if ("name" in param && "serialNumber" in param) {
+          return new _AuthorityKeyIdentifierExtension(param, critical);
+        }
+        const key = await PublicKey.create(param, crypto2);
+        const id = await key.getKeyIdentifier(crypto2);
+        return new _AuthorityKeyIdentifierExtension(pvtsutils.Convert.ToHex(id), critical);
+      }
+      constructor(...args) {
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          super(args[0]);
+        } else if (typeof args[0] === "string") {
+          const value = new asn1X509__namespace.AuthorityKeyIdentifier({ keyIdentifier: new asn1X509__namespace.KeyIdentifier(pvtsutils.Convert.FromHex(args[0])) });
+          super(asn1X509__namespace.id_ce_authorityKeyIdentifier, args[1], asn1Schema.AsnConvert.serialize(value));
+        } else {
+          const certId = args[0];
+          const certIdName = certId.name instanceof GeneralNames ? asn1Schema.AsnConvert.parse(certId.name.rawData, asn1X509__namespace.GeneralNames) : certId.name;
+          const value = new asn1X509__namespace.AuthorityKeyIdentifier({
+            authorityCertIssuer: certIdName,
+            authorityCertSerialNumber: pvtsutils.Convert.FromHex(certId.serialNumber)
+          });
+          super(asn1X509__namespace.id_ce_authorityKeyIdentifier, args[1], asn1Schema.AsnConvert.serialize(value));
+        }
+      }
+      onInit(asn) {
+        super.onInit(asn);
+        const aki = asn1Schema.AsnConvert.parse(asn.extnValue, asn1X509__namespace.AuthorityKeyIdentifier);
+        if (aki.keyIdentifier) {
+          this.keyId = pvtsutils.Convert.ToHex(aki.keyIdentifier);
+        }
+        if (aki.authorityCertIssuer || aki.authorityCertSerialNumber) {
+          this.certId = {
+            name: aki.authorityCertIssuer || [],
+            serialNumber: aki.authorityCertSerialNumber ? pvtsutils.Convert.ToHex(aki.authorityCertSerialNumber) : ""
+          };
+        }
+      }
+      toTextObject() {
+        const obj = this.toTextObjectWithoutValue();
+        const asn = asn1Schema.AsnConvert.parse(this.value, asn1X509__namespace.AuthorityKeyIdentifier);
+        if (asn.authorityCertIssuer) {
+          obj["Authority Issuer"] = new GeneralNames(asn.authorityCertIssuer).toTextObject();
+        }
+        if (asn.authorityCertSerialNumber) {
+          obj["Authority Serial Number"] = asn.authorityCertSerialNumber;
+        }
+        if (asn.keyIdentifier) {
+          obj[""] = asn.keyIdentifier;
+        }
+        return obj;
+      }
+    };
+    AuthorityKeyIdentifierExtension.NAME = "Authority Key Identifier";
+    var BasicConstraintsExtension = class extends Extension {
+      constructor(...args) {
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          super(args[0]);
+          const value = asn1Schema.AsnConvert.parse(this.value, asn1X509.BasicConstraints);
+          this.ca = value.cA;
+          this.pathLength = value.pathLenConstraint;
+        } else {
+          const value = new asn1X509.BasicConstraints({
+            cA: args[0],
+            pathLenConstraint: args[1]
+          });
+          super(asn1X509.id_ce_basicConstraints, args[2], asn1Schema.AsnConvert.serialize(value));
+          this.ca = args[0];
+          this.pathLength = args[1];
+        }
+      }
+      toTextObject() {
+        const obj = this.toTextObjectWithoutValue();
+        if (this.ca) {
+          obj["CA"] = this.ca;
+        }
+        if (this.pathLength !== void 0) {
+          obj["Path Length"] = this.pathLength;
+        }
+        return obj;
+      }
+    };
+    BasicConstraintsExtension.NAME = "Basic Constraints";
+    exports2.ExtendedKeyUsage = void 0;
+    (function(ExtendedKeyUsage) {
+      ExtendedKeyUsage["serverAuth"] = "1.3.6.1.5.5.7.3.1";
+      ExtendedKeyUsage["clientAuth"] = "1.3.6.1.5.5.7.3.2";
+      ExtendedKeyUsage["codeSigning"] = "1.3.6.1.5.5.7.3.3";
+      ExtendedKeyUsage["emailProtection"] = "1.3.6.1.5.5.7.3.4";
+      ExtendedKeyUsage["timeStamping"] = "1.3.6.1.5.5.7.3.8";
+      ExtendedKeyUsage["ocspSigning"] = "1.3.6.1.5.5.7.3.9";
+    })(exports2.ExtendedKeyUsage || (exports2.ExtendedKeyUsage = {}));
+    var ExtendedKeyUsageExtension = class extends Extension {
+      constructor(...args) {
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          super(args[0]);
+          const value = asn1Schema.AsnConvert.parse(this.value, asn1X509__namespace.ExtendedKeyUsage);
+          this.usages = value.map((o) => o);
+        } else {
+          const value = new asn1X509__namespace.ExtendedKeyUsage(args[0]);
+          super(asn1X509__namespace.id_ce_extKeyUsage, args[1], asn1Schema.AsnConvert.serialize(value));
+          this.usages = args[0];
+        }
+      }
+      toTextObject() {
+        const obj = this.toTextObjectWithoutValue();
+        obj[""] = this.usages.map((o) => OidSerializer.toString(o)).join(", ");
+        return obj;
+      }
+    };
+    ExtendedKeyUsageExtension.NAME = "Extended Key Usages";
+    exports2.KeyUsageFlags = void 0;
+    (function(KeyUsageFlags) {
+      KeyUsageFlags[KeyUsageFlags["digitalSignature"] = 1] = "digitalSignature";
+      KeyUsageFlags[KeyUsageFlags["nonRepudiation"] = 2] = "nonRepudiation";
+      KeyUsageFlags[KeyUsageFlags["keyEncipherment"] = 4] = "keyEncipherment";
+      KeyUsageFlags[KeyUsageFlags["dataEncipherment"] = 8] = "dataEncipherment";
+      KeyUsageFlags[KeyUsageFlags["keyAgreement"] = 16] = "keyAgreement";
+      KeyUsageFlags[KeyUsageFlags["keyCertSign"] = 32] = "keyCertSign";
+      KeyUsageFlags[KeyUsageFlags["cRLSign"] = 64] = "cRLSign";
+      KeyUsageFlags[KeyUsageFlags["encipherOnly"] = 128] = "encipherOnly";
+      KeyUsageFlags[KeyUsageFlags["decipherOnly"] = 256] = "decipherOnly";
+    })(exports2.KeyUsageFlags || (exports2.KeyUsageFlags = {}));
+    var KeyUsagesExtension = class extends Extension {
+      constructor(...args) {
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          super(args[0]);
+          const value = asn1Schema.AsnConvert.parse(this.value, asn1X509.KeyUsage);
+          this.usages = value.toNumber();
+        } else {
+          const value = new asn1X509.KeyUsage(args[0]);
+          super(asn1X509.id_ce_keyUsage, args[1], asn1Schema.AsnConvert.serialize(value));
+          this.usages = args[0];
+        }
+      }
+      toTextObject() {
+        const obj = this.toTextObjectWithoutValue();
+        const asn = asn1Schema.AsnConvert.parse(this.value, asn1X509.KeyUsage);
+        obj[""] = asn.toJSON().join(", ");
+        return obj;
+      }
+    };
+    KeyUsagesExtension.NAME = "Key Usages";
+    var SubjectKeyIdentifierExtension = class _SubjectKeyIdentifierExtension extends Extension {
+      static async create(publicKey, critical = false, crypto2 = cryptoProvider.get()) {
+        const key = await PublicKey.create(publicKey, crypto2);
+        const id = await key.getKeyIdentifier(crypto2);
+        return new _SubjectKeyIdentifierExtension(pvtsutils.Convert.ToHex(id), critical);
+      }
+      constructor(...args) {
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          super(args[0]);
+          const value = asn1Schema.AsnConvert.parse(this.value, asn1X509__namespace.SubjectKeyIdentifier);
+          this.keyId = pvtsutils.Convert.ToHex(value);
+        } else {
+          const identifier = typeof args[0] === "string" ? pvtsutils.Convert.FromHex(args[0]) : args[0];
+          const value = new asn1X509__namespace.SubjectKeyIdentifier(identifier);
+          super(asn1X509__namespace.id_ce_subjectKeyIdentifier, args[1], asn1Schema.AsnConvert.serialize(value));
+          this.keyId = pvtsutils.Convert.ToHex(identifier);
+        }
+      }
+      toTextObject() {
+        const obj = this.toTextObjectWithoutValue();
+        const asn = asn1Schema.AsnConvert.parse(this.value, asn1X509__namespace.SubjectKeyIdentifier);
+        obj[""] = asn;
+        return obj;
+      }
+    };
+    SubjectKeyIdentifierExtension.NAME = "Subject Key Identifier";
+    var SubjectAlternativeNameExtension = class extends Extension {
+      constructor(...args) {
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          super(args[0]);
+        } else {
+          super(asn1X509__namespace.id_ce_subjectAltName, args[1], new GeneralNames(args[0] || []).rawData);
+        }
+      }
+      onInit(asn) {
+        super.onInit(asn);
+        const value = asn1Schema.AsnConvert.parse(asn.extnValue, asn1X509__namespace.SubjectAlternativeName);
+        this.names = new GeneralNames(value);
+      }
+      toTextObject() {
+        const obj = this.toTextObjectWithoutValue();
+        const namesObj = this.names.toTextObject();
+        for (const key in namesObj) {
+          obj[key] = namesObj[key];
+        }
+        return obj;
+      }
+    };
+    SubjectAlternativeNameExtension.NAME = "Subject Alternative Name";
+    var ExtensionFactory = class {
+      static register(id, type) {
+        this.items.set(id, type);
+      }
+      static create(data) {
+        const extension2 = new Extension(data);
+        const Type = this.items.get(extension2.type);
+        if (Type) {
+          return new Type(data);
+        }
+        return extension2;
+      }
+    };
+    ExtensionFactory.items = /* @__PURE__ */ new Map();
+    var CertificatePolicyExtension = class extends Extension {
+      constructor(...args) {
+        var _a3;
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          super(args[0]);
+          const asnPolicies = asn1Schema.AsnConvert.parse(this.value, asn1X509__namespace.CertificatePolicies);
+          this.policies = asnPolicies.map((o) => o.policyIdentifier);
+        } else {
+          const policies = args[0];
+          const critical = (_a3 = args[1]) !== null && _a3 !== void 0 ? _a3 : false;
+          const value = new asn1X509__namespace.CertificatePolicies(policies.map((o) => new asn1X509__namespace.PolicyInformation({ policyIdentifier: o })));
+          super(asn1X509__namespace.id_ce_certificatePolicies, critical, asn1Schema.AsnConvert.serialize(value));
+          this.policies = policies;
+        }
+      }
+      toTextObject() {
+        const obj = this.toTextObjectWithoutValue();
+        obj["Policy"] = this.policies.map((o) => new TextObject("", {}, OidSerializer.toString(o)));
+        return obj;
+      }
+    };
+    CertificatePolicyExtension.NAME = "Certificate Policies";
+    ExtensionFactory.register(asn1X509__namespace.id_ce_certificatePolicies, CertificatePolicyExtension);
+    var CRLDistributionPointsExtension = class extends Extension {
+      constructor(...args) {
+        var _a3;
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          super(args[0]);
+        } else if (Array.isArray(args[0]) && typeof args[0][0] === "string") {
+          const urls = args[0];
+          const dps = urls.map((url2) => {
+            return new asn1X509__namespace.DistributionPoint({
+              distributionPoint: new asn1X509__namespace.DistributionPointName({ fullName: [new asn1X509__namespace.GeneralName({ uniformResourceIdentifier: url2 })] })
+            });
+          });
+          const value = new asn1X509__namespace.CRLDistributionPoints(dps);
+          super(asn1X509__namespace.id_ce_cRLDistributionPoints, args[1], asn1Schema.AsnConvert.serialize(value));
+        } else {
+          const value = new asn1X509__namespace.CRLDistributionPoints(args[0]);
+          super(asn1X509__namespace.id_ce_cRLDistributionPoints, args[1], asn1Schema.AsnConvert.serialize(value));
+        }
+        (_a3 = this.distributionPoints) !== null && _a3 !== void 0 ? _a3 : this.distributionPoints = [];
+      }
+      onInit(asn) {
+        super.onInit(asn);
+        const crlExt = asn1Schema.AsnConvert.parse(asn.extnValue, asn1X509__namespace.CRLDistributionPoints);
+        this.distributionPoints = crlExt;
+      }
+      toTextObject() {
+        const obj = this.toTextObjectWithoutValue();
+        obj["Distribution Point"] = this.distributionPoints.map((dp) => {
+          var _a3;
+          const dpObj = {};
+          if (dp.distributionPoint) {
+            dpObj[""] = (_a3 = dp.distributionPoint.fullName) === null || _a3 === void 0 ? void 0 : _a3.map((name) => new GeneralName(name).toString()).join(", ");
+          }
+          if (dp.reasons) {
+            dpObj["Reasons"] = dp.reasons.toString();
+          }
+          if (dp.cRLIssuer) {
+            dpObj["CRL Issuer"] = dp.cRLIssuer.map((issuer) => issuer.toString()).join(", ");
+          }
+          return dpObj;
+        });
+        return obj;
+      }
+    };
+    CRLDistributionPointsExtension.NAME = "CRL Distribution Points";
+    var AuthorityInfoAccessExtension = class extends Extension {
+      constructor(...args) {
+        var _a3, _b, _c, _d;
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          super(args[0]);
+        } else if (args[0] instanceof asn1X509__namespace.AuthorityInfoAccessSyntax) {
+          const value = new asn1X509__namespace.AuthorityInfoAccessSyntax(args[0]);
+          super(asn1X509__namespace.id_pe_authorityInfoAccess, args[1], asn1Schema.AsnConvert.serialize(value));
+        } else {
+          const params = args[0];
+          const value = new asn1X509__namespace.AuthorityInfoAccessSyntax();
+          addAccessDescriptions(value, params, asn1X509__namespace.id_ad_ocsp, "ocsp");
+          addAccessDescriptions(value, params, asn1X509__namespace.id_ad_caIssuers, "caIssuers");
+          addAccessDescriptions(value, params, asn1X509__namespace.id_ad_timeStamping, "timeStamping");
+          addAccessDescriptions(value, params, asn1X509__namespace.id_ad_caRepository, "caRepository");
+          super(asn1X509__namespace.id_pe_authorityInfoAccess, args[1], asn1Schema.AsnConvert.serialize(value));
+        }
+        (_a3 = this.ocsp) !== null && _a3 !== void 0 ? _a3 : this.ocsp = [];
+        (_b = this.caIssuers) !== null && _b !== void 0 ? _b : this.caIssuers = [];
+        (_c = this.timeStamping) !== null && _c !== void 0 ? _c : this.timeStamping = [];
+        (_d = this.caRepository) !== null && _d !== void 0 ? _d : this.caRepository = [];
+      }
+      onInit(asn) {
+        super.onInit(asn);
+        this.ocsp = [];
+        this.caIssuers = [];
+        this.timeStamping = [];
+        this.caRepository = [];
+        const aia = asn1Schema.AsnConvert.parse(asn.extnValue, asn1X509__namespace.AuthorityInfoAccessSyntax);
+        aia.forEach((accessDescription) => {
+          switch (accessDescription.accessMethod) {
+            case asn1X509__namespace.id_ad_ocsp:
+              this.ocsp.push(new GeneralName(accessDescription.accessLocation));
+              break;
+            case asn1X509__namespace.id_ad_caIssuers:
+              this.caIssuers.push(new GeneralName(accessDescription.accessLocation));
+              break;
+            case asn1X509__namespace.id_ad_timeStamping:
+              this.timeStamping.push(new GeneralName(accessDescription.accessLocation));
+              break;
+            case asn1X509__namespace.id_ad_caRepository:
+              this.caRepository.push(new GeneralName(accessDescription.accessLocation));
+              break;
+          }
+        });
+      }
+      toTextObject() {
+        const obj = this.toTextObjectWithoutValue();
+        if (this.ocsp.length) {
+          addUrlsToObject(obj, "OCSP", this.ocsp);
+        }
+        if (this.caIssuers.length) {
+          addUrlsToObject(obj, "CA Issuers", this.caIssuers);
+        }
+        if (this.timeStamping.length) {
+          addUrlsToObject(obj, "Time Stamping", this.timeStamping);
+        }
+        if (this.caRepository.length) {
+          addUrlsToObject(obj, "CA Repository", this.caRepository);
+        }
+        return obj;
+      }
+    };
+    AuthorityInfoAccessExtension.NAME = "Authority Info Access";
+    function addUrlsToObject(obj, key, urls) {
+      if (urls.length === 1) {
+        obj[key] = urls[0].toTextObject();
+      } else {
+        const names2 = new TextObject("");
+        urls.forEach((name, index) => {
+          const nameObj = name.toTextObject();
+          const indexedKey = `${nameObj[TextObject.NAME]} ${index + 1}`;
+          let field = names2[indexedKey];
+          if (!Array.isArray(field)) {
+            field = [];
+            names2[indexedKey] = field;
+          }
+          field.push(nameObj);
+        });
+        obj[key] = names2;
+      }
+    }
+    function addAccessDescriptions(value, params, method, key) {
+      const items = params[key];
+      if (items) {
+        const array2 = Array.isArray(items) ? items : [items];
+        array2.forEach((url2) => {
+          if (typeof url2 === "string") {
+            url2 = new GeneralName("url", url2);
+          }
+          value.push(new asn1X509__namespace.AccessDescription({
+            accessMethod: method,
+            accessLocation: asn1Schema.AsnConvert.parse(url2.rawData, asn1X509__namespace.GeneralName)
+          }));
+        });
+      }
+    }
+    var IssuerAlternativeNameExtension = class extends Extension {
+      constructor(...args) {
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          super(args[0]);
+        } else {
+          super(asn1X509__namespace.id_ce_issuerAltName, args[1], new GeneralNames(args[0] || []).rawData);
+        }
+      }
+      onInit(asn) {
+        super.onInit(asn);
+        const value = asn1Schema.AsnConvert.parse(asn.extnValue, asn1X509__namespace.GeneralNames);
+        this.names = new GeneralNames(value);
+      }
+      toTextObject() {
+        const obj = this.toTextObjectWithoutValue();
+        const namesObj = this.names.toTextObject();
+        for (const key in namesObj) {
+          obj[key] = namesObj[key];
+        }
+        return obj;
+      }
+    };
+    IssuerAlternativeNameExtension.NAME = "Issuer Alternative Name";
+    var Attribute = class _Attribute extends AsnData {
+      constructor(...args) {
+        let raw;
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          raw = pvtsutils.BufferSourceConverter.toArrayBuffer(args[0]);
+        } else {
+          const type = args[0];
+          const values = Array.isArray(args[1]) ? args[1].map((o) => pvtsutils.BufferSourceConverter.toArrayBuffer(o)) : [];
+          raw = asn1Schema.AsnConvert.serialize(new asn1X509.Attribute({
+            type,
+            values
+          }));
+        }
+        super(raw, asn1X509.Attribute);
+      }
+      onInit(asn) {
+        this.type = asn.type;
+        this.values = asn.values;
+      }
+      toTextObject() {
+        const obj = this.toTextObjectWithoutValue();
+        obj["Value"] = this.values.map((o) => new TextObject("", { "": o }));
+        return obj;
+      }
+      toTextObjectWithoutValue() {
+        const obj = this.toTextObjectEmpty();
+        if (obj[TextObject.NAME] === _Attribute.NAME) {
+          obj[TextObject.NAME] = OidSerializer.toString(this.type);
+        }
+        return obj;
+      }
+    };
+    Attribute.NAME = "Attribute";
+    var ChallengePasswordAttribute = class extends Attribute {
+      constructor(...args) {
+        var _a3;
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          super(args[0]);
+        } else {
+          const value = new asnPkcs9__namespace.ChallengePassword({ printableString: args[0] });
+          super(asnPkcs9__namespace.id_pkcs9_at_challengePassword, [asn1Schema.AsnConvert.serialize(value)]);
+        }
+        (_a3 = this.password) !== null && _a3 !== void 0 ? _a3 : this.password = "";
+      }
+      onInit(asn) {
+        super.onInit(asn);
+        if (this.values[0]) {
+          const value = asn1Schema.AsnConvert.parse(this.values[0], asnPkcs9__namespace.ChallengePassword);
+          this.password = value.toString();
+        }
+      }
+      toTextObject() {
+        const obj = this.toTextObjectWithoutValue();
+        obj[TextObject.VALUE] = this.password;
+        return obj;
+      }
+    };
+    ChallengePasswordAttribute.NAME = "Challenge Password";
+    var ExtensionsAttribute = class extends Attribute {
+      constructor(...args) {
+        var _a3;
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          super(args[0]);
+        } else {
+          const extensions = args[0];
+          const value = new asn1X509__namespace.Extensions();
+          for (const extension2 of extensions) {
+            value.push(asn1Schema.AsnConvert.parse(extension2.rawData, asn1X509__namespace.Extension));
+          }
+          super(asnPkcs9__namespace.id_pkcs9_at_extensionRequest, [asn1Schema.AsnConvert.serialize(value)]);
+        }
+        (_a3 = this.items) !== null && _a3 !== void 0 ? _a3 : this.items = [];
+      }
+      onInit(asn) {
+        super.onInit(asn);
+        if (this.values[0]) {
+          const value = asn1Schema.AsnConvert.parse(this.values[0], asn1X509__namespace.Extensions);
+          this.items = value.map((o) => ExtensionFactory.create(asn1Schema.AsnConvert.serialize(o)));
+        }
+      }
+      toTextObject() {
+        const obj = this.toTextObjectWithoutValue();
+        const extensions = this.items.map((o) => o.toTextObject());
+        for (const extension2 of extensions) {
+          obj[extension2[TextObject.NAME]] = extension2;
+        }
+        return obj;
+      }
+    };
+    ExtensionsAttribute.NAME = "Extensions";
+    var AttributeFactory = class {
+      static register(id, type) {
+        this.items.set(id, type);
+      }
+      static create(data) {
+        const attribute = new Attribute(data);
+        const Type = this.items.get(attribute.type);
+        if (Type) {
+          return new Type(data);
+        }
+        return attribute;
+      }
+    };
+    AttributeFactory.items = /* @__PURE__ */ new Map();
+    var diAsnSignatureFormatter = "crypto.signatureFormatter";
+    var AsnDefaultSignatureFormatter = class {
+      toAsnSignature(algorithm, signature) {
+        return pvtsutils.BufferSourceConverter.toArrayBuffer(signature);
+      }
+      toWebSignature(algorithm, signature) {
+        return pvtsutils.BufferSourceConverter.toArrayBuffer(signature);
+      }
+    };
+    var RsaAlgorithm_1;
+    exports2.RsaAlgorithm = RsaAlgorithm_1 = class RsaAlgorithm {
+      static createPssParams(hash2, saltLength) {
+        const hashAlgorithm = RsaAlgorithm_1.getHashAlgorithm(hash2);
+        if (!hashAlgorithm) {
+          return null;
+        }
+        return new asn1Rsa__namespace.RsaSaPssParams({
+          hashAlgorithm,
+          maskGenAlgorithm: new asn1X509.AlgorithmIdentifier({
+            algorithm: asn1Rsa__namespace.id_mgf1,
+            parameters: asn1Schema.AsnConvert.serialize(hashAlgorithm)
+          }),
+          saltLength
+        });
+      }
+      static getHashAlgorithm(alg) {
+        const algProv = tsyringe.container.resolve(diAlgorithmProvider);
+        if (typeof alg === "string") {
+          return algProv.toAsnAlgorithm({ name: alg });
+        }
+        if (typeof alg === "object" && alg && "name" in alg) {
+          return algProv.toAsnAlgorithm(alg);
+        }
+        return null;
+      }
+      toAsnAlgorithm(alg) {
+        switch (alg.name.toLowerCase()) {
+          case "rsassa-pkcs1-v1_5":
+            if ("hash" in alg) {
+              let hash2;
+              if (typeof alg.hash === "string") {
+                hash2 = alg.hash;
+              } else if (alg.hash && typeof alg.hash === "object" && "name" in alg.hash && typeof alg.hash.name === "string") {
+                hash2 = alg.hash.name.toUpperCase();
+              } else {
+                throw new Error("Cannot get hash algorithm name");
+              }
+              switch (hash2.toLowerCase()) {
+                case "sha-1":
+                  return new asn1X509.AlgorithmIdentifier({
+                    algorithm: asn1Rsa__namespace.id_sha1WithRSAEncryption,
+                    parameters: null
+                  });
+                case "sha-256":
+                  return new asn1X509.AlgorithmIdentifier({
+                    algorithm: asn1Rsa__namespace.id_sha256WithRSAEncryption,
+                    parameters: null
+                  });
+                case "sha-384":
+                  return new asn1X509.AlgorithmIdentifier({
+                    algorithm: asn1Rsa__namespace.id_sha384WithRSAEncryption,
+                    parameters: null
+                  });
+                case "sha-512":
+                  return new asn1X509.AlgorithmIdentifier({
+                    algorithm: asn1Rsa__namespace.id_sha512WithRSAEncryption,
+                    parameters: null
+                  });
+              }
+            } else {
+              return new asn1X509.AlgorithmIdentifier({
+                algorithm: asn1Rsa__namespace.id_rsaEncryption,
+                parameters: null
+              });
+            }
+            break;
+          case "rsa-pss":
+            if ("hash" in alg) {
+              if (!("saltLength" in alg && typeof alg.saltLength === "number")) {
+                throw new Error("Cannot get 'saltLength' from 'alg' argument");
+              }
+              const pssParams = RsaAlgorithm_1.createPssParams(alg.hash, alg.saltLength);
+              if (!pssParams) {
+                throw new Error("Cannot create PSS parameters");
+              }
+              return new asn1X509.AlgorithmIdentifier({
+                algorithm: asn1Rsa__namespace.id_RSASSA_PSS,
+                parameters: asn1Schema.AsnConvert.serialize(pssParams)
+              });
+            } else {
+              return new asn1X509.AlgorithmIdentifier({
+                algorithm: asn1Rsa__namespace.id_RSASSA_PSS,
+                parameters: null
+              });
+            }
+        }
+        return null;
+      }
+      toWebAlgorithm(alg) {
+        switch (alg.algorithm) {
+          case asn1Rsa__namespace.id_rsaEncryption:
+            return { name: "RSASSA-PKCS1-v1_5" };
+          case asn1Rsa__namespace.id_sha1WithRSAEncryption:
+            return {
+              name: "RSASSA-PKCS1-v1_5",
+              hash: { name: "SHA-1" }
+            };
+          case asn1Rsa__namespace.id_sha256WithRSAEncryption:
+            return {
+              name: "RSASSA-PKCS1-v1_5",
+              hash: { name: "SHA-256" }
+            };
+          case asn1Rsa__namespace.id_sha384WithRSAEncryption:
+            return {
+              name: "RSASSA-PKCS1-v1_5",
+              hash: { name: "SHA-384" }
+            };
+          case asn1Rsa__namespace.id_sha512WithRSAEncryption:
+            return {
+              name: "RSASSA-PKCS1-v1_5",
+              hash: { name: "SHA-512" }
+            };
+          case asn1Rsa__namespace.id_RSASSA_PSS:
+            if (alg.parameters) {
+              const pssParams = asn1Schema.AsnConvert.parse(alg.parameters, asn1Rsa__namespace.RsaSaPssParams);
+              const algProv = tsyringe.container.resolve(diAlgorithmProvider);
+              const hashAlg = algProv.toWebAlgorithm(pssParams.hashAlgorithm);
+              return {
+                name: "RSA-PSS",
+                hash: hashAlg,
+                saltLength: pssParams.saltLength
+              };
+            } else {
+              return { name: "RSA-PSS" };
+            }
+        }
+        return null;
+      }
+    };
+    exports2.RsaAlgorithm = RsaAlgorithm_1 = tslib.__decorate([
+      tsyringe.injectable()
+    ], exports2.RsaAlgorithm);
+    tsyringe.container.registerSingleton(diAlgorithm, exports2.RsaAlgorithm);
+    exports2.ShaAlgorithm = class ShaAlgorithm {
+      toAsnAlgorithm(alg) {
+        switch (alg.name.toLowerCase()) {
+          case "sha-1":
+            return new asn1X509.AlgorithmIdentifier({ algorithm: asn1Rsa.id_sha1 });
+          case "sha-256":
+            return new asn1X509.AlgorithmIdentifier({ algorithm: asn1Rsa.id_sha256 });
+          case "sha-384":
+            return new asn1X509.AlgorithmIdentifier({ algorithm: asn1Rsa.id_sha384 });
+          case "sha-512":
+            return new asn1X509.AlgorithmIdentifier({ algorithm: asn1Rsa.id_sha512 });
+        }
+        return null;
+      }
+      toWebAlgorithm(alg) {
+        switch (alg.algorithm) {
+          case asn1Rsa.id_sha1:
+            return { name: "SHA-1" };
+          case asn1Rsa.id_sha256:
+            return { name: "SHA-256" };
+          case asn1Rsa.id_sha384:
+            return { name: "SHA-384" };
+          case asn1Rsa.id_sha512:
+            return { name: "SHA-512" };
+        }
+        return null;
+      }
+    };
+    exports2.ShaAlgorithm = tslib.__decorate([
+      tsyringe.injectable()
+    ], exports2.ShaAlgorithm);
+    tsyringe.container.registerSingleton(diAlgorithm, exports2.ShaAlgorithm);
+    var AsnEcSignatureFormatter = class _AsnEcSignatureFormatter {
+      addPadding(pointSize, data) {
+        const bytes = pvtsutils.BufferSourceConverter.toUint8Array(data);
+        const res = new Uint8Array(pointSize);
+        res.set(bytes, pointSize - bytes.length);
+        return res.buffer;
+      }
+      removePadding(data, positive = false) {
+        let bytes = pvtsutils.BufferSourceConverter.toUint8Array(data);
+        for (let i = 0; i < bytes.length; i++) {
+          if (!bytes[i]) {
+            continue;
+          }
+          bytes = bytes.slice(i);
+          break;
+        }
+        if (positive && bytes[0] > 127) {
+          const result = new Uint8Array(bytes.length + 1);
+          result.set(bytes, 1);
+          return result.buffer;
+        }
+        return bytes.buffer;
+      }
+      toAsnSignature(algorithm, signature) {
+        if (algorithm.name === "ECDSA") {
+          const namedCurve = algorithm.namedCurve;
+          const pointSize = _AsnEcSignatureFormatter.namedCurveSize.get(namedCurve) || _AsnEcSignatureFormatter.defaultNamedCurveSize;
+          const ecSignature = new asn1Ecc.ECDSASigValue();
+          const uint8Signature = pvtsutils.BufferSourceConverter.toUint8Array(signature);
+          ecSignature.r = this.removePadding(uint8Signature.slice(0, pointSize), true);
+          ecSignature.s = this.removePadding(uint8Signature.slice(pointSize, pointSize + pointSize), true);
+          return asn1Schema.AsnConvert.serialize(ecSignature);
+        }
+        return null;
+      }
+      toWebSignature(algorithm, signature) {
+        if (algorithm.name === "ECDSA") {
+          const ecSigValue = asn1Schema.AsnConvert.parse(signature, asn1Ecc.ECDSASigValue);
+          const namedCurve = algorithm.namedCurve;
+          const pointSize = _AsnEcSignatureFormatter.namedCurveSize.get(namedCurve) || _AsnEcSignatureFormatter.defaultNamedCurveSize;
+          const r = this.addPadding(pointSize, this.removePadding(ecSigValue.r));
+          const s = this.addPadding(pointSize, this.removePadding(ecSigValue.s));
+          return pvtsutils.combine(r, s);
+        }
+        return null;
+      }
+    };
+    AsnEcSignatureFormatter.namedCurveSize = /* @__PURE__ */ new Map();
+    AsnEcSignatureFormatter.defaultNamedCurveSize = 32;
+    var idX25519 = "1.3.101.110";
+    var idX448 = "1.3.101.111";
+    var idEd25519 = "1.3.101.112";
+    var idEd448 = "1.3.101.113";
+    exports2.EdAlgorithm = class EdAlgorithm {
+      toAsnAlgorithm(alg) {
+        let algorithm = null;
+        switch (alg.name.toLowerCase()) {
+          case "ed25519":
+            algorithm = idEd25519;
+            break;
+          case "x25519":
+            algorithm = idX25519;
+            break;
+          case "eddsa":
+            switch (alg.namedCurve.toLowerCase()) {
+              case "ed25519":
+                algorithm = idEd25519;
+                break;
+              case "ed448":
+                algorithm = idEd448;
+                break;
+            }
+            break;
+          case "ecdh-es":
+            switch (alg.namedCurve.toLowerCase()) {
+              case "x25519":
+                algorithm = idX25519;
+                break;
+              case "x448":
+                algorithm = idX448;
+                break;
+            }
+        }
+        if (algorithm) {
+          return new asn1X509.AlgorithmIdentifier({ algorithm });
+        }
+        return null;
+      }
+      toWebAlgorithm(alg) {
+        switch (alg.algorithm) {
+          case idEd25519:
+            return { name: "Ed25519" };
+          case idEd448:
+            return {
+              name: "EdDSA",
+              namedCurve: "Ed448"
+            };
+          case idX25519:
+            return { name: "X25519" };
+          case idX448:
+            return {
+              name: "ECDH-ES",
+              namedCurve: "X448"
+            };
+        }
+        return null;
+      }
+    };
+    exports2.EdAlgorithm = tslib.__decorate([
+      tsyringe.injectable()
+    ], exports2.EdAlgorithm);
+    tsyringe.container.registerSingleton(diAlgorithm, exports2.EdAlgorithm);
+    var _Pkcs10CertificateRequest_tbs;
+    var _Pkcs10CertificateRequest_subjectName;
+    var _Pkcs10CertificateRequest_subject;
+    var _Pkcs10CertificateRequest_signatureAlgorithm;
+    var _Pkcs10CertificateRequest_signature;
+    var _Pkcs10CertificateRequest_publicKey;
+    var _Pkcs10CertificateRequest_attributes;
+    var _Pkcs10CertificateRequest_extensions;
+    var Pkcs10CertificateRequest = class extends PemData {
+      get subjectName() {
+        if (!tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_subjectName, "f")) {
+          tslib.__classPrivateFieldSet(this, _Pkcs10CertificateRequest_subjectName, new Name(this.asn.certificationRequestInfo.subject), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_subjectName, "f");
+      }
+      get subject() {
+        if (!tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_subject, "f")) {
+          tslib.__classPrivateFieldSet(this, _Pkcs10CertificateRequest_subject, this.subjectName.toString(), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_subject, "f");
+      }
+      get signatureAlgorithm() {
+        if (!tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_signatureAlgorithm, "f")) {
+          const algProv = tsyringe.container.resolve(diAlgorithmProvider);
+          tslib.__classPrivateFieldSet(this, _Pkcs10CertificateRequest_signatureAlgorithm, algProv.toWebAlgorithm(this.asn.signatureAlgorithm), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_signatureAlgorithm, "f");
+      }
+      get signature() {
+        if (!tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_signature, "f")) {
+          tslib.__classPrivateFieldSet(this, _Pkcs10CertificateRequest_signature, this.asn.signature, "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_signature, "f");
+      }
+      get publicKey() {
+        if (!tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_publicKey, "f")) {
+          tslib.__classPrivateFieldSet(this, _Pkcs10CertificateRequest_publicKey, new PublicKey(this.asn.certificationRequestInfo.subjectPKInfo), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_publicKey, "f");
+      }
+      get attributes() {
+        if (!tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_attributes, "f")) {
+          tslib.__classPrivateFieldSet(this, _Pkcs10CertificateRequest_attributes, this.asn.certificationRequestInfo.attributes.map((o) => AttributeFactory.create(asn1Schema.AsnConvert.serialize(o))), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_attributes, "f");
+      }
+      get extensions() {
+        if (!tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_extensions, "f")) {
+          tslib.__classPrivateFieldSet(this, _Pkcs10CertificateRequest_extensions, [], "f");
+          const extensions = this.getAttribute(asnPkcs9.id_pkcs9_at_extensionRequest);
+          if (extensions instanceof ExtensionsAttribute) {
+            tslib.__classPrivateFieldSet(this, _Pkcs10CertificateRequest_extensions, extensions.items, "f");
+          }
+        }
+        return tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_extensions, "f");
+      }
+      get tbs() {
+        if (!tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_tbs, "f")) {
+          tslib.__classPrivateFieldSet(this, _Pkcs10CertificateRequest_tbs, this.asn.certificationRequestInfoRaw || asn1Schema.AsnConvert.serialize(this.asn.certificationRequestInfo), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _Pkcs10CertificateRequest_tbs, "f");
+      }
+      constructor(param) {
+        const args = PemData.isAsnEncoded(param) ? [param, asn1Csr.CertificationRequest] : [param];
+        super(args[0], args[1]);
+        _Pkcs10CertificateRequest_tbs.set(this, void 0);
+        _Pkcs10CertificateRequest_subjectName.set(this, void 0);
+        _Pkcs10CertificateRequest_subject.set(this, void 0);
+        _Pkcs10CertificateRequest_signatureAlgorithm.set(this, void 0);
+        _Pkcs10CertificateRequest_signature.set(this, void 0);
+        _Pkcs10CertificateRequest_publicKey.set(this, void 0);
+        _Pkcs10CertificateRequest_attributes.set(this, void 0);
+        _Pkcs10CertificateRequest_extensions.set(this, void 0);
+        this.tag = PemConverter.CertificateRequestTag;
+      }
+      onInit(_asn) {
+      }
+      getAttribute(type) {
+        for (const attr of this.attributes) {
+          if (attr.type === type) {
+            return attr;
+          }
+        }
+        return null;
+      }
+      getAttributes(type) {
+        return this.attributes.filter((o) => o.type === type);
+      }
+      getExtension(type) {
+        for (const ext of this.extensions) {
+          if (ext.type === type) {
+            return ext;
+          }
+        }
+        return null;
+      }
+      getExtensions(type) {
+        return this.extensions.filter((o) => o.type === type);
+      }
+      async verify(crypto2 = cryptoProvider.get()) {
+        const algorithm = {
+          ...this.publicKey.algorithm,
+          ...this.signatureAlgorithm
+        };
+        const publicKey = await this.publicKey.export(algorithm, ["verify"], crypto2);
+        const signatureFormatters = tsyringe.container.resolveAll(diAsnSignatureFormatter).reverse();
+        let signature = null;
+        for (const signatureFormatter of signatureFormatters) {
+          signature = signatureFormatter.toWebSignature(algorithm, this.signature);
+          if (signature) {
+            break;
+          }
+        }
+        if (!signature) {
+          throw Error("Cannot convert WebCrypto signature value to ASN.1 format");
+        }
+        const ok = await crypto2.subtle.verify(this.signatureAlgorithm, publicKey, signature, this.tbs);
+        return ok;
+      }
+      toTextObject() {
+        const obj = this.toTextObjectEmpty();
+        const req = asn1Schema.AsnConvert.parse(this.rawData, asn1Csr.CertificationRequest);
+        const tbs = req.certificationRequestInfo;
+        const data = new TextObject("", {
+          Version: `${asn1X509.Version[tbs.version]} (${tbs.version})`,
+          Subject: this.subject,
+          "Subject Public Key Info": this.publicKey
+        });
+        if (this.attributes.length) {
+          const attrs = new TextObject("");
+          for (const ext of this.attributes) {
+            const attrObj = ext.toTextObject();
+            attrs[attrObj[TextObject.NAME]] = attrObj;
+          }
+          data["Attributes"] = attrs;
+        }
+        obj["Data"] = data;
+        obj["Signature"] = new TextObject("", {
+          Algorithm: TextConverter.serializeAlgorithm(req.signatureAlgorithm),
+          "": req.signature
+        });
+        return obj;
+      }
+    };
+    _Pkcs10CertificateRequest_tbs = /* @__PURE__ */ new WeakMap(), _Pkcs10CertificateRequest_subjectName = /* @__PURE__ */ new WeakMap(), _Pkcs10CertificateRequest_subject = /* @__PURE__ */ new WeakMap(), _Pkcs10CertificateRequest_signatureAlgorithm = /* @__PURE__ */ new WeakMap(), _Pkcs10CertificateRequest_signature = /* @__PURE__ */ new WeakMap(), _Pkcs10CertificateRequest_publicKey = /* @__PURE__ */ new WeakMap(), _Pkcs10CertificateRequest_attributes = /* @__PURE__ */ new WeakMap(), _Pkcs10CertificateRequest_extensions = /* @__PURE__ */ new WeakMap();
+    Pkcs10CertificateRequest.NAME = "PKCS#10 Certificate Request";
+    var Pkcs10CertificateRequestGenerator = class {
+      static async create(params, crypto2 = cryptoProvider.get()) {
+        if (!params.keys.privateKey) {
+          throw new Error("Bad field 'keys' in 'params' argument. 'privateKey' is empty");
+        }
+        if (!params.keys.publicKey) {
+          throw new Error("Bad field 'keys' in 'params' argument. 'publicKey' is empty");
+        }
+        const spki = await crypto2.subtle.exportKey("spki", params.keys.publicKey);
+        const asnReq = new asn1Csr.CertificationRequest({
+          certificationRequestInfo: new asn1Csr.CertificationRequestInfo({ subjectPKInfo: asn1Schema.AsnConvert.parse(spki, asn1X509.SubjectPublicKeyInfo) })
+        });
+        if (params.name) {
+          const name = params.name instanceof Name ? params.name : new Name(params.name);
+          asnReq.certificationRequestInfo.subject = asn1Schema.AsnConvert.parse(name.toArrayBuffer(), asn1X509.Name);
+        }
+        if (params.attributes) {
+          for (const o of params.attributes) {
+            asnReq.certificationRequestInfo.attributes.push(asn1Schema.AsnConvert.parse(o.rawData, asn1X509.Attribute));
+          }
+        }
+        if (params.extensions && params.extensions.length) {
+          const attr = new asn1X509.Attribute({ type: asnPkcs9.id_pkcs9_at_extensionRequest });
+          const extensions = new asn1X509.Extensions();
+          for (const o of params.extensions) {
+            extensions.push(asn1Schema.AsnConvert.parse(o.rawData, asn1X509.Extension));
+          }
+          attr.values.push(asn1Schema.AsnConvert.serialize(extensions));
+          asnReq.certificationRequestInfo.attributes.push(attr);
+        }
+        const signingAlgorithm = {
+          ...params.signingAlgorithm,
+          ...params.keys.privateKey.algorithm
+        };
+        const algProv = tsyringe.container.resolve(diAlgorithmProvider);
+        asnReq.signatureAlgorithm = algProv.toAsnAlgorithm(signingAlgorithm);
+        const tbs = asn1Schema.AsnConvert.serialize(asnReq.certificationRequestInfo);
+        const signature = await crypto2.subtle.sign(signingAlgorithm, params.keys.privateKey, tbs);
+        const signatureFormatters = tsyringe.container.resolveAll(diAsnSignatureFormatter).reverse();
+        let asnSignature = null;
+        for (const signatureFormatter of signatureFormatters) {
+          asnSignature = signatureFormatter.toAsnSignature(signingAlgorithm, signature);
+          if (asnSignature) {
+            break;
+          }
+        }
+        if (!asnSignature) {
+          throw Error("Cannot convert WebCrypto signature value to ASN.1 format");
+        }
+        asnReq.signature = asnSignature;
+        return new Pkcs10CertificateRequest(asn1Schema.AsnConvert.serialize(asnReq));
+      }
+    };
+    var _X509Certificate_tbs;
+    var _X509Certificate_serialNumber;
+    var _X509Certificate_subjectName;
+    var _X509Certificate_subject;
+    var _X509Certificate_issuerName;
+    var _X509Certificate_issuer;
+    var _X509Certificate_notBefore;
+    var _X509Certificate_notAfter;
+    var _X509Certificate_signatureAlgorithm;
+    var _X509Certificate_signature;
+    var _X509Certificate_extensions;
+    var _X509Certificate_publicKey;
+    var X509Certificate = class extends PemData {
+      get publicKey() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Certificate_publicKey, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509Certificate_publicKey, new PublicKey(this.asn.tbsCertificate.subjectPublicKeyInfo), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Certificate_publicKey, "f");
+      }
+      get serialNumber() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Certificate_serialNumber, "f")) {
+          const tbs = this.asn.tbsCertificate;
+          let serialNumberBytes = new Uint8Array(tbs.serialNumber);
+          if (serialNumberBytes.length > 1 && serialNumberBytes[0] === 0 && serialNumberBytes[1] > 127) {
+            serialNumberBytes = serialNumberBytes.slice(1);
+          }
+          tslib.__classPrivateFieldSet(this, _X509Certificate_serialNumber, pvtsutils.Convert.ToHex(serialNumberBytes), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Certificate_serialNumber, "f");
+      }
+      get subjectName() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Certificate_subjectName, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509Certificate_subjectName, new Name(this.asn.tbsCertificate.subject), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Certificate_subjectName, "f");
+      }
+      get subject() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Certificate_subject, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509Certificate_subject, this.subjectName.toString(), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Certificate_subject, "f");
+      }
+      get issuerName() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Certificate_issuerName, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509Certificate_issuerName, new Name(this.asn.tbsCertificate.issuer), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Certificate_issuerName, "f");
+      }
+      get issuer() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Certificate_issuer, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509Certificate_issuer, this.issuerName.toString(), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Certificate_issuer, "f");
+      }
+      get notBefore() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Certificate_notBefore, "f")) {
+          const notBefore = this.asn.tbsCertificate.validity.notBefore.utcTime || this.asn.tbsCertificate.validity.notBefore.generalTime;
+          if (!notBefore) {
+            throw new Error("Cannot get 'notBefore' value");
+          }
+          tslib.__classPrivateFieldSet(this, _X509Certificate_notBefore, notBefore, "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Certificate_notBefore, "f");
+      }
+      get notAfter() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Certificate_notAfter, "f")) {
+          const notAfter = this.asn.tbsCertificate.validity.notAfter.utcTime || this.asn.tbsCertificate.validity.notAfter.generalTime;
+          if (!notAfter) {
+            throw new Error("Cannot get 'notAfter' value");
+          }
+          tslib.__classPrivateFieldSet(this, _X509Certificate_notAfter, notAfter, "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Certificate_notAfter, "f");
+      }
+      get signatureAlgorithm() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Certificate_signatureAlgorithm, "f")) {
+          const algProv = tsyringe.container.resolve(diAlgorithmProvider);
+          tslib.__classPrivateFieldSet(this, _X509Certificate_signatureAlgorithm, algProv.toWebAlgorithm(this.asn.signatureAlgorithm), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Certificate_signatureAlgorithm, "f");
+      }
+      get signature() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Certificate_signature, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509Certificate_signature, this.asn.signatureValue, "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Certificate_signature, "f");
+      }
+      get extensions() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Certificate_extensions, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509Certificate_extensions, [], "f");
+          if (this.asn.tbsCertificate.extensions) {
+            tslib.__classPrivateFieldSet(this, _X509Certificate_extensions, this.asn.tbsCertificate.extensions.map((o) => ExtensionFactory.create(asn1Schema.AsnConvert.serialize(o))), "f");
+          }
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Certificate_extensions, "f");
+      }
+      get tbs() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Certificate_tbs, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509Certificate_tbs, this.asn.tbsCertificateRaw || asn1Schema.AsnConvert.serialize(this.asn.tbsCertificate), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Certificate_tbs, "f");
+      }
+      constructor(param) {
+        const args = PemData.isAsnEncoded(param) ? [param, asn1X509.Certificate] : [param];
+        super(args[0], args[1]);
+        _X509Certificate_tbs.set(this, void 0);
+        _X509Certificate_serialNumber.set(this, void 0);
+        _X509Certificate_subjectName.set(this, void 0);
+        _X509Certificate_subject.set(this, void 0);
+        _X509Certificate_issuerName.set(this, void 0);
+        _X509Certificate_issuer.set(this, void 0);
+        _X509Certificate_notBefore.set(this, void 0);
+        _X509Certificate_notAfter.set(this, void 0);
+        _X509Certificate_signatureAlgorithm.set(this, void 0);
+        _X509Certificate_signature.set(this, void 0);
+        _X509Certificate_extensions.set(this, void 0);
+        _X509Certificate_publicKey.set(this, void 0);
+        this.tag = PemConverter.CertificateTag;
+      }
+      onInit(_asn) {
+      }
+      getExtension(type) {
+        for (const ext of this.extensions) {
+          if (typeof type === "string") {
+            if (ext.type === type) {
+              return ext;
+            }
+          } else {
+            if (ext instanceof type) {
+              return ext;
+            }
+          }
+        }
+        return null;
+      }
+      getExtensions(type) {
+        return this.extensions.filter((o) => {
+          if (typeof type === "string") {
+            return o.type === type;
+          } else {
+            return o instanceof type;
+          }
+        });
+      }
+      async verify(params = {}, crypto2 = cryptoProvider.get()) {
+        let keyAlgorithm;
+        let publicKey;
+        const paramsKey = params.publicKey;
+        try {
+          if (!paramsKey) {
+            keyAlgorithm = {
+              ...this.publicKey.algorithm,
+              ...this.signatureAlgorithm
+            };
+            publicKey = await this.publicKey.export(keyAlgorithm, ["verify"], crypto2);
+          } else if ("publicKey" in paramsKey) {
+            keyAlgorithm = {
+              ...paramsKey.publicKey.algorithm,
+              ...this.signatureAlgorithm
+            };
+            publicKey = await paramsKey.publicKey.export(keyAlgorithm, ["verify"], crypto2);
+          } else if (paramsKey instanceof PublicKey) {
+            keyAlgorithm = {
+              ...paramsKey.algorithm,
+              ...this.signatureAlgorithm
+            };
+            publicKey = await paramsKey.export(keyAlgorithm, ["verify"], crypto2);
+          } else if (pvtsutils.BufferSourceConverter.isBufferSource(paramsKey)) {
+            const key = new PublicKey(paramsKey);
+            keyAlgorithm = {
+              ...key.algorithm,
+              ...this.signatureAlgorithm
+            };
+            publicKey = await key.export(keyAlgorithm, ["verify"], crypto2);
+          } else {
+            keyAlgorithm = {
+              ...paramsKey.algorithm,
+              ...this.signatureAlgorithm
+            };
+            publicKey = paramsKey;
+          }
+        } catch {
+          return false;
+        }
+        const signatureFormatters = tsyringe.container.resolveAll(diAsnSignatureFormatter).reverse();
+        let signature = null;
+        for (const signatureFormatter of signatureFormatters) {
+          signature = signatureFormatter.toWebSignature(keyAlgorithm, this.signature);
+          if (signature) {
+            break;
+          }
+        }
+        if (!signature) {
+          throw Error("Cannot convert ASN.1 signature value to WebCrypto format");
+        }
+        const ok = await crypto2.subtle.verify(this.signatureAlgorithm, publicKey, signature, this.tbs);
+        if (params.signatureOnly) {
+          return ok;
+        } else {
+          const date5 = params.date || /* @__PURE__ */ new Date();
+          const time3 = date5.getTime();
+          return ok && this.notBefore.getTime() < time3 && time3 < this.notAfter.getTime();
+        }
+      }
+      async getThumbprint(...args) {
+        let crypto2;
+        let algorithm = "SHA-1";
+        if (args[0]) {
+          if (!args[0].subtle) {
+            algorithm = args[0] || algorithm;
+            crypto2 = args[1];
+          } else {
+            crypto2 = args[0];
+          }
+        }
+        crypto2 !== null && crypto2 !== void 0 ? crypto2 : crypto2 = cryptoProvider.get();
+        return await crypto2.subtle.digest(algorithm, this.rawData);
+      }
+      async isSelfSigned(crypto2 = cryptoProvider.get()) {
+        return this.subject === this.issuer && await this.verify({ signatureOnly: true }, crypto2);
+      }
+      toTextObject() {
+        const obj = this.toTextObjectEmpty();
+        const cert = asn1Schema.AsnConvert.parse(this.rawData, asn1X509.Certificate);
+        const tbs = cert.tbsCertificate;
+        const data = new TextObject("", {
+          Version: `${asn1X509.Version[tbs.version]} (${tbs.version})`,
+          "Serial Number": tbs.serialNumber,
+          "Signature Algorithm": TextConverter.serializeAlgorithm(tbs.signature),
+          Issuer: this.issuer,
+          Validity: new TextObject("", {
+            "Not Before": tbs.validity.notBefore.getTime(),
+            "Not After": tbs.validity.notAfter.getTime()
+          }),
+          Subject: this.subject,
+          "Subject Public Key Info": this.publicKey
+        });
+        if (tbs.issuerUniqueID) {
+          data["Issuer Unique ID"] = tbs.issuerUniqueID;
+        }
+        if (tbs.subjectUniqueID) {
+          data["Subject Unique ID"] = tbs.subjectUniqueID;
+        }
+        if (this.extensions.length) {
+          const extensions = new TextObject("");
+          for (const ext of this.extensions) {
+            const extObj = ext.toTextObject();
+            extensions[extObj[TextObject.NAME]] = extObj;
+          }
+          data["Extensions"] = extensions;
+        }
+        obj["Data"] = data;
+        obj["Signature"] = new TextObject("", {
+          Algorithm: TextConverter.serializeAlgorithm(cert.signatureAlgorithm),
+          "": cert.signatureValue
+        });
+        return obj;
+      }
+    };
+    _X509Certificate_tbs = /* @__PURE__ */ new WeakMap(), _X509Certificate_serialNumber = /* @__PURE__ */ new WeakMap(), _X509Certificate_subjectName = /* @__PURE__ */ new WeakMap(), _X509Certificate_subject = /* @__PURE__ */ new WeakMap(), _X509Certificate_issuerName = /* @__PURE__ */ new WeakMap(), _X509Certificate_issuer = /* @__PURE__ */ new WeakMap(), _X509Certificate_notBefore = /* @__PURE__ */ new WeakMap(), _X509Certificate_notAfter = /* @__PURE__ */ new WeakMap(), _X509Certificate_signatureAlgorithm = /* @__PURE__ */ new WeakMap(), _X509Certificate_signature = /* @__PURE__ */ new WeakMap(), _X509Certificate_extensions = /* @__PURE__ */ new WeakMap(), _X509Certificate_publicKey = /* @__PURE__ */ new WeakMap();
+    X509Certificate.NAME = "Certificate";
+    var X509Certificates = class extends Array {
+      constructor(param) {
+        super();
+        if (PemData.isAsnEncoded(param)) {
+          this.import(param);
+        } else if (param instanceof X509Certificate) {
+          this.push(param);
+        } else if (Array.isArray(param)) {
+          for (const item of param) {
+            this.push(item);
+          }
+        }
+      }
+      export(format) {
+        const signedData = new asn1Cms__namespace.SignedData();
+        signedData.version = 1;
+        signedData.encapContentInfo.eContentType = asn1Cms__namespace.id_data;
+        signedData.encapContentInfo.eContent = new asn1Cms__namespace.EncapsulatedContent({ single: new asn1Schema.OctetString() });
+        signedData.certificates = new asn1Cms__namespace.CertificateSet(this.map((o) => new asn1Cms__namespace.CertificateChoices({ certificate: asn1Schema.AsnConvert.parse(o.rawData, asn1X509.Certificate) })));
+        const cms = new asn1Cms__namespace.ContentInfo({
+          contentType: asn1Cms__namespace.id_signedData,
+          content: asn1Schema.AsnConvert.serialize(signedData)
+        });
+        const raw = asn1Schema.AsnConvert.serialize(cms);
+        if (format === "raw") {
+          return raw;
+        }
+        return this.toString(format);
+      }
+      import(data) {
+        const raw = PemData.toArrayBuffer(data);
+        const cms = asn1Schema.AsnConvert.parse(raw, asn1Cms__namespace.ContentInfo);
+        if (cms.contentType !== asn1Cms__namespace.id_signedData) {
+          throw new TypeError("Cannot parse CMS package. Incoming data is not a SignedData object.");
+        }
+        const signedData = asn1Schema.AsnConvert.parse(cms.content, asn1Cms__namespace.SignedData);
+        this.clear();
+        for (const item of signedData.certificates || []) {
+          if (item.certificate) {
+            this.push(new X509Certificate(item.certificate));
+          }
+        }
+      }
+      clear() {
+        while (this.pop()) {
+        }
+      }
+      toString(format = "pem") {
+        const raw = this.export("raw");
+        switch (format) {
+          case "pem":
+            return PemConverter.encode(raw, "CMS");
+          case "pem-chain":
+            return this.map((o) => o.toString("pem")).join("\n");
+          case "asn":
+            return asn1Schema.AsnConvert.toString(raw);
+          case "hex":
+            return pvtsutils.Convert.ToHex(raw);
+          case "base64":
+            return pvtsutils.Convert.ToBase64(raw);
+          case "base64url":
+            return pvtsutils.Convert.ToBase64Url(raw);
+          case "text":
+            return TextConverter.serialize(this.toTextObject());
+          default:
+            throw TypeError("Argument 'format' is unsupported value");
+        }
+      }
+      toTextObject() {
+        const contentInfo = asn1Schema.AsnConvert.parse(this.export("raw"), asn1Cms__namespace.ContentInfo);
+        const signedData = asn1Schema.AsnConvert.parse(contentInfo.content, asn1Cms__namespace.SignedData);
+        const obj = new TextObject("X509Certificates", {
+          "Content Type": OidSerializer.toString(contentInfo.contentType),
+          Content: new TextObject("", {
+            Version: `${asn1Cms__namespace.CMSVersion[signedData.version]} (${signedData.version})`,
+            Certificates: new TextObject("", { Certificate: this.map((o) => o.toTextObject()) })
+          })
+        });
+        return obj;
+      }
+    };
+    var X509ChainBuilder = class {
+      constructor(params = {}) {
+        this.certificates = [];
+        if (params.certificates) {
+          this.certificates = params.certificates;
+        }
+      }
+      async build(cert, crypto2 = cryptoProvider.get()) {
+        const chain = new X509Certificates(cert);
+        let current = cert;
+        while (current = await this.findIssuer(current, crypto2)) {
+          const thumbprint = await current.getThumbprint(crypto2);
+          for (const item of chain) {
+            const thumbprint2 = await item.getThumbprint(crypto2);
+            if (pvtsutils.isEqual(thumbprint, thumbprint2)) {
+              throw new Error("Cannot build a certificate chain. Circular dependency.");
+            }
+          }
+          chain.push(current);
+        }
+        return chain;
+      }
+      async findIssuer(cert, crypto2 = cryptoProvider.get()) {
+        if (!await cert.isSelfSigned(crypto2)) {
+          const akiExt = cert.getExtension(asn1X509__namespace.id_ce_authorityKeyIdentifier);
+          for (const item of this.certificates) {
+            if (item.subject !== cert.issuer) {
+              continue;
+            }
+            if (akiExt) {
+              if (akiExt.keyId) {
+                const skiExt = item.getExtension(asn1X509__namespace.id_ce_subjectKeyIdentifier);
+                if (skiExt && skiExt.keyId !== akiExt.keyId) {
+                  continue;
+                }
+              } else if (akiExt.certId) {
+                const sanExt = item.getExtension(asn1X509__namespace.id_ce_subjectAltName);
+                if (sanExt && !(akiExt.certId.serialNumber === item.serialNumber && pvtsutils.isEqual(asn1Schema.AsnConvert.serialize(akiExt.certId.name), asn1Schema.AsnConvert.serialize(sanExt)))) {
+                  continue;
+                }
+              }
+            }
+            try {
+              const algorithm = {
+                ...item.publicKey.algorithm,
+                ...cert.signatureAlgorithm
+              };
+              const publicKey = await item.publicKey.export(algorithm, ["verify"], crypto2);
+              const ok = await cert.verify({
+                publicKey,
+                signatureOnly: true
+              }, crypto2);
+              if (!ok) {
+                continue;
+              }
+            } catch {
+              continue;
+            }
+            return item;
+          }
+        }
+        return null;
+      }
+    };
+    function generateCertificateSerialNumber(input, crypto2 = cryptoProvider.get()) {
+      const inputView = pvtsutils.BufferSourceConverter.toUint8Array(pvtsutils.Convert.FromHex(input || ""));
+      let serialNumber = inputView && inputView.length && inputView.some((o) => o > 0) ? new Uint8Array(inputView) : void 0;
+      if (!serialNumber) {
+        serialNumber = crypto2.getRandomValues(new Uint8Array(16));
+      }
+      let firstNonZero = 0;
+      while (firstNonZero < serialNumber.length - 1 && serialNumber[firstNonZero] === 0) {
+        firstNonZero++;
+      }
+      serialNumber = serialNumber.slice(firstNonZero);
+      if (serialNumber[0] > 127) {
+        const newSerialNumber = new Uint8Array(serialNumber.length + 1);
+        newSerialNumber[0] = 0;
+        newSerialNumber.set(serialNumber, 1);
+        serialNumber = newSerialNumber;
+      }
+      return serialNumber.buffer;
+    }
+    var X509CertificateGenerator = class {
+      static async createSelfSigned(params, crypto2 = cryptoProvider.get()) {
+        if (!params.keys.privateKey) {
+          throw new Error("Bad field 'keys' in 'params' argument. 'privateKey' is empty");
+        }
+        if (!params.keys.publicKey) {
+          throw new Error("Bad field 'keys' in 'params' argument. 'publicKey' is empty");
+        }
+        return this.create({
+          serialNumber: params.serialNumber,
+          subject: params.name,
+          issuer: params.name,
+          notBefore: params.notBefore,
+          notAfter: params.notAfter,
+          publicKey: params.keys.publicKey,
+          signingKey: params.keys.privateKey,
+          signingAlgorithm: params.signingAlgorithm,
+          extensions: params.extensions
+        }, crypto2);
+      }
+      static async create(params, crypto2 = cryptoProvider.get()) {
+        var _a3;
+        let spki;
+        if (params.publicKey instanceof PublicKey) {
+          spki = params.publicKey.rawData;
+        } else if ("publicKey" in params.publicKey) {
+          spki = params.publicKey.publicKey.rawData;
+        } else if (pvtsutils.BufferSourceConverter.isBufferSource(params.publicKey)) {
+          spki = params.publicKey;
+        } else {
+          spki = await crypto2.subtle.exportKey("spki", params.publicKey);
+        }
+        const serialNumber = generateCertificateSerialNumber(params.serialNumber, crypto2);
+        const notBefore = params.notBefore || /* @__PURE__ */ new Date();
+        const notAfter = params.notAfter || new Date(notBefore.getTime() + 31536e6);
+        const asnX509 = new asn1X509__namespace.Certificate({
+          tbsCertificate: new asn1X509__namespace.TBSCertificate({
+            version: asn1X509__namespace.Version.v3,
+            serialNumber,
+            validity: new asn1X509__namespace.Validity({
+              notBefore,
+              notAfter
+            }),
+            extensions: new asn1X509__namespace.Extensions(((_a3 = params.extensions) === null || _a3 === void 0 ? void 0 : _a3.map((o) => asn1Schema.AsnConvert.parse(o.rawData, asn1X509__namespace.Extension))) || []),
+            subjectPublicKeyInfo: asn1Schema.AsnConvert.parse(spki, asn1X509__namespace.SubjectPublicKeyInfo)
+          })
+        });
+        if (params.subject) {
+          const name = params.subject instanceof Name ? params.subject : new Name(params.subject);
+          asnX509.tbsCertificate.subject = asn1Schema.AsnConvert.parse(name.toArrayBuffer(), asn1X509__namespace.Name);
+        }
+        if (params.issuer) {
+          const name = params.issuer instanceof Name ? params.issuer : new Name(params.issuer);
+          asnX509.tbsCertificate.issuer = asn1Schema.AsnConvert.parse(name.toArrayBuffer(), asn1X509__namespace.Name);
+        }
+        const defaultSigningAlgorithm = { hash: "SHA-256" };
+        const signatureAlgorithm = "signingKey" in params ? {
+          ...defaultSigningAlgorithm,
+          ...params.signingAlgorithm,
+          ...params.signingKey.algorithm
+        } : {
+          ...defaultSigningAlgorithm,
+          ...params.signingAlgorithm
+        };
+        const algProv = tsyringe.container.resolve(diAlgorithmProvider);
+        asnX509.tbsCertificate.signature = asnX509.signatureAlgorithm = algProv.toAsnAlgorithm(signatureAlgorithm);
+        const tbs = asn1Schema.AsnConvert.serialize(asnX509.tbsCertificate);
+        const signatureValue = "signingKey" in params ? await crypto2.subtle.sign(signatureAlgorithm, params.signingKey, tbs) : params.signature;
+        const signatureFormatters = tsyringe.container.resolveAll(diAsnSignatureFormatter).reverse();
+        let asnSignature = null;
+        for (const signatureFormatter of signatureFormatters) {
+          asnSignature = signatureFormatter.toAsnSignature(signatureAlgorithm, signatureValue);
+          if (asnSignature) {
+            break;
+          }
+        }
+        if (!asnSignature) {
+          throw Error("Cannot convert ASN.1 signature value to WebCrypto format");
+        }
+        asnX509.signatureValue = asnSignature;
+        return new X509Certificate(asn1Schema.AsnConvert.serialize(asnX509));
+      }
+    };
+    var _X509CrlEntry_serialNumber;
+    var _X509CrlEntry_revocationDate;
+    var _X509CrlEntry_reason;
+    var _X509CrlEntry_invalidity;
+    var _X509CrlEntry_extensions;
+    exports2.X509CrlReason = void 0;
+    (function(X509CrlReason) {
+      X509CrlReason[X509CrlReason["unspecified"] = 0] = "unspecified";
+      X509CrlReason[X509CrlReason["keyCompromise"] = 1] = "keyCompromise";
+      X509CrlReason[X509CrlReason["cACompromise"] = 2] = "cACompromise";
+      X509CrlReason[X509CrlReason["affiliationChanged"] = 3] = "affiliationChanged";
+      X509CrlReason[X509CrlReason["superseded"] = 4] = "superseded";
+      X509CrlReason[X509CrlReason["cessationOfOperation"] = 5] = "cessationOfOperation";
+      X509CrlReason[X509CrlReason["certificateHold"] = 6] = "certificateHold";
+      X509CrlReason[X509CrlReason["removeFromCRL"] = 8] = "removeFromCRL";
+      X509CrlReason[X509CrlReason["privilegeWithdrawn"] = 9] = "privilegeWithdrawn";
+      X509CrlReason[X509CrlReason["aACompromise"] = 10] = "aACompromise";
+    })(exports2.X509CrlReason || (exports2.X509CrlReason = {}));
+    var X509CrlEntry = class extends AsnData {
+      get serialNumber() {
+        if (!tslib.__classPrivateFieldGet(this, _X509CrlEntry_serialNumber, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509CrlEntry_serialNumber, pvtsutils.Convert.ToHex(this.asn.userCertificate), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509CrlEntry_serialNumber, "f");
+      }
+      get revocationDate() {
+        if (!tslib.__classPrivateFieldGet(this, _X509CrlEntry_revocationDate, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509CrlEntry_revocationDate, this.asn.revocationDate.getTime(), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509CrlEntry_revocationDate, "f");
+      }
+      get reason() {
+        if (tslib.__classPrivateFieldGet(this, _X509CrlEntry_reason, "f") === void 0) {
+          void this.extensions;
+        }
+        return tslib.__classPrivateFieldGet(this, _X509CrlEntry_reason, "f");
+      }
+      get invalidity() {
+        if (tslib.__classPrivateFieldGet(this, _X509CrlEntry_invalidity, "f") === void 0) {
+          void this.extensions;
+        }
+        return tslib.__classPrivateFieldGet(this, _X509CrlEntry_invalidity, "f");
+      }
+      get extensions() {
+        if (!tslib.__classPrivateFieldGet(this, _X509CrlEntry_extensions, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509CrlEntry_extensions, [], "f");
+          if (this.asn.crlEntryExtensions) {
+            tslib.__classPrivateFieldSet(this, _X509CrlEntry_extensions, this.asn.crlEntryExtensions.map((o) => {
+              const extension2 = ExtensionFactory.create(asn1Schema.AsnConvert.serialize(o));
+              switch (extension2.type) {
+                case asn1X509.id_ce_cRLReasons:
+                  if (tslib.__classPrivateFieldGet(this, _X509CrlEntry_reason, "f") === void 0) {
+                    tslib.__classPrivateFieldSet(this, _X509CrlEntry_reason, asn1Schema.AsnConvert.parse(extension2.value, asn1X509.CRLReason).reason, "f");
+                  }
+                  break;
+                case asn1X509.id_ce_invalidityDate:
+                  if (tslib.__classPrivateFieldGet(this, _X509CrlEntry_invalidity, "f") === void 0) {
+                    tslib.__classPrivateFieldSet(this, _X509CrlEntry_invalidity, asn1Schema.AsnConvert.parse(extension2.value, asn1X509.InvalidityDate).value, "f");
+                  }
+                  break;
+              }
+              return extension2;
+            }), "f");
+          }
+        }
+        return tslib.__classPrivateFieldGet(this, _X509CrlEntry_extensions, "f");
+      }
+      constructor(...args) {
+        let raw;
+        if (pvtsutils.BufferSourceConverter.isBufferSource(args[0])) {
+          raw = pvtsutils.BufferSourceConverter.toArrayBuffer(args[0]);
+        } else if (typeof args[0] === "string") {
+          raw = asn1Schema.AsnConvert.serialize(new asn1X509.RevokedCertificate({
+            userCertificate: generateCertificateSerialNumber(args[0]),
+            revocationDate: new asn1X509.Time(args[1]),
+            crlEntryExtensions: args[2]
+          }));
+        } else if (args[0] instanceof asn1X509.RevokedCertificate) {
+          raw = args[0];
+        }
+        if (!raw) {
+          throw new TypeError("Cannot create X509CrlEntry instance. Wrong constructor arguments.");
+        }
+        super(raw, asn1X509.RevokedCertificate);
+        _X509CrlEntry_serialNumber.set(this, void 0);
+        _X509CrlEntry_revocationDate.set(this, void 0);
+        _X509CrlEntry_reason.set(this, void 0);
+        _X509CrlEntry_invalidity.set(this, void 0);
+        _X509CrlEntry_extensions.set(this, void 0);
+      }
+      onInit(_asn) {
+      }
+    };
+    _X509CrlEntry_serialNumber = /* @__PURE__ */ new WeakMap(), _X509CrlEntry_revocationDate = /* @__PURE__ */ new WeakMap(), _X509CrlEntry_reason = /* @__PURE__ */ new WeakMap(), _X509CrlEntry_invalidity = /* @__PURE__ */ new WeakMap(), _X509CrlEntry_extensions = /* @__PURE__ */ new WeakMap();
+    var _X509Crl_tbs;
+    var _X509Crl_signatureAlgorithm;
+    var _X509Crl_issuerName;
+    var _X509Crl_thisUpdate;
+    var _X509Crl_nextUpdate;
+    var _X509Crl_entries;
+    var _X509Crl_extensions;
+    var X509Crl = class extends PemData {
+      get version() {
+        return this.asn.tbsCertList.version;
+      }
+      get signatureAlgorithm() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Crl_signatureAlgorithm, "f")) {
+          const algProv = tsyringe.container.resolve(diAlgorithmProvider);
+          tslib.__classPrivateFieldSet(this, _X509Crl_signatureAlgorithm, algProv.toWebAlgorithm(this.asn.signatureAlgorithm), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Crl_signatureAlgorithm, "f");
+      }
+      get signature() {
+        return this.asn.signature;
+      }
+      get issuer() {
+        return this.issuerName.toString();
+      }
+      get issuerName() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Crl_issuerName, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509Crl_issuerName, new Name(this.asn.tbsCertList.issuer), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Crl_issuerName, "f");
+      }
+      get thisUpdate() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Crl_thisUpdate, "f")) {
+          const thisUpdate = this.asn.tbsCertList.thisUpdate.getTime();
+          if (!thisUpdate) {
+            throw new Error("Cannot get 'thisUpdate' value");
+          }
+          tslib.__classPrivateFieldSet(this, _X509Crl_thisUpdate, thisUpdate, "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Crl_thisUpdate, "f");
+      }
+      get nextUpdate() {
+        var _a3;
+        if (tslib.__classPrivateFieldGet(this, _X509Crl_nextUpdate, "f") === void 0) {
+          tslib.__classPrivateFieldSet(this, _X509Crl_nextUpdate, ((_a3 = this.asn.tbsCertList.nextUpdate) === null || _a3 === void 0 ? void 0 : _a3.getTime()) || void 0, "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Crl_nextUpdate, "f");
+      }
+      get entries() {
+        var _a3;
+        if (!tslib.__classPrivateFieldGet(this, _X509Crl_entries, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509Crl_entries, ((_a3 = this.asn.tbsCertList.revokedCertificates) === null || _a3 === void 0 ? void 0 : _a3.map((o) => new X509CrlEntry(o))) || [], "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Crl_entries, "f");
+      }
+      get extensions() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Crl_extensions, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509Crl_extensions, [], "f");
+          if (this.asn.tbsCertList.crlExtensions) {
+            tslib.__classPrivateFieldSet(this, _X509Crl_extensions, this.asn.tbsCertList.crlExtensions.map((o) => ExtensionFactory.create(asn1Schema.AsnConvert.serialize(o))), "f");
+          }
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Crl_extensions, "f");
+      }
+      get tbs() {
+        if (!tslib.__classPrivateFieldGet(this, _X509Crl_tbs, "f")) {
+          tslib.__classPrivateFieldSet(this, _X509Crl_tbs, this.asn.tbsCertListRaw || asn1Schema.AsnConvert.serialize(this.asn.tbsCertList), "f");
+        }
+        return tslib.__classPrivateFieldGet(this, _X509Crl_tbs, "f");
+      }
+      get tbsCertListSignatureAlgorithm() {
+        return this.asn.tbsCertList.signature;
+      }
+      get certListSignatureAlgorithm() {
+        return this.asn.signatureAlgorithm;
+      }
+      constructor(param) {
+        super(param, PemData.isAsnEncoded(param) ? asn1X509.CertificateList : void 0);
+        this.tag = PemConverter.CrlTag;
+        _X509Crl_tbs.set(this, void 0);
+        _X509Crl_signatureAlgorithm.set(this, void 0);
+        _X509Crl_issuerName.set(this, void 0);
+        _X509Crl_thisUpdate.set(this, void 0);
+        _X509Crl_nextUpdate.set(this, void 0);
+        _X509Crl_entries.set(this, void 0);
+        _X509Crl_extensions.set(this, void 0);
+      }
+      onInit(_asn) {
+      }
+      getExtension(type) {
+        for (const ext of this.extensions) {
+          if (typeof type === "string") {
+            if (ext.type === type) {
+              return ext;
+            }
+          } else {
+            if (ext instanceof type) {
+              return ext;
+            }
+          }
+        }
+        return null;
+      }
+      getExtensions(type) {
+        return this.extensions.filter((o) => {
+          if (typeof type === "string") {
+            return o.type === type;
+          } else {
+            return o instanceof type;
+          }
+        });
+      }
+      async verify(params, crypto2 = cryptoProvider.get()) {
+        if (!this.certListSignatureAlgorithm.isEqual(this.tbsCertListSignatureAlgorithm)) {
+          throw new Error("algorithm identifier in the sequence tbsCertList and CertificateList mismatch");
+        }
+        let keyAlgorithm;
+        let publicKey;
+        const paramsKey = params.publicKey;
+        try {
+          if (paramsKey instanceof X509Certificate) {
+            keyAlgorithm = {
+              ...paramsKey.publicKey.algorithm,
+              ...paramsKey.signatureAlgorithm
+            };
+            publicKey = await paramsKey.publicKey.export(keyAlgorithm, ["verify"]);
+          } else if (paramsKey instanceof PublicKey) {
+            keyAlgorithm = {
+              ...paramsKey.algorithm,
+              ...this.signatureAlgorithm
+            };
+            publicKey = await paramsKey.export(keyAlgorithm, ["verify"]);
+          } else {
+            keyAlgorithm = {
+              ...paramsKey.algorithm,
+              ...this.signatureAlgorithm
+            };
+            publicKey = paramsKey;
+          }
+        } catch {
+          return false;
+        }
+        const signatureFormatters = tsyringe.container.resolveAll(diAsnSignatureFormatter).reverse();
+        let signature = null;
+        for (const signatureFormatter of signatureFormatters) {
+          signature = signatureFormatter.toWebSignature(keyAlgorithm, this.signature);
+          if (signature) {
+            break;
+          }
+        }
+        if (!signature) {
+          throw Error("Cannot convert ASN.1 signature value to WebCrypto format");
+        }
+        return await crypto2.subtle.verify(this.signatureAlgorithm, publicKey, signature, this.tbs);
+      }
+      async getThumbprint(...args) {
+        let crypto2;
+        let algorithm = "SHA-1";
+        if (args[0]) {
+          if (!args[0].subtle) {
+            algorithm = args[0] || algorithm;
+            crypto2 = args[1];
+          } else {
+            crypto2 = args[0];
+          }
+        }
+        crypto2 !== null && crypto2 !== void 0 ? crypto2 : crypto2 = cryptoProvider.get();
+        return await crypto2.subtle.digest(algorithm, this.rawData);
+      }
+      findRevoked(certOrSerialNumber) {
+        const serialNumber = typeof certOrSerialNumber === "string" ? certOrSerialNumber : certOrSerialNumber.serialNumber;
+        const serialBuffer = generateCertificateSerialNumber(serialNumber);
+        for (const revoked of this.asn.tbsCertList.revokedCertificates || []) {
+          if (pvtsutils.BufferSourceConverter.isEqual(revoked.userCertificate, serialBuffer)) {
+            return new X509CrlEntry(asn1Schema.AsnConvert.serialize(revoked));
+          }
+        }
+        return null;
+      }
+    };
+    _X509Crl_tbs = /* @__PURE__ */ new WeakMap(), _X509Crl_signatureAlgorithm = /* @__PURE__ */ new WeakMap(), _X509Crl_issuerName = /* @__PURE__ */ new WeakMap(), _X509Crl_thisUpdate = /* @__PURE__ */ new WeakMap(), _X509Crl_nextUpdate = /* @__PURE__ */ new WeakMap(), _X509Crl_entries = /* @__PURE__ */ new WeakMap(), _X509Crl_extensions = /* @__PURE__ */ new WeakMap();
+    var X509CrlGenerator = class {
+      static async create(params, crypto2 = cryptoProvider.get()) {
+        var _a3;
+        const name = params.issuer instanceof Name ? params.issuer : new Name(params.issuer);
+        const asnX509Crl = new asn1X509__namespace.CertificateList({
+          tbsCertList: new asn1X509__namespace.TBSCertList({
+            version: asn1X509__namespace.Version.v2,
+            issuer: asn1Schema.AsnConvert.parse(name.toArrayBuffer(), asn1X509__namespace.Name),
+            thisUpdate: new asn1X509.Time(params.thisUpdate || /* @__PURE__ */ new Date())
+          })
+        });
+        if (params.nextUpdate) {
+          asnX509Crl.tbsCertList.nextUpdate = new asn1X509.Time(params.nextUpdate);
+        }
+        if (params.extensions && params.extensions.length) {
+          asnX509Crl.tbsCertList.crlExtensions = new asn1X509__namespace.Extensions(params.extensions.map((o) => asn1Schema.AsnConvert.parse(o.rawData, asn1X509__namespace.Extension)) || []);
+        }
+        if (params.entries && params.entries.length) {
+          asnX509Crl.tbsCertList.revokedCertificates = [];
+          for (const entry of params.entries) {
+            const userCertificate = PemData.toArrayBuffer(entry.serialNumber);
+            const index = asnX509Crl.tbsCertList.revokedCertificates.findIndex((cert) => pvtsutils.isEqual(cert.userCertificate, userCertificate));
+            if (index > -1) {
+              throw new Error(`Certificate serial number ${entry.serialNumber} already exists in tbsCertList`);
+            }
+            const revokedCert = new asn1X509.RevokedCertificate({
+              userCertificate,
+              revocationDate: new asn1X509.Time(entry.revocationDate || /* @__PURE__ */ new Date())
+            });
+            if ("extensions" in entry && ((_a3 = entry.extensions) === null || _a3 === void 0 ? void 0 : _a3.length)) {
+              revokedCert.crlEntryExtensions = entry.extensions.map((o) => asn1Schema.AsnConvert.parse(o.rawData, asn1X509__namespace.Extension));
+            } else {
+              revokedCert.crlEntryExtensions = [];
+            }
+            if (!(entry instanceof X509CrlEntry)) {
+              if (entry.reason) {
+                revokedCert.crlEntryExtensions.push(new asn1X509__namespace.Extension({
+                  extnID: asn1X509__namespace.id_ce_cRLReasons,
+                  critical: false,
+                  extnValue: new asn1Schema.OctetString(asn1Schema.AsnConvert.serialize(new asn1X509__namespace.CRLReason(entry.reason)))
+                }));
+              }
+              if (entry.invalidity) {
+                revokedCert.crlEntryExtensions.push(new asn1X509__namespace.Extension({
+                  extnID: asn1X509__namespace.id_ce_invalidityDate,
+                  critical: false,
+                  extnValue: new asn1Schema.OctetString(asn1Schema.AsnConvert.serialize(new asn1X509__namespace.InvalidityDate(entry.invalidity)))
+                }));
+              }
+              if (entry.issuer) {
+                const name2 = params.issuer instanceof Name ? params.issuer : new Name(params.issuer);
+                revokedCert.crlEntryExtensions.push(new asn1X509__namespace.Extension({
+                  extnID: asn1X509__namespace.id_ce_certificateIssuer,
+                  critical: false,
+                  extnValue: new asn1Schema.OctetString(asn1Schema.AsnConvert.serialize(asn1Schema.AsnConvert.parse(name2.toArrayBuffer(), asn1X509__namespace.Name)))
+                }));
+              }
+            }
+            asnX509Crl.tbsCertList.revokedCertificates.push(revokedCert);
+          }
+        }
+        const signingAlgorithm = {
+          ...params.signingAlgorithm,
+          ...params.signingKey.algorithm
+        };
+        const algProv = tsyringe.container.resolve(diAlgorithmProvider);
+        asnX509Crl.tbsCertList.signature = asnX509Crl.signatureAlgorithm = algProv.toAsnAlgorithm(signingAlgorithm);
+        const tbs = asn1Schema.AsnConvert.serialize(asnX509Crl.tbsCertList);
+        const signature = await crypto2.subtle.sign(signingAlgorithm, params.signingKey, tbs);
+        const signatureFormatters = tsyringe.container.resolveAll(diAsnSignatureFormatter).reverse();
+        let asnSignature = null;
+        for (const signatureFormatter of signatureFormatters) {
+          asnSignature = signatureFormatter.toAsnSignature(signingAlgorithm, signature);
+          if (asnSignature) {
+            break;
+          }
+        }
+        if (!asnSignature) {
+          throw Error("Cannot convert ASN.1 signature value to WebCrypto format");
+        }
+        asnX509Crl.signature = asnSignature;
+        return new X509Crl(asn1Schema.AsnConvert.serialize(asnX509Crl));
+      }
+    };
+    ExtensionFactory.register(asn1X509__namespace.id_ce_basicConstraints, BasicConstraintsExtension);
+    ExtensionFactory.register(asn1X509__namespace.id_ce_extKeyUsage, ExtendedKeyUsageExtension);
+    ExtensionFactory.register(asn1X509__namespace.id_ce_keyUsage, KeyUsagesExtension);
+    ExtensionFactory.register(asn1X509__namespace.id_ce_subjectKeyIdentifier, SubjectKeyIdentifierExtension);
+    ExtensionFactory.register(asn1X509__namespace.id_ce_authorityKeyIdentifier, AuthorityKeyIdentifierExtension);
+    ExtensionFactory.register(asn1X509__namespace.id_ce_subjectAltName, SubjectAlternativeNameExtension);
+    ExtensionFactory.register(asn1X509__namespace.id_ce_cRLDistributionPoints, CRLDistributionPointsExtension);
+    ExtensionFactory.register(asn1X509__namespace.id_pe_authorityInfoAccess, AuthorityInfoAccessExtension);
+    ExtensionFactory.register(asn1X509__namespace.id_ce_issuerAltName, IssuerAlternativeNameExtension);
+    AttributeFactory.register(asnPkcs9__namespace.id_pkcs9_at_challengePassword, ChallengePasswordAttribute);
+    AttributeFactory.register(asnPkcs9__namespace.id_pkcs9_at_extensionRequest, ExtensionsAttribute);
+    tsyringe.container.registerSingleton(diAsnSignatureFormatter, AsnDefaultSignatureFormatter);
+    tsyringe.container.registerSingleton(diAsnSignatureFormatter, AsnEcSignatureFormatter);
+    AsnEcSignatureFormatter.namedCurveSize.set("P-256", 32);
+    AsnEcSignatureFormatter.namedCurveSize.set("K-256", 32);
+    AsnEcSignatureFormatter.namedCurveSize.set("P-384", 48);
+    AsnEcSignatureFormatter.namedCurveSize.set("P-521", 66);
+    exports2.AlgorithmProvider = AlgorithmProvider;
+    exports2.AsnData = AsnData;
+    exports2.AsnDefaultSignatureFormatter = AsnDefaultSignatureFormatter;
+    exports2.AsnEcSignatureFormatter = AsnEcSignatureFormatter;
+    exports2.Attribute = Attribute;
+    exports2.AttributeFactory = AttributeFactory;
+    exports2.AuthorityInfoAccessExtension = AuthorityInfoAccessExtension;
+    exports2.AuthorityKeyIdentifierExtension = AuthorityKeyIdentifierExtension;
+    exports2.BasicConstraintsExtension = BasicConstraintsExtension;
+    exports2.CRLDistributionPointsExtension = CRLDistributionPointsExtension;
+    exports2.CertificatePolicyExtension = CertificatePolicyExtension;
+    exports2.ChallengePasswordAttribute = ChallengePasswordAttribute;
+    exports2.CryptoProvider = CryptoProvider;
+    exports2.DN = DN;
+    exports2.DNS = DNS;
+    exports2.DefaultAlgorithmSerializer = DefaultAlgorithmSerializer;
+    exports2.EMAIL = EMAIL;
+    exports2.ExtendedKeyUsageExtension = ExtendedKeyUsageExtension;
+    exports2.Extension = Extension;
+    exports2.ExtensionFactory = ExtensionFactory;
+    exports2.ExtensionsAttribute = ExtensionsAttribute;
+    exports2.GUID = GUID;
+    exports2.GeneralName = GeneralName;
+    exports2.GeneralNames = GeneralNames;
+    exports2.IP = IP;
+    exports2.IssuerAlternativeNameExtension = IssuerAlternativeNameExtension;
+    exports2.KeyUsagesExtension = KeyUsagesExtension;
+    exports2.Name = Name;
+    exports2.NameIdentifier = NameIdentifier;
+    exports2.OidSerializer = OidSerializer;
+    exports2.PemConverter = PemConverter;
+    exports2.PemData = PemData;
+    exports2.Pkcs10CertificateRequest = Pkcs10CertificateRequest;
+    exports2.Pkcs10CertificateRequestGenerator = Pkcs10CertificateRequestGenerator;
+    exports2.PublicKey = PublicKey;
+    exports2.REGISTERED_ID = REGISTERED_ID;
+    exports2.SubjectAlternativeNameExtension = SubjectAlternativeNameExtension;
+    exports2.SubjectKeyIdentifierExtension = SubjectKeyIdentifierExtension;
+    exports2.TextConverter = TextConverter;
+    exports2.TextObject = TextObject;
+    exports2.UPN = UPN;
+    exports2.URL = URL2;
+    exports2.X509Certificate = X509Certificate;
+    exports2.X509CertificateGenerator = X509CertificateGenerator;
+    exports2.X509Certificates = X509Certificates;
+    exports2.X509ChainBuilder = X509ChainBuilder;
+    exports2.X509Crl = X509Crl;
+    exports2.X509CrlEntry = X509CrlEntry;
+    exports2.X509CrlGenerator = X509CrlGenerator;
+    exports2.cryptoProvider = cryptoProvider;
+    exports2.diAlgorithm = diAlgorithm;
+    exports2.diAlgorithmProvider = diAlgorithmProvider;
+    exports2.diAsnSignatureFormatter = diAsnSignatureFormatter;
+    exports2.idEd25519 = idEd25519;
+    exports2.idEd448 = idEd448;
+    exports2.idX25519 = idX25519;
+    exports2.idX448 = idX448;
+  }
+});
+
+// node_modules/selfsigned/index.js
+var require_selfsigned = __commonJS({
+  "node_modules/selfsigned/index.js"(exports2) {
+    var { X509CertificateGenerator, X509Certificate, cryptoProvider, X509ChainBuilder, BasicConstraintsExtension, KeyUsagesExtension, KeyUsageFlags, ExtendedKeyUsageExtension, ExtendedKeyUsage, SubjectAlternativeNameExtension, GeneralName } = require_x509_cjs();
+    var nodeCrypto = require("crypto");
+    var crypto2 = nodeCrypto.webcrypto;
+    cryptoProvider.set(crypto2);
+    function toPositiveHex(hexString) {
+      var mostSiginficativeHexAsInt = parseInt(hexString[0], 16);
+      if (mostSiginficativeHexAsInt < 8) {
+        return hexString;
+      }
+      mostSiginficativeHexAsInt -= 8;
+      return mostSiginficativeHexAsInt.toString() + hexString.substring(1);
+    }
+    function getAlgorithmName(key) {
+      switch (key) {
+        case "sha256":
+          return "SHA-256";
+        case "sha384":
+          return "SHA-384";
+        case "sha512":
+          return "SHA-512";
+        default:
+          return "SHA-1";
+      }
+    }
+    function getSigningAlgorithm(hashKey, keyType) {
+      const hashAlg = getAlgorithmName(hashKey);
+      if (keyType === "ec") {
+        return {
+          name: "ECDSA",
+          hash: hashAlg
+        };
+      }
+      return {
+        name: "RSASSA-PKCS1-v1_5",
+        hash: hashAlg
+      };
+    }
+    function getKeyAlgorithm(options) {
+      const keyType = options.keyType || "rsa";
+      const hashAlg = getAlgorithmName(options.algorithm || "sha1");
+      if (keyType === "ec") {
+        const curve = options.curve || "P-256";
+        return {
+          name: "ECDSA",
+          namedCurve: curve
+        };
+      }
+      return {
+        name: "RSASSA-PKCS1-v1_5",
+        modulusLength: options.keySize || 2048,
+        publicExponent: new Uint8Array([1, 0, 1]),
+        hash: hashAlg
+      };
+    }
+    function buildExtensions(userExtensions, commonName) {
+      if (!userExtensions || userExtensions.length === 0) {
+        return [
+          new BasicConstraintsExtension(false, void 0, true),
+          new KeyUsagesExtension(KeyUsageFlags.digitalSignature | KeyUsageFlags.keyEncipherment, true),
+          new ExtendedKeyUsageExtension([ExtendedKeyUsage.serverAuth, ExtendedKeyUsage.clientAuth], false),
+          new SubjectAlternativeNameExtension([
+            { type: "dns", value: commonName },
+            ...commonName === "localhost" ? [{ type: "ip", value: "127.0.0.1" }] : []
+          ], false)
+        ];
+      }
+      const extensions = [];
+      for (const ext of userExtensions) {
+        const critical = ext.critical || false;
+        switch (ext.name) {
+          case "basicConstraints":
+            extensions.push(new BasicConstraintsExtension(
+              ext.cA || false,
+              ext.pathLenConstraint,
+              critical
+            ));
+            break;
+          case "keyUsage":
+            let flags = 0;
+            if (ext.digitalSignature) flags |= KeyUsageFlags.digitalSignature;
+            if (ext.nonRepudiation || ext.contentCommitment) flags |= KeyUsageFlags.nonRepudiation;
+            if (ext.keyEncipherment) flags |= KeyUsageFlags.keyEncipherment;
+            if (ext.dataEncipherment) flags |= KeyUsageFlags.dataEncipherment;
+            if (ext.keyAgreement) flags |= KeyUsageFlags.keyAgreement;
+            if (ext.keyCertSign) flags |= KeyUsageFlags.keyCertSign;
+            if (ext.cRLSign) flags |= KeyUsageFlags.cRLSign;
+            if (ext.encipherOnly) flags |= KeyUsageFlags.encipherOnly;
+            if (ext.decipherOnly) flags |= KeyUsageFlags.decipherOnly;
+            extensions.push(new KeyUsagesExtension(flags, critical));
+            break;
+          case "extKeyUsage":
+            const usages = [];
+            if (ext.serverAuth) usages.push(ExtendedKeyUsage.serverAuth);
+            if (ext.clientAuth) usages.push(ExtendedKeyUsage.clientAuth);
+            if (ext.codeSigning) usages.push(ExtendedKeyUsage.codeSigning);
+            if (ext.emailProtection) usages.push(ExtendedKeyUsage.emailProtection);
+            if (ext.timeStamping) usages.push(ExtendedKeyUsage.timeStamping);
+            extensions.push(new ExtendedKeyUsageExtension(usages, critical));
+            break;
+          case "subjectAltName":
+            const altNames = (ext.altNames || []).map((alt) => {
+              switch (alt.type) {
+                case 1:
+                  return { type: "email", value: alt.value };
+                case 2:
+                  return { type: "dns", value: alt.value };
+                case 6:
+                  return { type: "url", value: alt.value };
+                case 7:
+                  return { type: "ip", value: alt.ip || alt.value };
+                default:
+                  if (alt.ip) return { type: "ip", value: alt.ip };
+                  if (alt.dns) return { type: "dns", value: alt.dns };
+                  if (alt.email) return { type: "email", value: alt.email };
+                  if (alt.uri || alt.url) return { type: "url", value: alt.uri || alt.url };
+                  return { type: "dns", value: alt.value };
+              }
+            });
+            extensions.push(new SubjectAlternativeNameExtension(altNames, critical));
+            break;
+          default:
+            console.warn(`Unknown extension "${ext.name}" ignored`);
+        }
+      }
+      return extensions;
+    }
+    function convertAttributes(attrs) {
+      const nameMap = {
+        "commonName": "CN",
+        "countryName": "C",
+        "ST": "ST",
+        "localityName": "L",
+        "organizationName": "O",
+        "OU": "OU"
+      };
+      return attrs.map((attr) => {
+        const key = attr.name || attr.shortName;
+        const oid = nameMap[key] || key;
+        return `${oid}=${attr.value}`;
+      }).join(", ");
+    }
+    function normalizeECCurve(curveName) {
+      const curveMap = {
+        "prime256v1": "P-256",
+        "secp384r1": "P-384",
+        "secp521r1": "P-521",
+        "P-256": "P-256",
+        "P-384": "P-384",
+        "P-521": "P-521"
+      };
+      return curveMap[curveName] || curveName;
+    }
+    function getECCurve(keyObject) {
+      const details = keyObject.asymmetricKeyDetails;
+      if (details && details.namedCurve) {
+        return normalizeECCurve(details.namedCurve);
+      }
+      return "P-256";
+    }
+    async function importPrivateKey(pemKey, algorithm, keyType) {
+      const keyObject = nodeCrypto.createPrivateKey(pemKey);
+      const detectedKeyType = keyObject.asymmetricKeyType;
+      const actualKeyType = keyType || detectedKeyType;
+      const pkcs8Pem = keyObject.export({ type: "pkcs8", format: "pem" });
+      const pemContents = pkcs8Pem.replace(/-----BEGIN PRIVATE KEY-----/, "").replace(/-----END PRIVATE KEY-----/, "").replace(/\s/g, "");
+      const binaryDer = Buffer.from(pemContents, "base64");
+      let importAlgorithm;
+      if (actualKeyType === "ec") {
+        const curve = getECCurve(keyObject);
+        importAlgorithm = {
+          name: "ECDSA",
+          namedCurve: curve
+        };
+      } else {
+        importAlgorithm = {
+          name: "RSASSA-PKCS1-v1_5",
+          hash: getAlgorithmName(algorithm)
+        };
+      }
+      return await crypto2.subtle.importKey(
+        "pkcs8",
+        binaryDer,
+        importAlgorithm,
+        true,
+        ["sign"]
+      );
+    }
+    async function importPublicKey(pemKey, algorithm, keyType, curve) {
+      const pemContents = pemKey.replace(/-----BEGIN PUBLIC KEY-----/, "").replace(/-----END PUBLIC KEY-----/, "").replace(/\s/g, "");
+      const binaryDer = Buffer.from(pemContents, "base64");
+      let importAlgorithm;
+      if (keyType === "ec") {
+        importAlgorithm = {
+          name: "ECDSA",
+          namedCurve: curve || "P-256"
+        };
+      } else {
+        importAlgorithm = {
+          name: "RSASSA-PKCS1-v1_5",
+          hash: getAlgorithmName(algorithm)
+        };
+      }
+      return await crypto2.subtle.importKey(
+        "spki",
+        binaryDer,
+        importAlgorithm,
+        true,
+        ["verify"]
+      );
+    }
+    async function generatePemAsync(keyPair, attrs, options, ca) {
+      const { privateKey, publicKey } = keyPair;
+      const serialBytes = crypto2.getRandomValues(new Uint8Array(9));
+      const serialHex = toPositiveHex(Buffer.from(serialBytes).toString("hex"));
+      const notBefore = options.notBeforeDate || /* @__PURE__ */ new Date();
+      let notAfter;
+      if (options.notAfterDate) {
+        notAfter = options.notAfterDate;
+      } else {
+        notAfter = new Date(notBefore);
+        notAfter.setDate(notAfter.getDate() + 365);
+      }
+      attrs = attrs || [
+        {
+          name: "commonName",
+          value: "example.org"
+        },
+        {
+          name: "countryName",
+          value: "US"
+        },
+        {
+          shortName: "ST",
+          value: "Virginia"
+        },
+        {
+          name: "localityName",
+          value: "Blacksburg"
+        },
+        {
+          name: "organizationName",
+          value: "Test"
+        },
+        {
+          shortName: "OU",
+          value: "Test"
+        }
+      ];
+      const subjectName = convertAttributes(attrs);
+      const keyType = options.keyType || "rsa";
+      const signingAlg = getSigningAlgorithm(options.algorithm, keyType);
+      const commonNameAttr = attrs.find((attr) => attr.name === "commonName" || attr.shortName === "CN");
+      const commonName = commonNameAttr ? commonNameAttr.value : "localhost";
+      const extensions = buildExtensions(options.extensions, commonName);
+      let cert;
+      if (ca) {
+        const caCert = new X509Certificate(ca.cert);
+        const caPrivateKey = await importPrivateKey(ca.key, options.algorithm || "sha256", keyType);
+        cert = await X509CertificateGenerator.create({
+          serialNumber: serialHex,
+          subject: subjectName,
+          issuer: caCert.subject,
+          notBefore,
+          notAfter,
+          signingAlgorithm: signingAlg,
+          publicKey,
+          signingKey: caPrivateKey,
+          extensions
+        });
+      } else {
+        cert = await X509CertificateGenerator.createSelfSigned({
+          serialNumber: serialHex,
+          name: subjectName,
+          notBefore,
+          notAfter,
+          signingAlgorithm: signingAlg,
+          keys: {
+            privateKey,
+            publicKey
+          },
+          extensions
+        });
+      }
+      const certRaw = cert.rawData;
+      const fingerprintBuffer = await crypto2.subtle.digest("SHA-1", certRaw);
+      const fingerprint = Buffer.from(fingerprintBuffer).toString("hex").match(/.{2}/g).join(":");
+      const privateKeyDer = await crypto2.subtle.exportKey("pkcs8", privateKey);
+      const publicKeyDer = await crypto2.subtle.exportKey("spki", publicKey);
+      let privatePem;
+      if (options.passphrase) {
+        const keyObject = nodeCrypto.createPrivateKey({
+          key: Buffer.from(privateKeyDer),
+          format: "der",
+          type: "pkcs8"
+        });
+        privatePem = keyObject.export({
+          type: "pkcs8",
+          format: "pem",
+          cipher: "aes-256-cbc",
+          passphrase: options.passphrase
+        });
+      } else {
+        privatePem = "-----BEGIN PRIVATE KEY-----\n" + Buffer.from(privateKeyDer).toString("base64").match(/.{1,64}/g).join("\n") + "\n-----END PRIVATE KEY-----\n";
+      }
+      const publicPem = "-----BEGIN PUBLIC KEY-----\n" + Buffer.from(publicKeyDer).toString("base64").match(/.{1,64}/g).join("\n") + "\n-----END PUBLIC KEY-----\n";
+      const certPem = cert.toString("pem");
+      const pem = {
+        private: privatePem,
+        public: publicPem,
+        cert: certPem,
+        fingerprint
+      };
+      if (options && options.clientCertificate) {
+        const clientOpts = typeof options.clientCertificate === "object" ? options.clientCertificate : {};
+        const clientKeySize = clientOpts.keySize || options.clientCertificateKeySize || 2048;
+        const clientAlgorithm = clientOpts.algorithm || options.algorithm || "sha1";
+        const clientCN = clientOpts.cn || options.clientCertificateCN || "John Doe jdoe123";
+        const clientKeyType = clientOpts.keyType || keyType;
+        const clientCurve = clientOpts.curve || options.curve || "P-256";
+        const clientKeyAlg = getKeyAlgorithm({
+          keyType: clientKeyType,
+          keySize: clientKeySize,
+          algorithm: clientAlgorithm,
+          curve: clientCurve
+        });
+        const clientKeyPair = await crypto2.subtle.generateKey(
+          clientKeyAlg,
+          true,
+          ["sign", "verify"]
+        );
+        const clientSerialBytes = crypto2.getRandomValues(new Uint8Array(9));
+        const clientSerialHex = toPositiveHex(Buffer.from(clientSerialBytes).toString("hex"));
+        const clientNotBefore = clientOpts.notBeforeDate || /* @__PURE__ */ new Date();
+        let clientNotAfter;
+        if (clientOpts.notAfterDate) {
+          clientNotAfter = clientOpts.notAfterDate;
+        } else {
+          clientNotAfter = new Date(clientNotBefore);
+          clientNotAfter.setFullYear(clientNotBefore.getFullYear() + 1);
+        }
+        const clientAttrs = JSON.parse(JSON.stringify(attrs));
+        for (let i = 0; i < clientAttrs.length; i++) {
+          if (clientAttrs[i].name === "commonName") {
+            clientAttrs[i] = {
+              name: "commonName",
+              value: clientCN
+            };
+          }
+        }
+        const clientSubjectName = convertAttributes(clientAttrs);
+        const issuerName = convertAttributes(attrs);
+        const clientSigningAlg = getSigningAlgorithm(clientAlgorithm, keyType);
+        const clientCertRaw = await X509CertificateGenerator.create({
+          serialNumber: clientSerialHex,
+          subject: clientSubjectName,
+          issuer: issuerName,
+          notBefore: clientNotBefore,
+          notAfter: clientNotAfter,
+          signingAlgorithm: clientSigningAlg,
+          publicKey: clientKeyPair.publicKey,
+          signingKey: privateKey
+          // Sign with root private key
+        });
+        const clientPrivateKeyDer = await crypto2.subtle.exportKey("pkcs8", clientKeyPair.privateKey);
+        const clientPublicKeyDer = await crypto2.subtle.exportKey("spki", clientKeyPair.publicKey);
+        pem.clientprivate = "-----BEGIN PRIVATE KEY-----\n" + Buffer.from(clientPrivateKeyDer).toString("base64").match(/.{1,64}/g).join("\n") + "\n-----END PRIVATE KEY-----\n";
+        pem.clientpublic = "-----BEGIN PUBLIC KEY-----\n" + Buffer.from(clientPublicKeyDer).toString("base64").match(/.{1,64}/g).join("\n") + "\n-----END PUBLIC KEY-----\n";
+        pem.clientcert = clientCertRaw.toString("pem");
+      }
+      const x509Cert = new X509Certificate(cert.rawData);
+      const certificates = [x509Cert];
+      if (ca) {
+        const caCert = new X509Certificate(ca.cert);
+        certificates.push(caCert);
+      }
+      const chainBuilder = new X509ChainBuilder({
+        certificates
+      });
+      const chain = await chainBuilder.build(x509Cert);
+      if (chain.length === 0) {
+        throw new Error("Certificate could not be verified.");
+      }
+      return pem;
+    }
+    exports2.generate = async function generate(attrs, options) {
+      attrs = attrs || void 0;
+      options = options || {};
+      const keyType = options.keyType || "rsa";
+      const curve = options.curve || "P-256";
+      let keyPair;
+      if (options.keyPair) {
+        keyPair = {
+          privateKey: await importPrivateKey(options.keyPair.privateKey, options.algorithm || "sha1", keyType),
+          publicKey: await importPublicKey(options.keyPair.publicKey, options.algorithm || "sha1", keyType, curve)
+        };
+      } else {
+        const keyAlg = getKeyAlgorithm(options);
+        keyPair = await crypto2.subtle.generateKey(
+          keyAlg,
+          true,
+          ["sign", "verify"]
+        );
+      }
+      return await generatePemAsync(keyPair, attrs, options, options.ca);
+    };
+  }
+});
+
 // node_modules/@xmldom/xmldom/lib/conventions.js
 var require_conventions = __commonJS({
   "node_modules/@xmldom/xmldom/lib/conventions.js"(exports2) {
@@ -11244,7 +30802,7 @@ var require_conventions = __commonJS({
 });
 
 // node_modules/@xmldom/xmldom/lib/errors.js
-var require_errors2 = __commonJS({
+var require_errors3 = __commonJS({
   "node_modules/@xmldom/xmldom/lib/errors.js"(exports2) {
     "use strict";
     var conventions = require_conventions();
@@ -11623,7 +31181,7 @@ var require_dom = __commonJS({
     var MIME_TYPE = conventions.MIME_TYPE;
     var NAMESPACE = conventions.NAMESPACE;
     var PDC = /* @__PURE__ */ Symbol();
-    var errors = require_errors2();
+    var errors = require_errors3();
     var DOMException = errors.DOMException;
     var DOMExceptionName = errors.DOMExceptionName;
     var g = require_grammar();
@@ -16425,7 +35983,7 @@ var require_sax = __commonJS({
     "use strict";
     var conventions = require_conventions();
     var g = require_grammar();
-    var errors = require_errors2();
+    var errors = require_errors3();
     var isHTMLEscapableRawTextElement = conventions.isHTMLEscapableRawTextElement;
     var isHTMLMimeType = conventions.isHTMLMimeType;
     var isHTMLRawTextElement = conventions.isHTMLRawTextElement;
@@ -17207,7 +36765,7 @@ var require_dom_parser = __commonJS({
     "use strict";
     var conventions = require_conventions();
     var dom = require_dom();
-    var errors = require_errors2();
+    var errors = require_errors3();
     var entities = require_entities();
     var sax = require_sax();
     var DOMImplementation = dom.DOMImplementation;
@@ -17480,7 +37038,7 @@ var require_lib = __commonJS({
     exports2.isValidMimeType = conventions.isValidMimeType;
     exports2.MIME_TYPE = conventions.MIME_TYPE;
     exports2.NAMESPACE = conventions.NAMESPACE;
-    var errors = require_errors2();
+    var errors = require_errors3();
     exports2.DOMException = errors.DOMException;
     exports2.DOMExceptionName = errors.DOMExceptionName;
     exports2.ExceptionCode = errors.ExceptionCode;
@@ -19528,10 +39086,10 @@ var require_support = __commonJS({
 });
 
 // node_modules/jszip/lib/base64.js
-var require_base64 = __commonJS({
+var require_base642 = __commonJS({
   "node_modules/jszip/lib/base64.js"(exports2) {
     "use strict";
-    var utils = require_utils2();
+    var utils = require_utils3();
     var support = require_support();
     var _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
     exports2.encode = function(input) {
@@ -19769,8 +39327,8 @@ var require_lib3 = __commonJS({
         return this;
       }
       var p = this.constructor;
-      return this.then(resolve4, reject2);
-      function resolve4(value) {
+      return this.then(resolve5, reject2);
+      function resolve5(value) {
         function yes() {
           return value;
         }
@@ -19923,8 +39481,8 @@ var require_lib3 = __commonJS({
       }
       return out;
     }
-    Promise2.resolve = resolve3;
-    function resolve3(value) {
+    Promise2.resolve = resolve4;
+    function resolve4(value) {
       if (value instanceof this) {
         return value;
       }
@@ -20169,11 +39727,11 @@ var require_setImmediate = __commonJS({
 });
 
 // node_modules/jszip/lib/utils.js
-var require_utils2 = __commonJS({
+var require_utils3 = __commonJS({
   "node_modules/jszip/lib/utils.js"(exports2) {
     "use strict";
     var support = require_support();
-    var base643 = require_base64();
+    var base643 = require_base642();
     var nodejsUtils = require_nodejsUtils();
     var external = require_external();
     require_setImmediate();
@@ -20455,10 +40013,10 @@ var require_utils2 = __commonJS({
       var promise2 = external.Promise.resolve(inputData).then(function(data) {
         var isBlob = support.blob && (data instanceof Blob || ["[object File]", "[object Blob]"].indexOf(Object.prototype.toString.call(data)) !== -1);
         if (isBlob && typeof FileReader !== "undefined") {
-          return new external.Promise(function(resolve3, reject) {
+          return new external.Promise(function(resolve4, reject) {
             var reader = new FileReader();
             reader.onload = function(e) {
-              resolve3(e.target.result);
+              resolve4(e.target.result);
             };
             reader.onerror = function(e) {
               reject(e.target.error);
@@ -20721,10 +40279,10 @@ var require_GenericWorker = __commonJS({
 });
 
 // node_modules/jszip/lib/utf8.js
-var require_utf8 = __commonJS({
+var require_utf82 = __commonJS({
   "node_modules/jszip/lib/utf8.js"(exports2) {
     "use strict";
-    var utils = require_utils2();
+    var utils = require_utils3();
     var support = require_support();
     var nodejsUtils = require_nodejsUtils();
     var GenericWorker = require_GenericWorker();
@@ -20915,7 +40473,7 @@ var require_ConvertWorker = __commonJS({
   "node_modules/jszip/lib/stream/ConvertWorker.js"(exports2, module2) {
     "use strict";
     var GenericWorker = require_GenericWorker();
-    var utils = require_utils2();
+    var utils = require_utils3();
     function ConvertWorker(destType) {
       GenericWorker.call(this, "ConvertWorker to " + destType);
       this.destType = destType;
@@ -20936,7 +40494,7 @@ var require_NodejsStreamOutputAdapter = __commonJS({
   "node_modules/jszip/lib/nodejs/NodejsStreamOutputAdapter.js"(exports2, module2) {
     "use strict";
     var Readable2 = require_readable().Readable;
-    var utils = require_utils2();
+    var utils = require_utils3();
     utils.inherits(NodejsStreamOutputAdapter, Readable2);
     function NodejsStreamOutputAdapter(helper, options, updateCb) {
       Readable2.call(this, options);
@@ -20966,10 +40524,10 @@ var require_NodejsStreamOutputAdapter = __commonJS({
 var require_StreamHelper = __commonJS({
   "node_modules/jszip/lib/stream/StreamHelper.js"(exports2, module2) {
     "use strict";
-    var utils = require_utils2();
+    var utils = require_utils3();
     var ConvertWorker = require_ConvertWorker();
     var GenericWorker = require_GenericWorker();
-    var base643 = require_base64();
+    var base643 = require_base642();
     var support = require_support();
     var external = require_external();
     var NodejsStreamOutputAdapter = null;
@@ -21013,7 +40571,7 @@ var require_StreamHelper = __commonJS({
       }
     }
     function accumulate(helper, updateCallback) {
-      return new external.Promise(function(resolve3, reject) {
+      return new external.Promise(function(resolve4, reject) {
         var dataArray = [];
         var chunkType = helper._internalType, resultType = helper._outputType, mimeType = helper._mimeType;
         helper.on("data", function(data, meta3) {
@@ -21027,7 +40585,7 @@ var require_StreamHelper = __commonJS({
         }).on("end", function() {
           try {
             var result = transformZipOutput(resultType, concat(chunkType, dataArray), mimeType);
-            resolve3(result);
+            resolve4(result);
           } catch (e) {
             reject(e);
           }
@@ -21123,7 +40681,7 @@ var require_StreamHelper = __commonJS({
 });
 
 // node_modules/jszip/lib/defaults.js
-var require_defaults2 = __commonJS({
+var require_defaults3 = __commonJS({
   "node_modules/jszip/lib/defaults.js"(exports2) {
     "use strict";
     exports2.base64 = false;
@@ -21143,7 +40701,7 @@ var require_defaults2 = __commonJS({
 var require_DataWorker = __commonJS({
   "node_modules/jszip/lib/stream/DataWorker.js"(exports2, module2) {
     "use strict";
-    var utils = require_utils2();
+    var utils = require_utils3();
     var GenericWorker = require_GenericWorker();
     var DEFAULT_BLOCK_SIZE = 16 * 1024;
     function DataWorker(dataP) {
@@ -21231,7 +40789,7 @@ var require_DataWorker = __commonJS({
 var require_crc32 = __commonJS({
   "node_modules/jszip/lib/crc32.js"(exports2, module2) {
     "use strict";
-    var utils = require_utils2();
+    var utils = require_utils3();
     function makeTable() {
       var c, table = [];
       for (var n = 0; n < 256; n++) {
@@ -21280,7 +40838,7 @@ var require_Crc32Probe = __commonJS({
     "use strict";
     var GenericWorker = require_GenericWorker();
     var crc32 = require_crc32();
-    var utils = require_utils2();
+    var utils = require_utils3();
     function Crc32Probe() {
       GenericWorker.call(this, "Crc32Probe");
       this.withStreamInfo("crc32", 0);
@@ -21298,7 +40856,7 @@ var require_Crc32Probe = __commonJS({
 var require_DataLengthProbe = __commonJS({
   "node_modules/jszip/lib/stream/DataLengthProbe.js"(exports2, module2) {
     "use strict";
-    var utils = require_utils2();
+    var utils = require_utils3();
     var GenericWorker = require_GenericWorker();
     function DataLengthProbe(propName) {
       GenericWorker.call(this, "DataLengthProbe for " + propName);
@@ -21368,7 +40926,7 @@ var require_zipObject = __commonJS({
     "use strict";
     var StreamHelper = require_StreamHelper();
     var DataWorker = require_DataWorker();
-    var utf8 = require_utf8();
+    var utf8 = require_utf82();
     var CompressedObject = require_compressedObject();
     var GenericWorker = require_GenericWorker();
     var ZipObject = function(name, data, options) {
@@ -25708,7 +45266,7 @@ var require_flate = __commonJS({
     "use strict";
     var USE_TYPEDARRAY = typeof Uint8Array !== "undefined" && typeof Uint16Array !== "undefined" && typeof Uint32Array !== "undefined";
     var pako = require_pako();
-    var utils = require_utils2();
+    var utils = require_utils3();
     var GenericWorker = require_GenericWorker();
     var ARRAY_TYPE = USE_TYPEDARRAY ? "uint8array" : "array";
     exports2.magic = "\b\0";
@@ -25796,9 +45354,9 @@ var require_signature = __commonJS({
 var require_ZipFileWorker = __commonJS({
   "node_modules/jszip/lib/generate/ZipFileWorker.js"(exports2, module2) {
     "use strict";
-    var utils = require_utils2();
+    var utils = require_utils3();
     var GenericWorker = require_GenericWorker();
-    var utf8 = require_utf8();
+    var utf8 = require_utf82();
     var crc32 = require_crc32();
     var signature = require_signature();
     var decToHex = function(dec, bytes) {
@@ -26121,7 +45679,7 @@ var require_generate = __commonJS({
 var require_NodejsStreamInputAdapter = __commonJS({
   "node_modules/jszip/lib/nodejs/NodejsStreamInputAdapter.js"(exports2, module2) {
     "use strict";
-    var utils = require_utils2();
+    var utils = require_utils3();
     var GenericWorker = require_GenericWorker();
     function NodejsStreamInputAdapter(filename, stream) {
       GenericWorker.call(this, "Nodejs stream input adapter for " + filename);
@@ -26180,11 +45738,11 @@ var require_NodejsStreamInputAdapter = __commonJS({
 var require_object = __commonJS({
   "node_modules/jszip/lib/object.js"(exports2, module2) {
     "use strict";
-    var utf8 = require_utf8();
-    var utils = require_utils2();
+    var utf8 = require_utf82();
+    var utils = require_utils3();
     var GenericWorker = require_GenericWorker();
     var StreamHelper = require_StreamHelper();
-    var defaults = require_defaults2();
+    var defaults = require_defaults3();
     var CompressedObject = require_compressedObject();
     var ZipObject = require_zipObject();
     var generate = require_generate();
@@ -26453,7 +46011,7 @@ var require_object = __commonJS({
 var require_DataReader = __commonJS({
   "node_modules/jszip/lib/reader/DataReader.js"(exports2, module2) {
     "use strict";
-    var utils = require_utils2();
+    var utils = require_utils3();
     function DataReader(data) {
       this.data = data;
       this.length = data.length;
@@ -26576,7 +46134,7 @@ var require_ArrayReader = __commonJS({
   "node_modules/jszip/lib/reader/ArrayReader.js"(exports2, module2) {
     "use strict";
     var DataReader = require_DataReader();
-    var utils = require_utils2();
+    var utils = require_utils3();
     function ArrayReader(data) {
       DataReader.call(this, data);
       for (var i = 0; i < this.data.length; i++) {
@@ -26618,7 +46176,7 @@ var require_StringReader = __commonJS({
   "node_modules/jszip/lib/reader/StringReader.js"(exports2, module2) {
     "use strict";
     var DataReader = require_DataReader();
-    var utils = require_utils2();
+    var utils = require_utils3();
     function StringReader(data) {
       DataReader.call(this, data);
     }
@@ -26648,7 +46206,7 @@ var require_Uint8ArrayReader = __commonJS({
   "node_modules/jszip/lib/reader/Uint8ArrayReader.js"(exports2, module2) {
     "use strict";
     var ArrayReader = require_ArrayReader();
-    var utils = require_utils2();
+    var utils = require_utils3();
     function Uint8ArrayReader(data) {
       ArrayReader.call(this, data);
     }
@@ -26671,7 +46229,7 @@ var require_NodeBufferReader = __commonJS({
   "node_modules/jszip/lib/reader/NodeBufferReader.js"(exports2, module2) {
     "use strict";
     var Uint8ArrayReader = require_Uint8ArrayReader();
-    var utils = require_utils2();
+    var utils = require_utils3();
     function NodeBufferReader(data) {
       Uint8ArrayReader.call(this, data);
     }
@@ -26690,7 +46248,7 @@ var require_NodeBufferReader = __commonJS({
 var require_readerFor = __commonJS({
   "node_modules/jszip/lib/reader/readerFor.js"(exports2, module2) {
     "use strict";
-    var utils = require_utils2();
+    var utils = require_utils3();
     var support = require_support();
     var ArrayReader = require_ArrayReader();
     var StringReader = require_StringReader();
@@ -26718,10 +46276,10 @@ var require_zipEntry = __commonJS({
   "node_modules/jszip/lib/zipEntry.js"(exports2, module2) {
     "use strict";
     var readerFor = require_readerFor();
-    var utils = require_utils2();
+    var utils = require_utils3();
     var CompressedObject = require_compressedObject();
     var crc32fn = require_crc32();
-    var utf8 = require_utf8();
+    var utf8 = require_utf82();
     var compressions = require_compressions();
     var support = require_support();
     var MADE_BY_DOS = 0;
@@ -26936,7 +46494,7 @@ var require_zipEntries = __commonJS({
   "node_modules/jszip/lib/zipEntries.js"(exports2, module2) {
     "use strict";
     var readerFor = require_readerFor();
-    var utils = require_utils2();
+    var utils = require_utils3();
     var sig = require_signature();
     var ZipEntry = require_zipEntry();
     var support = require_support();
@@ -27133,14 +46691,14 @@ var require_zipEntries = __commonJS({
 var require_load = __commonJS({
   "node_modules/jszip/lib/load.js"(exports2, module2) {
     "use strict";
-    var utils = require_utils2();
+    var utils = require_utils3();
     var external = require_external();
-    var utf8 = require_utf8();
+    var utf8 = require_utf82();
     var ZipEntries = require_zipEntries();
     var Crc32Probe = require_Crc32Probe();
     var nodejsUtils = require_nodejsUtils();
     function checkEntryCRC32(zipEntry) {
-      return new external.Promise(function(resolve3, reject) {
+      return new external.Promise(function(resolve4, reject) {
         var worker = zipEntry.decompressed.getContentWorker().pipe(new Crc32Probe());
         worker.on("error", function(e) {
           reject(e);
@@ -27148,7 +46706,7 @@ var require_load = __commonJS({
           if (worker.streamInfo.crc32 !== zipEntry.decompressed.crc32) {
             reject(new Error("Corrupted zip : CRC32 mismatch"));
           } else {
-            resolve3();
+            resolve4();
           }
         }).resume();
       });
@@ -27235,7 +46793,7 @@ var require_lib4 = __commonJS({
     JSZip5.prototype = require_object();
     JSZip5.prototype.loadAsync = require_load();
     JSZip5.support = require_support();
-    JSZip5.defaults = require_defaults2();
+    JSZip5.defaults = require_defaults3();
     JSZip5.version = "3.10.1";
     JSZip5.loadAsync = function(content, options) {
       return new JSZip5().loadAsync(content, options);
@@ -27247,12 +46805,12 @@ var require_lib4 = __commonJS({
 
 // server/index.ts
 var import_node_crypto2 = require("node:crypto");
-var import_node_fs10 = require("node:fs");
+var import_node_fs11 = require("node:fs");
 var import_node_http = require("node:http");
 var import_node_https = require("node:https");
-var import_node_os3 = require("node:os");
-var import_node_path5 = require("node:path");
-var import_node_url3 = require("node:url");
+var import_node_os4 = require("node:os");
+var import_node_path6 = require("node:path");
+var import_node_url4 = require("node:url");
 
 // node_modules/zod/v3/helpers/util.js
 var util;
@@ -48488,7 +68046,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve3) => setTimeout(resolve3, pollInterval));
+        await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error48) {
@@ -48505,7 +68063,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve3, reject) => {
+    return new Promise((resolve4, reject) => {
       const earlyReject = (error48) => {
         reject(error48);
       };
@@ -48583,7 +68141,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve3(parseResult.data);
+            resolve4(parseResult.data);
           }
         } catch (error48) {
           reject(error48);
@@ -48845,12 +68403,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve3, reject) => {
+    return new Promise((resolve4, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve3, interval);
+      const timeoutId = setTimeout(resolve4, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -49981,7 +69539,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve3) => setTimeout(resolve3, pollInterval));
+      await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -50645,12 +70203,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve3) => {
+    return new Promise((resolve4) => {
       const json3 = serializeMessage(message);
       if (this._stdout.write(json3)) {
-        resolve3();
+        resolve4();
       } else {
-        this._stdout.once("drain", resolve3);
+        this._stdout.once("drain", resolve4);
       }
     });
   }
@@ -50939,7 +70497,7 @@ var readBodyDirect = (request) => {
     request[bodyBufferKey] = buffered;
     return Promise.resolve(buffered);
   }
-  const promise2 = new Promise((resolve3, reject) => {
+  const promise2 = new Promise((resolve4, reject) => {
     const chunks = [];
     let settled = false;
     const finish = (callback) => {
@@ -50957,7 +70515,7 @@ var readBodyDirect = (request) => {
         else if (recovered === void 0) reject(error48 ?? normalizeAbortError(request, incoming));
         else {
           request[bodyBufferKey] = recovered;
-          resolve3(recovered);
+          resolve4(recovered);
         }
       });
       return true;
@@ -50969,7 +70527,7 @@ var readBodyDirect = (request) => {
       finish(() => {
         const buffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
         request[bodyBufferKey] = buffer;
-        resolve3(buffer);
+        resolve4(buffer);
       });
     };
     const onError = (error48) => {
@@ -51491,7 +71049,7 @@ var responseViaResponseObject = async (res, outgoing, options = {}) => {
         });
         if (!chunk) {
           if (i === 1) {
-            await new Promise((resolve3) => setTimeout(resolve3));
+            await new Promise((resolve4) => setTimeout(resolve4));
             maxReadCount = 3;
             continue;
           }
@@ -52226,9 +71784,9 @@ data:
       const initRequest = messages.find((m) => isInitializeRequest(m));
       const clientProtocolVersion = initRequest ? initRequest.params.protocolVersion : req.headers.get("mcp-protocol-version") ?? DEFAULT_NEGOTIATED_PROTOCOL_VERSION;
       if (this._enableJsonResponse) {
-        return new Promise((resolve3) => {
+        return new Promise((resolve4) => {
           this._streamMapping.set(streamId, {
-            resolveJson: resolve3,
+            resolveJson: resolve4,
             cleanup: () => {
               this._streamMapping.delete(streamId);
             }
@@ -52791,8 +72349,8 @@ var ConnectionPool = class {
   sendCommand(action, params, targetWs, timeoutMs) {
     const id = (0, import_node_crypto.randomUUID)();
     const timeout = timeoutMs ?? this.commandTimeout;
-    const { promise: promise2, resolve: resolve3, reject } = Promise.withResolvers();
-    const queued = { id, action, params, ws: targetWs, timeoutMs: timeout, resolve: resolve3, reject };
+    const { promise: promise2, resolve: resolve4, reject } = Promise.withResolvers();
+    const queued = { id, action, params, ws: targetWs, timeoutMs: timeout, resolve: resolve4, reject };
     const queue = this.queues.get(targetWs) ?? { current: null, waiting: [] };
     this.queues.set(targetWs, queue);
     if (queue.current === null) {
@@ -52853,9 +72411,301 @@ function substituteManifestPort(content, defaultPort, targetPort) {
   return content.replaceAll(`localhost:${defaultPort}`, `localhost:${targetPort}`);
 }
 
-// server/sharepoint-catalog.ts
+// server/setup.ts
+var import_node_child_process = require("node:child_process");
 var import_node_fs = require("node:fs");
+var import_node_os = require("node:os");
 var import_node_path = require("node:path");
+var import_node_url = require("node:url");
+var import_selfsigned = __toESM(require_selfsigned(), 1);
+var import_meta = {};
+var SCRIPT_DIR = typeof __dirname !== "undefined" ? __dirname : (0, import_node_path.dirname)((0, import_node_url.fileURLToPath)(import_meta.url));
+var PROJECT_ROOT = (0, import_node_path.resolve)(SCRIPT_DIR, "..");
+var CATALOG_GUID = "{7E3F2A11-93C4-4B5D-8E6F-1A2B3C4D5E6F}";
+var REG_KEY = `HKCU\\Software\\Microsoft\\Office\\16.0\\Wef\\TrustedCatalogs\\${CATALOG_GUID}`;
+var CERT_PATH = () => process.env.BRIDGE_CERT_PATH || (0, import_node_path.resolve)(PROJECT_ROOT, "certs", "localhost.pem");
+var CERT_KEY_PATH = () => process.env.BRIDGE_KEY_PATH || (0, import_node_path.resolve)(PROJECT_ROOT, "certs", "localhost-key.pem");
+var HTTPS_CATALOG_URL = "https://localhost:8443";
+var MAC_APPS = {
+  powerpoint: { manifest: "manifest.xml", container: "com.microsoft.Powerpoint", label: "PowerPoint" },
+  word: { manifest: "manifest.word.xml", container: "com.microsoft.Word", label: "Word" },
+  excel: { manifest: "manifest.excel.xml", container: "com.microsoft.Excel", label: "Excel" }
+};
+function manifestNameFor(manifest, tls) {
+  return tls ? manifest.replace(".xml", "-https.xml") : manifest;
+}
+function catalogUncCandidates(installDir, packageRoot) {
+  const candidates = [];
+  if (process.env.OLM_CATALOG_UNC) candidates.push(process.env.OLM_CATALOG_UNC);
+  if (packageRoot.startsWith("\\\\Mac\\Home\\")) candidates.push(`${packageRoot}\\addin`);
+  candidates.push(`\\\\${(0, import_node_os.hostname)()}\\OfficeLiveMCP`);
+  const drive = installDir.charAt(0);
+  if (installDir.startsWith("C:\\Users\\")) {
+    candidates.push(`\\\\localhost\\${drive}$\\${installDir.slice(3)}\\addin`);
+  }
+  return candidates;
+}
+function isUncPath(path) {
+  return /^\\\\[^\\]+\\.+/.test(path);
+}
+function registryCommands(uncPath) {
+  return [
+    ["reg", ["add", REG_KEY, "/v", "Id", "/t", "REG_SZ", "/d", CATALOG_GUID, "/f"]],
+    ["reg", ["add", REG_KEY, "/v", "Url", "/t", "REG_SZ", "/d", uncPath, "/f"]],
+    ["reg", ["add", REG_KEY, "/v", "Flags", "/t", "REG_DWORD", "/d", "1", "/f"]]
+  ];
+}
+function mcpConfigSnippet(entryCommand) {
+  const command = JSON.stringify(entryCommand);
+  return ["{", `  "mcpServers": {`, `    "office-live-mcp": { "command": ${command} }`, "  }", "}"].join("\n");
+}
+function daemonTlsEnabled() {
+  try {
+    const envFile = (0, import_node_path.resolve)((0, import_node_os.homedir)(), ".office-live-mcp", "daemon.env");
+    return /^BRIDGE_TLS=1\b/m.test((0, import_node_fs.readFileSync)(envFile, "utf8"));
+  } catch {
+    return false;
+  }
+}
+function setupMac() {
+  const tls = daemonTlsEnabled();
+  const defaultPort = tls ? 8443 : 8080;
+  const port = Number(process.env.BRIDGE_PORT) || defaultPort;
+  let installed = 0;
+  let found = 0;
+  for (const [key, app] of Object.entries(MAC_APPS)) {
+    const containerDir = (0, import_node_path.resolve)((0, import_node_os.homedir)(), `Library/Containers/${app.container}`);
+    if (!(0, import_node_fs.existsSync)(containerDir)) {
+      console.log(`[setup] ${app.label}: not installed, skipped`);
+      continue;
+    }
+    found++;
+    const manifest = manifestNameFor(app.manifest, tls);
+    const src = (0, import_node_path.resolve)(PROJECT_ROOT, "addin", manifest);
+    if (!(0, import_node_fs.existsSync)(src)) {
+      console.log(`[setup] ${app.label}: manifest ${manifest} missing in package, skipped`);
+      continue;
+    }
+    const wefDir = (0, import_node_path.resolve)(containerDir, "Data/Documents/wef");
+    const template = (0, import_node_fs.readFileSync)(src, "utf8");
+    try {
+      (0, import_node_fs.mkdirSync)(wefDir, { recursive: true });
+      (0, import_node_fs.writeFileSync)((0, import_node_path.resolve)(wefDir, "manifest.xml"), substituteManifestPort(template, defaultPort, port));
+    } catch (err) {
+      const code = err.code;
+      if (code === "EPERM" || code === "EACCES") {
+        console.log(
+          `[setup] ${app.label}: blocked by macOS privacy protection (TCC). Grant your terminal Full Disk Access (System Settings \u2192 Privacy & Security) and rerun setup, or run: node --experimental-strip-types scripts/sideload.ts --app ${key}`
+        );
+        continue;
+      }
+      throw err;
+    }
+    console.log(`[setup] ${app.label}: add-in manifest installed (${tls ? "HTTPS" : "HTTP"}, port ${port})`);
+    installed++;
+  }
+  if (found === 0) {
+    console.log("[setup] No Office apps found \u2014 nothing to sideload.");
+  } else if (installed === 0) {
+    console.log("[setup] No manifests were installed \u2014 see the messages above.");
+  } else {
+    console.log("[setup] Restart your Office apps, open a document, and click the add-in button in the Home ribbon.");
+  }
+}
+async function ensureLocalhostCert() {
+  if ((0, import_node_fs.existsSync)(CERT_PATH()) && (0, import_node_fs.existsSync)(CERT_KEY_PATH())) {
+    return true;
+  }
+  try {
+    const pems = await import_selfsigned.default.generate([{ name: "commonName", value: "localhost" }], {
+      notAfterDate: new Date(Date.now() + 3650 * 24 * 3600 * 1e3),
+      keySize: 2048,
+      algorithm: "sha256",
+      extensions: [
+        {
+          name: "subjectAltName",
+          altNames: [
+            { type: 2, value: "localhost" },
+            // DNS
+            { type: 7, ip: "127.0.0.1" },
+            // IP
+            { type: 7, ip: "::1" }
+          ]
+        }
+      ]
+    });
+    (0, import_node_fs.mkdirSync)((0, import_node_path.dirname)(CERT_PATH()), { recursive: true });
+    (0, import_node_fs.writeFileSync)(CERT_PATH(), pems.cert);
+    (0, import_node_fs.writeFileSync)(CERT_KEY_PATH(), pems.private);
+    console.log(`[setup] Generated localhost TLS certificate: ${CERT_PATH()}`);
+    return true;
+  } catch (err) {
+    console.error(`[setup] Certificate generation failed: ${err instanceof Error ? err.message : String(err)}`);
+    return false;
+  }
+}
+function mergeDaemonTls(content) {
+  if (/^BRIDGE_TLS=1\b/m.test(content)) return content;
+  const lines = content.split("\n").filter((l) => l.trim() && !/^BRIDGE_TLS=/.test(l));
+  lines.push("BRIDGE_TLS=1");
+  return `${lines.join("\n")}
+`;
+}
+function writeDaemonTlsEnv() {
+  const envFile = (0, import_node_path.resolve)((0, import_node_os.homedir)(), ".office-live-mcp", "daemon.env");
+  let content = "";
+  try {
+    content = (0, import_node_fs.readFileSync)(envFile, "utf8");
+  } catch {
+  }
+  const merged = mergeDaemonTls(content);
+  if (merged !== content) {
+    (0, import_node_fs.mkdirSync)((0, import_node_path.dirname)(envFile), { recursive: true });
+    (0, import_node_fs.writeFileSync)(envFile, merged);
+  }
+  console.log(`[setup] Daemon env: ${envFile} (BRIDGE_TLS=1 \u2014 bridge serves https://localhost:8443)`);
+}
+async function setupWindowsHttpsCatalog() {
+  if (!await ensureLocalhostCert()) return false;
+  const userStore = (0, import_node_child_process.spawnSync)("certutil", ["-user", "-addstore", "Root", CERT_PATH()], { stdio: "pipe" });
+  let trusted = userStore.status === 0;
+  if (!trusted) {
+    const machineStore = (0, import_node_child_process.spawnSync)("certutil", ["-addstore", "Root", CERT_PATH()], { stdio: "pipe" });
+    trusted = machineStore.status === 0;
+  }
+  if (!trusted) {
+    console.error(
+      "[setup] Could not trust the certificate in the Windows Root store (certutil failed or was cancelled)."
+    );
+    return false;
+  }
+  console.log("[setup] Certificate trusted in the Windows Root store");
+  writeDaemonTlsEnv();
+  for (const [cmd, args] of registryCommands(HTTPS_CATALOG_URL)) {
+    try {
+      (0, import_node_child_process.execFileSync)(cmd, args, { stdio: "pipe" });
+    } catch (err) {
+      console.error(`[setup] Failed to write registry key: ${err instanceof Error ? err.message : String(err)}`);
+      return false;
+    }
+  }
+  console.log(`[setup] Trusted add-in catalog registered: ${HTTPS_CATALOG_URL} (registry, current user only)`);
+  console.log(
+    [
+      "[setup] One manual step left (Office requires it):",
+      "  1. Close and reopen PowerPoint / Word / Excel",
+      "  2. Home ribbon \u2192 Add-ins \u2192 Advanced... \u2192 MY ORGANIZATION tab",
+      '  3. Select "Office Live MCP" \u2192 Add'
+    ].join("\n")
+  );
+  return true;
+}
+function setupWindowsUncCatalog() {
+  const installDir = process.env.OLM_INSTALL_DIR || (0, import_node_path.resolve)((0, import_node_os.homedir)(), "AppData", "Local", "office-live-mcp");
+  for (const folder of ["dist", "addin"]) {
+    const src = (0, import_node_path.resolve)(PROJECT_ROOT, folder);
+    if (!(0, import_node_fs.existsSync)(src)) {
+      console.error(`[setup] Package incomplete: ${src} is missing.`);
+      process.exit(1);
+    }
+    (0, import_node_fs.cpSync)(src, (0, import_node_path.resolve)(installDir, folder), { recursive: true });
+  }
+  console.log(`[setup] Installed files to ${installDir}`);
+  const candidates = catalogUncCandidates(installDir, PROJECT_ROOT);
+  let unc;
+  for (const candidate of candidates) {
+    if (!isUncPath(candidate)) {
+      console.error(`[setup] Ignoring candidate "${candidate}" \u2014 not a valid UNC path (expected \\\\host\\share).`);
+      continue;
+    }
+    if ((0, import_node_fs.existsSync)(candidate)) {
+      unc = candidate;
+      break;
+    }
+  }
+  if (!unc) {
+    const addinDir = (0, import_node_path.resolve)(installDir, "addin");
+    const result = (0, import_node_child_process.spawnSync)("net", ["share", `OfficeLiveMCP=${addinDir}`, "/GRANT:Everyone:READ"], {
+      stdio: "pipe"
+    });
+    if (result.status === 0 && (0, import_node_fs.existsSync)(`\\\\${(0, import_node_os.hostname)()}\\OfficeLiveMCP`)) {
+      unc = `\\\\${(0, import_node_os.hostname)()}\\OfficeLiveMCP`;
+    }
+  }
+  if (!unc) {
+    const adminShare = candidates.find((c) => c.startsWith("\\\\localhost\\"));
+    if (adminShare && (0, import_node_fs.existsSync)(adminShare)) {
+      unc = adminShare;
+    }
+  }
+  if (!unc) {
+    console.error(
+      [
+        "[setup] Could not find a UNC path for the add-in catalog (Office only trusts network paths).",
+        "  Tried:",
+        ...candidates.map((c) => `    - ${c}`),
+        "  Fixes, pick one:",
+        "    - Parallels: run setup from the host share (\\\\Mac\\Home\\...) or set OLM_CATALOG_UNC",
+        "    - Native Windows: run setup from an elevated terminal so it can create the share,",
+        "      or set OLM_CATALOG_UNC to an existing share that exposes the addin folder."
+      ].join("\n")
+    );
+    process.exit(1);
+  }
+  console.log(`[setup] Add-in catalog: ${unc}`);
+  for (const [cmd, args] of registryCommands(unc)) {
+    try {
+      (0, import_node_child_process.execFileSync)(cmd, args, { stdio: "pipe" });
+    } catch (err) {
+      console.error(`[setup] Failed to write registry key: ${err instanceof Error ? err.message : String(err)}`);
+      process.exit(1);
+    }
+  }
+  console.log("[setup] Trusted add-in catalog registered (registry, current user only)");
+  console.log(
+    [
+      "[setup] One manual step left (Office requires it):",
+      "  1. Close and reopen PowerPoint / Word / Excel",
+      "  2. Home ribbon \u2192 Add-ins \u2192 Advanced... \u2192 SHARED FOLDER tab",
+      '  3. Select "Office Live MCP" \u2192 Add'
+    ].join("\n")
+  );
+}
+async function setupWindows() {
+  if (process.env.OLM_UNC_CATALOG === "1") {
+    console.log("[setup] OLM_UNC_CATALOG=1 \u2014 using the shared-folder route.");
+    setupWindowsUncCatalog();
+    return;
+  }
+  if (await setupWindowsHttpsCatalog()) return;
+  console.log("[setup] Falling back to the shared-folder (UNC) route.");
+  setupWindowsUncCatalog();
+}
+async function runSetup() {
+  console.log(`office-live-mcp setup (${process.platform})`);
+  if (process.platform === "darwin") {
+    setupMac();
+  } else if (process.platform === "win32") {
+    await setupWindows();
+  } else {
+    console.error(`[setup] Unsupported platform: ${process.platform}`);
+    process.exit(1);
+  }
+  const entry = process.argv[1] ?? "office-live-mcp";
+  console.log(
+    [
+      "",
+      "[setup] Connect your MCP client (Claude Code, OpenCode, Claude Desktop):",
+      mcpConfigSnippet(entry),
+      "",
+      "[setup] The bridge daemon starts automatically the first time a client connects."
+    ].join("\n")
+  );
+}
+
+// server/sharepoint-catalog.ts
+var import_node_fs2 = require("node:fs");
+var import_node_path2 = require("node:path");
 var manifestDir = "";
 function setManifestDir(dir) {
   manifestDir = dir;
@@ -52864,7 +72714,7 @@ function readManifest(req, serverRelativeUrl) {
   const name = serverRelativeUrl.split("/").pop() ?? "";
   if (!manifestDir) return null;
   try {
-    const raw = (0, import_node_fs.readFileSync)((0, import_node_path.join)((0, import_node_path.resolve)(manifestDir), name), "utf-8");
+    const raw = (0, import_node_fs2.readFileSync)((0, import_node_path2.join)((0, import_node_path2.resolve)(manifestDir), name), "utf-8");
     const host = String(req.headers.host ?? "");
     const portMatch = /:(\d+)$/.exec(host);
     const targetPort = portMatch ? Number.parseInt(portMatch[1], 10) : 8443;
@@ -53101,19 +72951,19 @@ function handleSharePointCatalog(req, res, rawUrl) {
 }
 
 // server/stdio-proxy.ts
-var import_node_child_process = require("node:child_process");
-var import_node_fs2 = require("node:fs");
-var import_node_os = require("node:os");
-var import_node_path2 = require("node:path");
+var import_node_child_process2 = require("node:child_process");
+var import_node_fs3 = require("node:fs");
+var import_node_os2 = require("node:os");
+var import_node_path3 = require("node:path");
 var HEALTH_TIMEOUT_MS = 1e3;
 var DAEMON_START_TIMEOUT_MS = 15e3;
 var DAEMON_POLL_INTERVAL_MS = 200;
 function mcpHttpBase() {
   return `http://127.0.0.1:${Number(process.env.MCP_PORT) || 3001}`;
 }
-var DAEMON_DIR = process.env.OLM_DAEMON_DIR || (0, import_node_path2.join)((0, import_node_os.homedir)(), ".office-live-mcp");
-var DAEMON_LOCK_FILE = (0, import_node_path2.join)(DAEMON_DIR, "daemon.lock");
-var DAEMON_LOG_FILE = process.env.OLM_DAEMON_LOG || (0, import_node_path2.join)(DAEMON_DIR, "daemon.log");
+var DAEMON_DIR = process.env.OLM_DAEMON_DIR || (0, import_node_path3.join)((0, import_node_os2.homedir)(), ".office-live-mcp");
+var DAEMON_LOCK_FILE = (0, import_node_path3.join)(DAEMON_DIR, "daemon.lock");
+var DAEMON_LOG_FILE = process.env.OLM_DAEMON_LOG || (0, import_node_path3.join)(DAEMON_DIR, "daemon.log");
 async function fetchDaemonHealth(timeoutMs = HEALTH_TIMEOUT_MS) {
   try {
     const res = await fetch(`${mcpHttpBase()}/health`, { signal: AbortSignal.timeout(timeoutMs) });
@@ -53133,7 +72983,7 @@ function isPidAlive(pid) {
 }
 function readDaemonLock() {
   try {
-    const parsed = JSON.parse((0, import_node_fs2.readFileSync)(DAEMON_LOCK_FILE, "utf8"));
+    const parsed = JSON.parse((0, import_node_fs3.readFileSync)(DAEMON_LOCK_FILE, "utf8"));
     if (typeof parsed.pid === "number" && Number.isInteger(parsed.pid) && parsed.pid > 0) {
       return { pid: parsed.pid };
     }
@@ -53142,8 +72992,8 @@ function readDaemonLock() {
   return void 0;
 }
 function writeDaemonLock(pid) {
-  (0, import_node_fs2.mkdirSync)(DAEMON_DIR, { recursive: true });
-  (0, import_node_fs2.writeFileSync)(DAEMON_LOCK_FILE, JSON.stringify({ pid, startedAt: (/* @__PURE__ */ new Date()).toISOString() }));
+  (0, import_node_fs3.mkdirSync)(DAEMON_DIR, { recursive: true });
+  (0, import_node_fs3.writeFileSync)(DAEMON_LOCK_FILE, JSON.stringify({ pid, startedAt: (/* @__PURE__ */ new Date()).toISOString() }));
 }
 async function waitForDaemonHealth(timeoutMs) {
   const deadline = Date.now() + timeoutMs;
@@ -53157,7 +73007,7 @@ async function waitForDaemonHealth(timeoutMs) {
 function readDaemonEnvFile() {
   const env = {};
   try {
-    const lines = (0, import_node_fs2.readFileSync)((0, import_node_path2.join)(DAEMON_DIR, "daemon.env"), "utf8").split("\n");
+    const lines = (0, import_node_fs3.readFileSync)((0, import_node_path3.join)(DAEMON_DIR, "daemon.env"), "utf8").split("\n");
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith("#")) continue;
@@ -53170,13 +73020,13 @@ function readDaemonEnvFile() {
   return env;
 }
 function spawnDaemon() {
-  (0, import_node_fs2.mkdirSync)(DAEMON_DIR, { recursive: true });
-  const logFd = (0, import_node_fs2.openSync)(DAEMON_LOG_FILE, "a");
+  (0, import_node_fs3.mkdirSync)(DAEMON_DIR, { recursive: true });
+  const logFd = (0, import_node_fs3.openSync)(DAEMON_LOG_FILE, "a");
   const entry = process.argv[1];
   if (!entry) throw new Error("Cannot determine server entry point (process.argv[1] is empty)");
   const isTs = entry.endsWith(".ts");
   const args = [...isTs ? ["--experimental-strip-types"] : [], entry, "--http", "--bridge"];
-  const child = (0, import_node_child_process.spawn)(process.execPath, args, {
+  const child = (0, import_node_child_process2.spawn)(process.execPath, args, {
     detached: true,
     stdio: ["ignore", logFd, logFd],
     env: { ...process.env, ...readDaemonEnvFile() },
@@ -53185,7 +73035,7 @@ function spawnDaemon() {
     windowsHide: true
   });
   child.unref();
-  (0, import_node_fs2.closeSync)(logFd);
+  (0, import_node_fs3.closeSync)(logFd);
   return child.pid ?? -1;
 }
 async function ensureDaemon(localVersion, deps = {}) {
@@ -53296,7 +73146,7 @@ async function runStdioProxy(options) {
 `);
     }
   }
-  return new Promise((resolve3, reject) => {
+  return new Promise((resolve4, reject) => {
     let buffer = "";
     stdin.setEncoding("utf8");
     stdin.on("data", (chunk) => {
@@ -53319,7 +73169,7 @@ async function runStdioProxy(options) {
           }).catch(() => {
           });
         }
-        resolve3();
+        resolve4();
       }, reject);
     });
     stdin.on("error", reject);
@@ -54071,10 +73921,10 @@ async function extractDeckText(zipBuffer, slideIndices, includeNotes) {
 }
 
 // server/tools/shared.ts
-var import_node_fs3 = require("node:fs");
-var import_node_os2 = require("node:os");
-var import_node_path3 = require("node:path");
-var import_node_url = require("node:url");
+var import_node_fs4 = require("node:fs");
+var import_node_os3 = require("node:os");
+var import_node_path4 = require("node:path");
+var import_node_url2 = require("node:url");
 var localCopyCache = /* @__PURE__ */ new Map();
 var themeCache = /* @__PURE__ */ new Map();
 var sessionConcurrentWarnings = /* @__PURE__ */ new Map();
@@ -54150,13 +74000,13 @@ function globToRegExp(pattern) {
   return new RegExp(`^${escaped}$`, "i");
 }
 function toLocalFilePath(filePath) {
-  return filePath.startsWith("file://") ? (0, import_node_url.fileURLToPath)(filePath) : filePath;
+  return filePath.startsWith("file://") ? (0, import_node_url2.fileURLToPath)(filePath) : filePath;
 }
 async function getLocalCopyPath(connPool, target) {
   const filePath = target.filePath;
   if (filePath && !filePath.startsWith("http")) {
     const localPath = toLocalFilePath(filePath);
-    if (!(0, import_node_fs3.existsSync)(localPath)) throw new Error(`Local file not found: ${localPath}`);
+    if (!(0, import_node_fs4.existsSync)(localPath)) throw new Error(`Local file not found: ${localPath}`);
     return localPath;
   }
   const revCode = `
@@ -54167,7 +74017,7 @@ async function getLocalCopyPath(connPool, target) {
   `;
   const currentRevision = await connPool.sendCommand("executeCode", { code: revCode }, target.ws);
   const cached2 = localCopyCache.get(target.presentationId);
-  if (cached2 && cached2.revision === currentRevision && (0, import_node_fs3.existsSync)(cached2.localPath)) {
+  if (cached2 && cached2.revision === currentRevision && (0, import_node_fs4.existsSync)(cached2.localPath)) {
     return cached2.localPath;
   }
   const exportCode = `
@@ -54216,8 +74066,8 @@ async function getLocalCopyPath(connPool, target) {
   `;
   const base643 = await connPool.sendCommand("executeCode", { code: exportCode }, target.ws, 12e4);
   const filename = filePath ? decodeURIComponent(filePath.split("/").pop() || "presentation.pptx") : "presentation.pptx";
-  const dest = (0, import_node_path3.join)((0, import_node_os2.tmpdir)(), `pptbridge-${Date.now()}-${filename}`);
-  (0, import_node_fs3.writeFileSync)(dest, Buffer.from(base643, "base64"));
+  const dest = (0, import_node_path4.join)((0, import_node_os3.tmpdir)(), `pptbridge-${Date.now()}-${filename}`);
+  (0, import_node_fs4.writeFileSync)(dest, Buffer.from(base643, "base64"));
   localCopyCache.set(target.presentationId, { localPath: dest, revision: currentRevision });
   return dest;
 }
@@ -55650,7 +75500,7 @@ function registerExecTools(server, pool2, getSessionId, getActiveSessionCount) {
 }
 
 // server/tools/inspect.ts
-var import_node_fs4 = require("node:fs");
+var import_node_fs5 = require("node:fs");
 var import_jszip2 = __toESM(require_lib4(), 1);
 function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
@@ -55763,7 +75613,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
         return { content: [{ type: "text", text: JSON.stringify({ layouts: layouts2, usedOnly: true }) }] };
       }
       const localPath = await getLocalCopyPath(pool2, target);
-      const fileData = (0, import_node_fs4.readFileSync)(localPath);
+      const fileData = (0, import_node_fs5.readFileSync)(localPath);
       const zip = await import_jszip2.default.loadAsync(fileData);
       const layouts = await extractLayoutsFromZip(zip);
       try {
@@ -56060,13 +75910,13 @@ ${textParts.join("\n")}` : "\n(no text content)";
 }
 
 // server/tools/media.ts
-var import_node_fs6 = require("node:fs");
+var import_node_fs7 = require("node:fs");
 
 // server/icons.ts
-var import_node_fs5 = require("node:fs");
-var import_node_path4 = require("node:path");
-var import_node_url2 = require("node:url");
-var import_meta = {};
+var import_node_fs6 = require("node:fs");
+var import_node_path5 = require("node:path");
+var import_node_url3 = require("node:url");
+var import_meta2 = {};
 var MANIFEST_URL = "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/fonts/FluentSystemIcons-Regular.json";
 var CDN_BASE = "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/assets";
 var DEFAULT_SIZE = 16;
@@ -56101,8 +75951,8 @@ function buildIndexFromManifest(manifest) {
 }
 function loadStaticIndex() {
   try {
-    const dir = (0, import_node_path4.dirname)((0, import_node_url2.fileURLToPath)(import_meta.url));
-    const raw = (0, import_node_fs5.readFileSync)((0, import_node_path4.join)(dir, "icon-index.json"), "utf-8");
+    const dir = (0, import_node_path5.dirname)((0, import_node_url3.fileURLToPath)(import_meta2.url));
+    const raw = (0, import_node_fs6.readFileSync)((0, import_node_path5.join)(dir, "icon-index.json"), "utf-8");
     const data = JSON.parse(raw);
     return data.map((e) => ({
       name: e.n,
@@ -56246,7 +76096,7 @@ function registerMediaTools(server, pool2, getSessionId, getActiveSessionCount) 
     withTool(async ({ source, sourceType, slideIndex, left, top, width, height, color, presentationId }) => {
       let base64Data;
       if (sourceType === "file") {
-        base64Data = (0, import_node_fs6.readFileSync)(source).toString("base64");
+        base64Data = (0, import_node_fs7.readFileSync)(source).toString("base64");
       } else if (sourceType === "url") {
         const resp = await fetch(source);
         if (!resp.ok) {
@@ -56389,7 +76239,7 @@ return new Promise(function(resolve, reject) {
 }
 
 // server/tools/notes.ts
-var import_node_fs7 = require("node:fs");
+var import_node_fs8 = require("node:fs");
 var import_jszip3 = __toESM(require_lib4(), 1);
 
 // server/notes-helpers.ts
@@ -56608,7 +76458,7 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
     withTool(async ({ slideRange, presentationId }) => {
       const target = pool2.resolveTarget(presentationId);
       const localPath = await getLocalCopyPath(pool2, target);
-      const data = (0, import_node_fs7.readFileSync)(localPath);
+      const data = (0, import_node_fs8.readFileSync)(localPath);
       const zip = await import_jszip3.default.loadAsync(data);
       const indices = parseSlideRange(slideRange);
       const notesMap = await readNotesFromDeck(zip, indices);
@@ -56621,7 +76471,7 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
 }
 
 // server/tools/slides.ts
-var import_node_fs8 = require("node:fs");
+var import_node_fs9 = require("node:fs");
 var import_jszip4 = __toESM(require_lib4(), 1);
 function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
@@ -56677,7 +76527,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
       }
       const target = pool2.resolveTarget(presentationId);
       const localPath = await getLocalCopyPath(pool2, target);
-      const fileData = (0, import_node_fs8.readFileSync)(localPath);
+      const fileData = (0, import_node_fs9.readFileSync)(localPath);
       const zip = await import_jszip4.default.loadAsync(fileData);
       const layouts = await extractLayoutsFromZip(zip);
       const targetLower = layoutName.toLowerCase();
@@ -56947,7 +76797,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
 }
 
 // server/tools/text.ts
-var import_node_fs9 = require("node:fs");
+var import_node_fs10 = require("node:fs");
 function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
     "edit_shape_paragraphs",
@@ -57015,7 +76865,7 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
     withTool(async ({ slideRange, includeNotes, presentationId }) => {
       const target = pool2.resolveTarget(presentationId);
       const localPath = await getLocalCopyPath(pool2, target);
-      const zipBuffer = (0, import_node_fs9.readFileSync)(localPath);
+      const zipBuffer = (0, import_node_fs10.readFileSync)(localPath);
       const indices = slideRange ? parseSlideRange(slideRange) : null;
       const result = await extractDeckText(zipBuffer, indices, includeNotes === true);
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount());
@@ -58303,33 +78153,34 @@ function runVersionCheck(currentVersion) {
 }
 
 // server/index.ts
-var import_meta2 = {};
+var import_meta3 = {};
 var BRIDGE_DEFAULT_HTTP_PORT = 8080;
 var BRIDGE_DEFAULT_HTTPS_PORT = 8443;
 var MCP_HTTP_PORT = Number(process.env.MCP_PORT) || 3001;
 var MAX_HTTP_BODY_BYTES = 16 * 1024 * 1024;
-var SCRIPT_DIR = typeof __dirname !== "undefined" ? __dirname : (0, import_node_path5.dirname)((0, import_node_url3.fileURLToPath)(import_meta2.url));
-var PROJECT_ROOT = (0, import_node_path5.resolve)(SCRIPT_DIR, "..");
-var BRIDGE_CERT_PATH = process.env.BRIDGE_CERT_PATH || (0, import_node_path5.resolve)(PROJECT_ROOT, "certs", "localhost.pem");
-var BRIDGE_KEY_PATH = process.env.BRIDGE_KEY_PATH || (0, import_node_path5.resolve)(PROJECT_ROOT, "certs", "localhost-key.pem");
-var ADDIN_STATIC_DIR = (0, import_node_path5.resolve)(PROJECT_ROOT, "addin");
+var SCRIPT_DIR2 = typeof __dirname !== "undefined" ? __dirname : (0, import_node_path6.dirname)((0, import_node_url4.fileURLToPath)(import_meta3.url));
+var PROJECT_ROOT2 = (0, import_node_path6.resolve)(SCRIPT_DIR2, "..");
+var BRIDGE_CERT_PATH = process.env.BRIDGE_CERT_PATH || (0, import_node_path6.resolve)(PROJECT_ROOT2, "certs", "localhost.pem");
+var BRIDGE_KEY_PATH = process.env.BRIDGE_KEY_PATH || (0, import_node_path6.resolve)(PROJECT_ROOT2, "certs", "localhost-key.pem");
+var ADDIN_STATIC_DIR = (0, import_node_path6.resolve)(PROJECT_ROOT2, "addin");
 setManifestDir(ADDIN_STATIC_DIR);
 var PKG_VERSION = (() => {
   try {
-    return JSON.parse((0, import_node_fs10.readFileSync)((0, import_node_path5.resolve)(PROJECT_ROOT, "package.json"), "utf8")).version;
+    return JSON.parse((0, import_node_fs11.readFileSync)((0, import_node_path6.resolve)(PROJECT_ROOT2, "package.json"), "utf8")).version;
   } catch {
     return "0.0.0";
   }
 })();
 var cliArgs = process.argv.slice(2);
+var setupRequested = cliArgs[0] === "setup";
 var enableStdio = cliArgs.includes("--stdio");
 var enableHttp = cliArgs.includes("--http");
 var enableBridge = cliArgs.includes("--bridge");
 var enableStopDaemon = cliArgs.includes("--stop-daemon");
-var noFlagsGiven = !enableStdio && !enableHttp && !enableBridge;
-var stdioActive = (enableStdio || noFlagsGiven) && !enableStopDaemon;
-var httpActive = enableHttp;
-var bridgeActive = enableBridge;
+var noFlagsGiven = !enableStdio && !enableHttp && !enableBridge && !setupRequested;
+var stdioActive = (enableStdio || noFlagsGiven) && !enableStopDaemon && !setupRequested;
+var httpActive = enableHttp && !setupRequested;
+var bridgeActive = enableBridge && !setupRequested;
 if (stdioActive) {
   const stderrWrite = (...stderrArgs) => {
     process.stderr.write(`${stderrArgs.map(String).join(" ")}
@@ -58355,8 +78206,14 @@ Flags (composable):
   );
   process.exit(1);
 }
+if (setupRequested) {
+  runSetup().then(() => process.exit(0)).catch((err) => {
+    console.error(err instanceof Error ? err.message : String(err));
+    process.exit(1);
+  });
+}
 var bridgeTls = process.env.BRIDGE_TLS === "1";
-if (bridgeActive && bridgeTls && (!(0, import_node_fs10.existsSync)(BRIDGE_CERT_PATH) || !(0, import_node_fs10.existsSync)(BRIDGE_KEY_PATH))) {
+if (bridgeActive && bridgeTls && (!(0, import_node_fs11.existsSync)(BRIDGE_CERT_PATH) || !(0, import_node_fs11.existsSync)(BRIDGE_KEY_PATH))) {
   console.error(
     `Error: BRIDGE_TLS=1 but TLS certificate files not found.
   Expected: ${BRIDGE_CERT_PATH} and ${BRIDGE_KEY_PATH}
@@ -58366,17 +78223,17 @@ if (bridgeActive && bridgeTls && (!(0, import_node_fs10.existsSync)(BRIDGE_CERT_
 }
 var BRIDGE_PORT = Number(process.env.BRIDGE_PORT) || (bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT);
 function autoSideloadManifest(tls, port) {
-  const markerFile = (0, import_node_path5.resolve)(PROJECT_ROOT, ".sideloaded");
-  const pkgPath = (0, import_node_path5.resolve)(PROJECT_ROOT, "package.json");
+  const markerFile = (0, import_node_path6.resolve)(PROJECT_ROOT2, ".sideloaded");
+  const pkgPath = (0, import_node_path6.resolve)(PROJECT_ROOT2, "package.json");
   let currentVersion = "unknown";
   try {
-    const pkg = JSON.parse((0, import_node_fs10.readFileSync)(pkgPath, "utf8"));
+    const pkg = JSON.parse((0, import_node_fs11.readFileSync)(pkgPath, "utf8"));
     currentVersion = pkg.version;
   } catch {
   }
   const markerValue = `${currentVersion}:${port}`;
   try {
-    const existing = (0, import_node_fs10.readFileSync)(markerFile, "utf8").trim();
+    const existing = (0, import_node_fs11.readFileSync)(markerFile, "utf8").trim();
     if (existing === markerValue) {
       console.error("[sideload] Add-in already installed (use `npm run sideload` to update)");
       return;
@@ -58385,17 +78242,17 @@ function autoSideloadManifest(tls, port) {
   } catch {
   }
   const defaultPort = tls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT;
-  const wefDir = (0, import_node_path5.join)((0, import_node_os3.homedir)(), "Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef");
+  const wefDir = (0, import_node_path6.join)((0, import_node_os4.homedir)(), "Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef");
   const manifestName = tls ? "manifest-https.xml" : "manifest.xml";
-  const src = (0, import_node_path5.resolve)(ADDIN_STATIC_DIR, manifestName);
-  const dest = (0, import_node_path5.join)(wefDir, "manifest.xml");
+  const src = (0, import_node_path6.resolve)(ADDIN_STATIC_DIR, manifestName);
+  const dest = (0, import_node_path6.join)(wefDir, "manifest.xml");
   try {
-    if (!(0, import_node_fs10.existsSync)(src)) return;
-    const template = (0, import_node_fs10.readFileSync)(src, "utf8");
+    if (!(0, import_node_fs11.existsSync)(src)) return;
+    const template = (0, import_node_fs11.readFileSync)(src, "utf8");
     const content = substituteManifestPort(template, defaultPort, port);
-    (0, import_node_fs10.mkdirSync)(wefDir, { recursive: true });
-    (0, import_node_fs10.writeFileSync)(dest, content);
-    (0, import_node_fs10.writeFileSync)(markerFile, markerValue);
+    (0, import_node_fs11.mkdirSync)(wefDir, { recursive: true });
+    (0, import_node_fs11.writeFileSync)(dest, content);
+    (0, import_node_fs11.writeFileSync)(markerFile, markerValue);
     console.error("[sideload] Add-in manifest installed for PowerPoint");
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -58433,7 +78290,7 @@ var MIME_TYPES = {
   ".xml": "application/xml; charset=UTF-8"
 };
 function getMimeType(filePath) {
-  const ext = (0, import_node_path5.extname)(filePath);
+  const ext = (0, import_node_path6.extname)(filePath);
   return MIME_TYPES[ext] ?? "application/octet-stream";
 }
 var RequestBodyTooLargeError = class extends Error {
@@ -58448,7 +78305,7 @@ function respondJson(res, statusCode, payload) {
   res.end(JSON.stringify(payload));
 }
 function parseJsonBody(req) {
-  const { promise: promise2, resolve: resolve3, reject } = Promise.withResolvers();
+  const { promise: promise2, resolve: resolve4, reject } = Promise.withResolvers();
   const chunks = [];
   let receivedBytes = 0;
   let tooLarge = false;
@@ -58467,7 +78324,7 @@ function parseJsonBody(req) {
       return;
     }
     try {
-      resolve3(JSON.parse(Buffer.concat(chunks).toString()));
+      resolve4(JSON.parse(Buffer.concat(chunks).toString()));
     } catch {
       reject(new Error("Invalid JSON body"));
     }
@@ -58572,21 +78429,21 @@ function serveStatic(req, res) {
   }
   const urlPath = rawUrl === "/" ? "/index.html" : rawUrl;
   console.error(`[bridge] GET ${rawUrl}`);
-  const filePath = (0, import_node_path5.resolve)((0, import_node_path5.join)(ADDIN_STATIC_DIR, urlPath));
-  const relToStaticDir = (0, import_node_path5.relative)(ADDIN_STATIC_DIR, filePath);
-  if (relToStaticDir.startsWith("..") || (0, import_node_path5.resolve)(ADDIN_STATIC_DIR, relToStaticDir) !== filePath) {
+  const filePath = (0, import_node_path6.resolve)((0, import_node_path6.join)(ADDIN_STATIC_DIR, urlPath));
+  const relToStaticDir = (0, import_node_path6.relative)(ADDIN_STATIC_DIR, filePath);
+  if (relToStaticDir.startsWith("..") || (0, import_node_path6.resolve)(ADDIN_STATIC_DIR, relToStaticDir) !== filePath) {
     res.writeHead(403, { "Content-Type": "text/plain" });
     res.end("403 Forbidden");
     return;
   }
-  if (!(0, import_node_fs10.existsSync)(filePath)) {
+  if (!(0, import_node_fs11.existsSync)(filePath)) {
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("404 Not Found");
     return;
   }
-  const raw = (0, import_node_fs10.readFileSync)(filePath);
+  const raw = (0, import_node_fs11.readFileSync)(filePath);
   const mimeType = getMimeType(filePath);
-  const content = (0, import_node_path5.extname)(filePath) === ".xml" ? substituteManifestPort(
+  const content = (0, import_node_path6.extname)(filePath) === ".xml" ? substituteManifestPort(
     raw.toString(),
     bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT,
     BRIDGE_PORT
@@ -58600,12 +78457,12 @@ function serveStatic(req, res) {
 }
 if (bridgeActive) {
   autoSideloadManifest(bridgeTls, BRIDGE_PORT);
-  const bridgeServer = bridgeTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs10.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs10.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http.createServer)(serveStatic);
+  const bridgeServer = bridgeTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs11.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs11.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http.createServer)(serveStatic);
   const allowedOrigins = /* @__PURE__ */ new Set();
   for (const host of ["localhost", "127.0.0.1"]) {
     allowedOrigins.add(`${bridgeTls ? "https" : "http"}://${host}:${BRIDGE_PORT}`);
   }
-  for (const ifaces of Object.values((0, import_node_os3.networkInterfaces)())) {
+  for (const ifaces of Object.values((0, import_node_os4.networkInterfaces)())) {
     for (const iface of ifaces ?? []) {
       if (iface.family === "IPv4" && !iface.internal) {
         allowedOrigins.add(`${bridgeTls ? "https" : "http"}://${iface.address}:${BRIDGE_PORT}`);
@@ -58758,6 +78615,7 @@ if (enableStopDaemon) {
   });
 }
 if (stdioActive && !bridgeActive && !enableStopDaemon) {
+} else if (setupRequested) {
 } else {
   runVersionCheck(PKG_VERSION);
 }
@@ -58766,7 +78624,7 @@ var activeInterfaces = [
   httpActive && `HTTP(:${MCP_HTTP_PORT})`,
   bridgeActive && `Bridge(:${BRIDGE_PORT})`
 ].filter(Boolean).join(" + ");
-if (enableStopDaemon) {
+if (enableStopDaemon || setupRequested) {
 } else if (stdioActive && !bridgeActive) {
   console.error("office-live-mcp started [STDIO proxy \u2192 shared daemon]");
 } else {
@@ -58782,5 +78640,129 @@ content-type/index.js:
    * content-type
    * Copyright(c) 2015 Douglas Christopher Wilson
    * MIT Licensed
+   *)
+
+reflect-metadata/Reflect.js:
+  (*! *****************************************************************************
+  Copyright (C) Microsoft. All rights reserved.
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+  this file except in compliance with the License. You may obtain a copy of the
+  License at http://www.apache.org/licenses/LICENSE-2.0
+  
+  THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+  WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+  MERCHANTABLITY OR NON-INFRINGEMENT.
+  
+  See the Apache Version 2.0 License for specific language governing permissions
+  and limitations under the License.
+  ***************************************************************************** *)
+
+pvtsutils/build/index.js:
+  (*!
+   * MIT License
+   * 
+   * Copyright (c) 2017-2024 Peculiar Ventures, LLC
+   * 
+   * Permission is hereby granted, free of charge, to any person obtaining a copy
+   * of this software and associated documentation files (the "Software"), to deal
+   * in the Software without restriction, including without limitation the rights
+   * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   * copies of the Software, and to permit persons to whom the Software is
+   * furnished to do so, subject to the following conditions:
+   * 
+   * The above copyright notice and this permission notice shall be included in all
+   * copies or substantial portions of the Software.
+   * 
+   * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   * SOFTWARE.
+   * 
+   *)
+
+pvutils/build/utils.js:
+  (*!
+   Copyright (c) Peculiar Ventures, LLC
+  *)
+
+asn1js/build/index.js:
+  (*!
+   * Copyright (c) 2014, GMO GlobalSign
+   * Copyright (c) 2015-2022, Peculiar Ventures
+   * All rights reserved.
+   * 
+   * Author 2014-2019, Yury Strozhevsky
+   * 
+   * Redistribution and use in source and binary forms, with or without modification,
+   * are permitted provided that the following conditions are met:
+   * 
+   * * Redistributions of source code must retain the above copyright notice, this
+   *   list of conditions and the following disclaimer.
+   * 
+   * * Redistributions in binary form must reproduce the above copyright notice, this
+   *   list of conditions and the following disclaimer in the documentation and/or
+   *   other materials provided with the distribution.
+   * 
+   * * Neither the name of the copyright holder nor the names of its
+   *   contributors may be used to endorse or promote products derived from
+   *   this software without specific prior written permission.
+   * 
+   * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+   * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+   * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+   * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+   * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+   * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+   * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+   * 
+   *)
+
+tslib/tslib.es6.js:
+  (*! *****************************************************************************
+  Copyright (c) Microsoft Corporation.
+  
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted.
+  
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+  REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+  INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+  LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+  OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+  PERFORMANCE OF THIS SOFTWARE.
+  ***************************************************************************** *)
+
+@peculiar/x509/build/x509.cjs.js:
+  (*!
+   * MIT License
+   * 
+   * Copyright (c) Peculiar Ventures. All rights reserved.
+   * 
+   * Permission is hereby granted, free of charge, to any person obtaining a copy
+   * of this software and associated documentation files (the "Software"), to deal
+   * in the Software without restriction, including without limitation the rights
+   * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   * copies of the Software, and to permit persons to whom the Software is
+   * furnished to do so, subject to the following conditions:
+   * 
+   * The above copyright notice and this permission notice shall be included in all
+   * copies or substantial portions of the Software.
+   * 
+   * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   * SOFTWARE.
+   * 
    *)
 */

@@ -1,7 +1,30 @@
+// Isolate the daemon dir BEFORE importing the module under test: it reads
+// OLM_DAEMON_DIR at module load, and the real ~/.office-live-mcp/daemon.lock
+// (with a live PID when a daemon is running) would change the code paths.
+vi.hoisted(() => {
+  process.env.OLM_DAEMON_DIR = '/tmp/olm-stdio-proxy-test'
+  process.env.OLM_DAEMON_LOG = '/tmp/olm-stdio-proxy-test/daemon.log'
+})
+
+import { mkdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
 import { createServer, type Server } from 'node:http'
 import { PassThrough } from 'node:stream'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { type EnsureDaemonResult, ensureDaemon, parseSseMessages, runStdioProxy, stopDaemon } from './stdio-proxy.ts'
+
+const TEST_DAEMON_DIR = '/tmp/olm-stdio-proxy-test'
+const TEST_LOCK_FILE = `${TEST_DAEMON_DIR}/daemon.lock`
+
+beforeEach(() => {
+  // Fresh daemon dir per test so lock-file state never leaks between tests
+  // (or from a real running daemon).
+  rmSync(TEST_DAEMON_DIR, { recursive: true, force: true })
+  mkdirSync(TEST_DAEMON_DIR, { recursive: true })
+})
+
+afterAll(() => {
+  rmSync(TEST_DAEMON_DIR, { recursive: true, force: true })
+})
 
 // Each fake daemon binds an ephemeral port (listen(0)) and points the module
 // under test at it via MCP_PORT — no cross-test or cross-run port collisions,
@@ -133,6 +156,37 @@ describe('ensureDaemon', () => {
       expect(result.alreadyRunning).toBe(false)
       expect(result.health.version).toBe('0.6.0')
       expect(spawn).toHaveBeenCalledTimes(1)
+    } finally {
+      await closeServer(server)
+    }
+  })
+
+  it('skips spawning when a live process holds the lock, and still waits for health', async () => {
+    // Simulate another wrapper that just spawned the daemon: lock exists with
+    // a live PID, health appears a moment later.
+    writeFileSync(TEST_LOCK_FILE, JSON.stringify({ pid: process.pid }))
+    let healthy = false
+    const server = await startFakeDaemon({
+      health: () =>
+        healthy
+          ? { status: 200, body: { status: 'ok', version: '0.6.0', bridge: true } }
+          : { status: 503, body: { status: 'starting' } },
+    })
+    try {
+      const spawn = vi.fn(() => {
+        throw new Error('must not be called when the lock is held by a live process')
+      })
+      const result = ensureDaemon('0.6.0', { spawnDaemon: spawn }).then((r) => {
+        return r
+      })
+      // Health comes up after the check started.
+      setTimeout(() => {
+        healthy = true
+      }, 100)
+      const out = await result
+      expect(out.alreadyRunning).toBe(false)
+      expect(out.health.version).toBe('0.6.0')
+      expect(spawn).not.toHaveBeenCalled()
     } finally {
       await closeServer(server)
     }

@@ -14,6 +14,7 @@ import type { WebSocket } from 'ws'
 import { WebSocketServer } from 'ws'
 import { ConnectionPool } from './bridge.ts'
 import { substituteManifestPort } from './manifest.ts'
+import { runSetup } from './setup.ts'
 import { handleSharePointCatalog, setManifestDir } from './sharepoint-catalog.ts'
 import { runStdioProxy, stopDaemon } from './stdio-proxy.ts'
 import { clearSessionWarnings, registerTools } from './tools.ts'
@@ -49,16 +50,17 @@ const PKG_VERSION: string = (() => {
 // ---------------------------------------------------------------------------
 
 const cliArgs = process.argv.slice(2)
+const setupRequested = cliArgs[0] === 'setup'
 const enableStdio = cliArgs.includes('--stdio')
 const enableHttp = cliArgs.includes('--http')
 const enableBridge = cliArgs.includes('--bridge')
 const enableStopDaemon = cliArgs.includes('--stop-daemon')
 
 // Default: --stdio if no flags given
-const noFlagsGiven = !enableStdio && !enableHttp && !enableBridge
-const stdioActive = (enableStdio || noFlagsGiven) && !enableStopDaemon
-const httpActive = enableHttp
-const bridgeActive = enableBridge
+const noFlagsGiven = !enableStdio && !enableHttp && !enableBridge && !setupRequested
+const stdioActive = (enableStdio || noFlagsGiven) && !enableStopDaemon && !setupRequested
+const httpActive = enableHttp && !setupRequested
+const bridgeActive = enableBridge && !setupRequested
 
 // ---------------------------------------------------------------------------
 // Stderr redirect: when STDIO transport is active, all console output → stderr
@@ -93,6 +95,19 @@ Flags (composable):
   --bridge  HTTP/WS bridge server for PowerPoint add-in connection`,
   )
   process.exit(1)
+}
+
+// ---------------------------------------------------------------------------
+// Subcommand: setup (install add-in + print client config, then exit)
+// ---------------------------------------------------------------------------
+
+if (setupRequested) {
+  runSetup()
+    .then(() => process.exit(0))
+    .catch((err: unknown) => {
+      console.error(err instanceof Error ? err.message : String(err))
+      process.exit(1)
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -665,6 +680,8 @@ if (enableStopDaemon) {
 
 if (stdioActive && !bridgeActive && !enableStopDaemon) {
   // Proxy mode: the daemon owns the update check; the wrapper stays silent.
+} else if (setupRequested) {
+  // setup is a one-shot command; no update check or server summary.
 } else {
   runVersionCheck(PKG_VERSION)
 }
@@ -681,8 +698,8 @@ const activeInterfaces = [
   .filter(Boolean)
   .join(' + ')
 
-if (enableStopDaemon) {
-  // --stop-daemon runs a one-shot command; no server summary applies.
+if (enableStopDaemon || setupRequested) {
+  // One-shot commands; no server summary applies.
 } else if (stdioActive && !bridgeActive) {
   console.error('office-live-mcp started [STDIO proxy → shared daemon]')
 } else {
