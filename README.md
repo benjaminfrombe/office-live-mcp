@@ -4,7 +4,7 @@
 
 # Office Live MCP
 
-One MCP server that drives **live, open** Word, Excel and PowerPoint documents on macOS through Office.js.
+One MCP server that drives **live, open** Word, Excel and PowerPoint documents on macOS and Windows through Office.js.
 
 </div>
 
@@ -23,7 +23,7 @@ One bridge server, one add-in taskpane, three Office apps. The add-in detects wh
 - **Excel**: 32 new tools. Read and write ranges with values, formulas and number formats, inspect workbooks, format cells, manage worksheets, sort and find, tables, charts, conditional formatting, named ranges, data validation, comments, pivot refresh, sheet protection, plus `execute_exceljs`.
 - **Word**: 26 new tools. Read and edit paragraphs, styles and formatting, search and replace, tables, comments, page breaks, tracked changes (read), selection, save, plus `execute_wordjs`.
 
-That is 85 tools on one server. Anything the typed tools do not cover, the execute escape hatch handles with raw Office.js in the right host.
+That is 86 tools on one server. Anything the typed tools do not cover, the execute escape hatch handles with raw Office.js in the right host.
 
 ## Why live matters
 
@@ -116,7 +116,7 @@ Notes:
 
 Two layers, because they catch different bugs.
 
-The mock suite (375 tests) verifies tool registration, argument handling and the generated Office.js code. It is fast and runs on every change.
+The mock suite (411 tests) verifies tool registration, argument handling and the generated Office.js code, plus the stdio→daemon proxy (auto-start, session handling, SSE parsing, stop). It is fast and runs on every change.
 
 The live suite runs every tool against a real open document. This is where the mock tests turned out to be insufficient: live testing caught three real API bugs the mocks could never find. `Range.findAllOrNullObject` does not exist on this host, `DataValidationRule` takes a type-keyed object rather than a `{ type, ... }` envelope, and calculation lives on `workbook.application`, not `workbook`. All fixed and now covered by both layers.
 
@@ -133,7 +133,7 @@ Full attribution in [NOTICE](NOTICE).
 
 ## Status
 
-Working on macOS with desktop Word, Excel and PowerPoint. PowerPoint Web works for the upstream tool set. The Word and Excel tool surfaces are young: they cover what I actually needed, and the escape hatch covers the rest. Expect rough edges and please open issues on the fork.
+Working on macOS with desktop Word, Excel and PowerPoint, and verified on Windows 11 ARM64 (Parallels) with PowerPoint: stdio auto-daemon, OpenCode as MCP client, and live edits through the add-in. PowerPoint Web works for the upstream tool set. The Word and Excel tool surfaces are young: they cover what I actually needed, and the escape hatch covers the rest. Expect rough edges and please open issues.
 
 ## License
 
