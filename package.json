@@ -1,7 +1,7 @@
 {
   "name": "office-live-mcp",
   "version": "0.6.0",
-  "description": "MCP server that lets AI assistants manipulate live PowerPoint presentations via Office.js",
+  "description": "MCP server that lets AI assistants manipulate live, open Word, Excel and PowerPoint documents via Office.js",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -24,16 +24,19 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kzarzycki/powerpoint-mcp.git"
+    "url": "git+https://github.com/benjaminfrombe/office-live-mcp.git"
   },
-  "homepage": "https://github.com/kzarzycki/powerpoint-mcp#readme",
+  "homepage": "https://github.com/benjaminfrombe/office-live-mcp#readme",
   "bugs": {
-    "url": "https://github.com/kzarzycki/powerpoint-mcp/issues"
+    "url": "https://github.com/benjaminfrombe/office-live-mcp/issues"
   },
   "keywords": [
     "mcp",
     "mcp-server",
     "powerpoint",
+    "word",
+    "excel",
+    "office",
     "office-js",
     "live-editing",
     "presentation",
