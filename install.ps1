@@ -10,6 +10,19 @@
 #   4. Prints the one remaining manual step (Office requires it)
 
 $ErrorActionPreference = 'Stop'
+function Invoke-NpmSafe {
+    param([string[]]$NpmArgs)
+    # npm.cmd writes progress to stderr; under $ErrorActionPreference='Stop'
+    # a redirected native stderr would throw spuriously. Run with Continue.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $npm @NpmArgs 2>&1 | ForEach-Object { "$_" } | Write-Host
+        return $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+}
 
 function Write-Step([string]$msg) { Write-Host "[installer] $msg" -ForegroundColor Cyan }
 
@@ -75,7 +88,13 @@ Write-Step "Node/npm found: $npm"
 
 $pkg = 'office-live-mcp'
 $installUrl = $null
-$prefix = & $npm prefix -g
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+    $prefix = (& $npm prefix -g 2>$null | Where-Object { $_ } | Select-Object -First 1).Trim()
+} finally {
+    $ErrorActionPreference = $prevEap
+}
 $installedDir = Join-Path $prefix "node_modules\$pkg"
 if (Test-Path (Join-Path $installedDir 'package.json')) {
     Write-Step "$pkg is already installed - updating..."
@@ -83,11 +102,11 @@ if (Test-Path (Join-Path $installedDir 'package.json')) {
     Write-Step "$pkg is not installed yet."
 }
 Write-Step "Installing $pkg (npm registry first, GitHub fallback)..."
-& $npm install -g $pkg 2>$null
-if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $installedDir 'package.json'))) {
+$null = Invoke-NpmSafe @('install', '-g', $pkg)
+if (-not (Test-Path (Join-Path $installedDir 'package.json'))) {
     Write-Step "npm registry install failed or unavailable - installing from GitHub..."
-    & $npm install -g 'https://github.com/benjaminfrombe/office-live-mcp/archive/refs/heads/main.tar.gz'
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $installedDir 'package.json'))) {
+    $null = Invoke-NpmSafe @('install', '-g', 'https://github.com/benjaminfrombe/office-live-mcp/archive/refs/heads/main.tar.gz')
+    if (-not (Test-Path (Join-Path $installedDir 'package.json'))) {
         Write-Host "[installer] Installation failed. See the npm output above." -ForegroundColor Red
         exit 1
     }
