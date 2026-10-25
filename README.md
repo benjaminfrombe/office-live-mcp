@@ -159,12 +159,12 @@ Already installed the package yourself? Then all you need is:
 office-live-mcp setup
 ```
 
-Verified on Windows 11 (ARM64, Office Insider 16.0.20430) in a Parallels VM. Recent Windows Office builds reject the old sideload shortcuts (Developer-registry manifests only load under a debugger, the new "Apps" storefront never queries custom catalogs, and neither the classic nor the new dialog offers an "Upload My Add-in" option), so the supported route is a **shared folder catalog** — `setup` automates all of it.
+Verified on Windows 11 (ARM64, Office Insider 16.0.20527). Recent Windows Office builds reject the old sideload shortcuts (Developer-registry manifests only load under a debugger, the new "Apps" storefront never queries custom catalogs, and neither the classic nor the new dialog offers an "Upload My Add-in" option), so the supported route is a **shared folder catalog** — `setup` automates all of it.
 
 What it does:
 
 1. Copies `dist/` and `addin/` to `%LOCALAPPDATA%\office-live-mcp`, keeping only the manifest variants that match the daemon transport (HTTPS or plain) so the catalog lists exactly one add-in per Office app.
-2. Registers a trusted add-in catalog in the registry (HKCU, no elevation needed) pointing at that folder through a UNC path. Office only trusts network paths for custom add-ins — that is a Microsoft requirement. In practice no share has to be created: setup uses, in order, an `OLM_CATALOG_UNC` override → the Parallels host share when running from `\\Mac\Home\...` → a dedicated `OfficeLiveMCP` share (created automatically in an elevated terminal) → the built-in admin share (`\\localhost\C$`), which exists by default on admin machines.
+2. Registers a trusted add-in catalog in the registry (HKCU, no elevation needed) pointing at that folder through a UNC path. Office only trusts network paths for custom add-ins — that is a Microsoft requirement. In practice no share has to be created: setup uses, in order, an `OLM_CATALOG_UNC` override → a dedicated `OfficeLiveMCP` share (created automatically in an elevated terminal) → the built-in admin share (`\\localhost\C$`), which exists by default on admin machines.
 3. Prints the ready-to-paste MCP client config.
 
 Then the one step no installer can do, because Office requires it:
@@ -201,7 +201,7 @@ Full attribution in [NOTICE](NOTICE).
 
 ## Status
 
-Working on macOS with desktop Word, Excel and PowerPoint, and verified on Windows 11 ARM64 (Parallels) with PowerPoint: stdio auto-daemon, OpenCode as MCP client, and live edits through the add-in. PowerPoint Web works for the upstream tool set. The Word and Excel tool surfaces are young: they cover what I actually needed, and the escape hatch covers the rest. Expect rough edges and please open issues.
+Working on macOS with desktop Word, Excel and PowerPoint, and verified on Windows 11 ARM64 with PowerPoint: stdio auto-daemon, OpenCode and Claude Desktop as MCP clients, and live edits through the add-in. PowerPoint Web works for the upstream tool set. The Word and Excel tool surfaces are young: they cover what I actually needed, and the escape hatch covers the rest. Expect rough edges and please open issues.
 
 ## License
 
