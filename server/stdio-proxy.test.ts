@@ -226,7 +226,11 @@ describe('runStdioProxy', () => {
     stdout.on('data', (c: Buffer) => chunks.push(c.toString()))
 
     const ensure = vi.fn<() => Promise<EnsureDaemonResult>>(() =>
-      Promise.resolve({ alreadyRunning: true, health: { status: 'ok', version: '0.6.0' } }),
+      Promise.resolve({
+        alreadyRunning: true,
+        health: { status: 'ok', version: '0.6.0' },
+        base: `http://127.0.0.1:${process.env.MCP_PORT}`,
+      }),
     )
 
     const done = runStdioProxy({ stdin, stdout, localVersion: '0.6.0', ensure })
@@ -270,7 +274,7 @@ describe('runStdioProxy', () => {
       stdin,
       stdout,
       localVersion: '0.6.0',
-      ensure: () => Promise.resolve({ alreadyRunning: true, health: { status: 'ok' } }),
+      ensure: () => Promise.resolve({ alreadyRunning: true, health: { status: 'ok' }, base: 'http://127.0.0.1:8792' }),
     })
 
     stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 7, method: 'tools/list', params: {} })}\n`)

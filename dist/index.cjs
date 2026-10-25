@@ -72969,6 +72969,9 @@ var DAEMON_POLL_INTERVAL_MS = 200;
 function mcpHttpBase() {
   return `http://127.0.0.1:${Number(process.env.MCP_PORT) || 8792}`;
 }
+function bridgeHttpBase() {
+  return `http://127.0.0.1:${Number(process.env.BRIDGE_PORT) || 8790}`;
+}
 var DAEMON_DIR = process.env.OLM_DAEMON_DIR || (0, import_node_path3.join)((0, import_node_os2.homedir)(), ".office-live-mcp");
 var DAEMON_LOCK_FILE = (0, import_node_path3.join)(DAEMON_DIR, "daemon.lock");
 var DAEMON_LOG_FILE = process.env.OLM_DAEMON_LOG || (0, import_node_path3.join)(DAEMON_DIR, "daemon.log");
@@ -72980,6 +72983,23 @@ async function fetchDaemonHealth(timeoutMs = HEALTH_TIMEOUT_MS) {
   } catch {
     return void 0;
   }
+}
+async function fetchBridgeHealth(timeoutMs = HEALTH_TIMEOUT_MS) {
+  try {
+    const res = await fetch(`${bridgeHttpBase()}/health`, { signal: AbortSignal.timeout(timeoutMs) });
+    if (!res.ok) return void 0;
+    const health = await res.json();
+    return health.mcp === true ? health : void 0;
+  } catch {
+    return void 0;
+  }
+}
+async function discoverMcpEndpoint() {
+  const daemon = await fetchDaemonHealth();
+  if (daemon) return mcpHttpBase();
+  const bridge = await fetchBridgeHealth();
+  if (bridge) return bridgeHttpBase();
+  return void 0;
 }
 function isPidAlive(pid) {
   try {
@@ -73007,7 +73027,9 @@ async function waitForDaemonHealth(timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const health = await fetchDaemonHealth();
-    if (health) return health;
+    if (health) return { health, base: mcpHttpBase() };
+    const bridge = await fetchBridgeHealth();
+    if (bridge) return { health: bridge, base: bridgeHttpBase() };
     await new Promise((r) => setTimeout(r, DAEMON_POLL_INTERVAL_MS));
   }
   return void 0;
@@ -73049,10 +73071,11 @@ function spawnDaemon() {
 async function ensureDaemon(localVersion, deps = {}) {
   const spawnFn = deps.spawnDaemon ?? spawnDaemon;
   const startTimeoutMs = deps.startTimeoutMs ?? DAEMON_START_TIMEOUT_MS;
-  let health = await fetchDaemonHealth();
-  if (health) {
-    warnOnVersionSkew(health, localVersion, false);
-    return { alreadyRunning: true, health };
+  const existingBase = await discoverMcpEndpoint();
+  if (existingBase) {
+    const existingHealth = await fetchDaemonHealth();
+    if (existingHealth) warnOnVersionSkew(existingHealth, localVersion, false);
+    return { alreadyRunning: true, health: existingHealth ?? { status: "ok" }, base: existingBase };
   }
   const lock = readDaemonLock();
   const lockHeldByLiveProcess = lock !== void 0 && isPidAlive(lock.pid);
@@ -73060,14 +73083,14 @@ async function ensureDaemon(localVersion, deps = {}) {
     const pid = spawnFn();
     if (pid > 0) writeDaemonLock(pid);
   }
-  health = await waitForDaemonHealth(startTimeoutMs);
-  if (!health) {
+  const found = await waitForDaemonHealth(startTimeoutMs);
+  if (!found) {
     throw new Error(
       `office-live-mcp daemon did not become healthy within ${startTimeoutMs / 1e3}s (check ${DAEMON_LOG_FILE})`
     );
   }
-  warnOnVersionSkew(health, localVersion, true);
-  return { alreadyRunning: false, health };
+  warnOnVersionSkew(found.health, localVersion, true);
+  return { alreadyRunning: false, health: found.health, base: found.base };
 }
 function warnOnVersionSkew(health, localVersion, started) {
   if (health.version && health.version !== localVersion) {
@@ -73103,7 +73126,7 @@ async function runStdioProxy(options) {
   const stdin = options.stdin ?? process.stdin;
   const stdout = options.stdout ?? process.stdout;
   const ensure = options.ensure ?? (() => ensureDaemon(options.localVersion));
-  const { alreadyRunning } = await ensure();
+  const { alreadyRunning, base } = await ensure();
   if (!alreadyRunning) {
     console.error("[stdio-proxy] Daemon started (detached); it stays up after this session ends.");
   }
@@ -73132,7 +73155,7 @@ async function runStdioProxy(options) {
       Accept: "application/json, text/event-stream"
     };
     if (sessionId) headers["Mcp-Session-Id"] = sessionId;
-    const res = await fetch(`${mcpHttpBase()}/mcp`, {
+    const res = await fetch(`${base}/mcp`, {
       method: "POST",
       headers,
       body: raw
@@ -73171,7 +73194,7 @@ async function runStdioProxy(options) {
     stdin.on("end", () => {
       queue.then(() => {
         if (sessionId) {
-          fetch(`${mcpHttpBase()}/mcp`, {
+          fetch(`${base}/mcp`, {
             method: "DELETE",
             headers: { "Mcp-Session-Id": sessionId }
           }).catch(() => {
@@ -78422,7 +78445,20 @@ function serveStatic(req, res) {
   }
   if (rawUrl === "/health" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "ok", connections: pool.size }));
+    res.end(JSON.stringify({ status: "ok", connections: pool.size, bridge: true, mcp: true, version: PKG_VERSION }));
+    return;
+  }
+  if (rawUrl === "/mcp") {
+    if (req.method === "POST") {
+      void handleMcpPost(req, res);
+    } else if (req.method === "GET") {
+      void handleMcpGet(req, res);
+    } else if (req.method === "DELETE") {
+      void handleMcpDelete(req, res);
+    } else {
+      res.writeHead(405);
+      res.end();
+    }
     return;
   }
   if (req.method === "OPTIONS") {
@@ -78463,7 +78499,7 @@ function serveStatic(req, res) {
   });
   res.end(content);
 }
-function startBridgeServer() {
+function startBridgeServer(onListening) {
   autoSideloadManifest(bridgeTls, BRIDGE_PORT);
   const useTls = bridgeTls && (0, import_node_fs11.existsSync)(BRIDGE_CERT_PATH) && (0, import_node_fs11.existsSync)(BRIDGE_KEY_PATH);
   const bridgeServer = useTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs11.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs11.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http.createServer)(serveStatic);
@@ -78534,16 +78570,35 @@ function startBridgeServer() {
   const bridgeScheme = useTls ? "https" : "http";
   const bridgeWsScheme = useTls ? "wss" : "ws";
   bridgeServer.on("error", (err) => {
-    if (err.code === "EADDRINUSE") {
-      console.error(`Error: Port ${BRIDGE_PORT} is already in use. Another bridge instance may be running.`);
+    if (err.code !== "EADDRINUSE") {
+      throw err;
+    }
+    console.error(`[bridge] Port ${BRIDGE_PORT} is already in use.`);
+    if (!stdioActive) {
+      console.error("Another bridge instance may be running. Exiting.");
       process.exit(1);
     }
-    throw err;
+    void discoverMcpEndpoint().then((base) => {
+      if (!base) {
+        console.error("No office-live-mcp MCP endpoint found on the bridge port. Exiting.");
+        process.exit(1);
+      }
+      console.error(`[bridge] Relaying MCP stdio to the existing bridge at ${base}/mcp`);
+      runStdioProxy({
+        localVersion: PKG_VERSION,
+        ensure: async () => ({ alreadyRunning: true, health: { status: "ok" }, base })
+      }).then(() => process.exit(0)).catch((relayErr) => {
+        console.error(`MCP STDIO relay failed: ${relayErr instanceof Error ? relayErr.message : String(relayErr)}`);
+        process.exit(1);
+      });
+    }).catch(() => process.exit(1));
   });
   bridgeServer.listen(BRIDGE_PORT, process.env.BRIDGE_HOST || "127.0.0.1", () => {
     console.error("Bridge server running");
     console.error(`  ${bridgeScheme.toUpperCase()}: ${bridgeScheme}://localhost:${BRIDGE_PORT}`);
     console.error(`  ${bridgeWsScheme.toUpperCase()}:  ${bridgeWsScheme}://localhost:${BRIDGE_PORT}`);
+    console.error(`  MCP:  ${bridgeScheme}://localhost:${BRIDGE_PORT}/mcp`);
+    onListening?.();
   });
 }
 function startMcpHttpServer() {
@@ -78597,8 +78652,18 @@ function startMcpHttpServer() {
     console.error(`  MCP HTTP: http://localhost:${MCP_HTTP_PORT}/mcp`);
   });
 }
-if (bridgeActive) startBridgeServer();
+if (bridgeActive && !stdioActive) startBridgeServer();
 if (httpActive) startMcpHttpServer();
+function connectInProcessStdio(logLine) {
+  const stdioTransport = new StdioServerTransport();
+  const stdioMcpServer = createMcpServer(
+    () => "stdio",
+    () => 1
+  );
+  stdioMcpServer.connect(stdioTransport).then(() => {
+    console.error(logLine);
+  });
+}
 if (enableStopDaemon) {
   stopDaemon().then((wasRunning) => {
     if (wasRunning) {
@@ -78616,30 +78681,22 @@ if (enableStopDaemon) {
     httpActive = true;
     bridgeActive = true;
     try {
-      startBridgeServer();
       startMcpHttpServer();
+      startBridgeServer(() => connectInProcessStdio("MCP STDIO transport running (in-process bridge fallback)"));
     } catch (startErr) {
       console.error(`MCP STDIO fallback failed: ${startErr instanceof Error ? startErr.message : String(startErr)}`);
       process.exit(1);
     }
-    const stdioTransport = new StdioServerTransport();
-    const stdioMcpServer = createMcpServer(
-      () => "stdio",
-      () => 1
-    );
-    stdioMcpServer.connect(stdioTransport).then(() => {
-      console.error("MCP STDIO transport running (in-process bridge fallback)");
-    });
   });
 } else if (stdioActive) {
-  const stdioTransport = new StdioServerTransport();
-  const stdioMcpServer = createMcpServer(
-    () => "stdio",
-    () => 1
-  );
-  stdioMcpServer.connect(stdioTransport).then(() => {
-    console.error("MCP STDIO transport running (legacy in-process mode, --bridge active)");
-  });
+  try {
+    startBridgeServer(
+      () => connectInProcessStdio("MCP STDIO transport running (legacy in-process mode, --bridge active)")
+    );
+  } catch (startErr) {
+    console.error(`MCP STDIO startup failed: ${startErr instanceof Error ? startErr.message : String(startErr)}`);
+    process.exit(1);
+  }
 }
 if (stdioActive && !bridgeActive && !enableStopDaemon) {
 } else if (setupRequested) {

@@ -16,7 +16,7 @@ import { ConnectionPool } from './bridge.ts'
 import { substituteManifestPort } from './manifest.ts'
 import { runSetup } from './setup.ts'
 import { handleSharePointCatalog, setManifestDir } from './sharepoint-catalog.ts'
-import { runStdioProxy, stopDaemon } from './stdio-proxy.ts'
+import { discoverMcpEndpoint, runStdioProxy, stopDaemon } from './stdio-proxy.ts'
 import { clearSessionWarnings, registerTools } from './tools.ts'
 import { runVersionCheck } from './version-check.ts'
 
@@ -391,9 +391,28 @@ function serveStatic(req: IncomingMessage, res: ServerResponse): void {
   // /health is polled by the e2e harness via Node fetch (CORS does not apply there).
   // It must NOT carry Access-Control-Allow-Origin / Access-Control-Allow-Private-Network,
   // so a page on a public origin cannot read its body (which leaks the live connection count).
+  // `mcp: true` also lets stdio wrappers discover that this bridge serves /mcp
+  // (MCP-on-the-bridge) and relay to it instead of spawning a doomed daemon.
   if (rawUrl === '/health' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ status: 'ok', connections: pool.size }))
+    res.end(JSON.stringify({ status: 'ok', connections: pool.size, bridge: true, mcp: true, version: PKG_VERSION }))
+    return
+  }
+
+  // MCP-on-the-bridge: any process that owns the bridge also serves MCP over
+  // HTTP on the same port, so other harness sessions (and harnesses) can
+  // relay to it. Same handlers as the dedicated MCP HTTP server.
+  if (rawUrl === '/mcp') {
+    if (req.method === 'POST') {
+      void handleMcpPost(req, res)
+    } else if (req.method === 'GET') {
+      void handleMcpGet(req, res)
+    } else if (req.method === 'DELETE') {
+      void handleMcpDelete(req, res)
+    } else {
+      res.writeHead(405)
+      res.end()
+    }
     return
   }
 
@@ -455,7 +474,7 @@ function serveStatic(req: IncomingMessage, res: ServerResponse): void {
 // Start: Bridge server (HTTP or HTTPS based on BRIDGE_TLS)
 // ---------------------------------------------------------------------------
 
-function startBridgeServer(): void {
+function startBridgeServer(onListening?: () => void): void {
   autoSideloadManifest(bridgeTls, BRIDGE_PORT)
 
   // The fallback path can start the bridge after module load; re-check the
@@ -565,17 +584,46 @@ function startBridgeServer(): void {
   const bridgeWsScheme = useTls ? 'wss' : 'ws'
 
   bridgeServer.on('error', (err: NodeJS.ErrnoException) => {
-    if (err.code === 'EADDRINUSE') {
-      console.error(`Error: Port ${BRIDGE_PORT} is already in use. Another bridge instance may be running.`)
+    if (err.code !== 'EADDRINUSE') {
+      throw err
+    }
+    console.error(`[bridge] Port ${BRIDGE_PORT} is already in use.`)
+    if (!stdioActive) {
+      // Daemon/bridge-only mode: the loser must die so the winner keeps
+      // serving; the wrapper that spawned us finds the winner via /health.
+      console.error('Another bridge instance may be running. Exiting.')
       process.exit(1)
     }
-    throw err
+    // We are a stdio session (e.g. Claude Desktop's extension host spawns one
+    // process per session) and another office-live-mcp process already owns
+    // the bridge — and with it the add-in. Instead of dying, relay this
+    // session's MCP traffic to that bridge's /mcp endpoint.
+    void discoverMcpEndpoint()
+      .then((base) => {
+        if (!base) {
+          console.error('No office-live-mcp MCP endpoint found on the bridge port. Exiting.')
+          process.exit(1)
+        }
+        console.error(`[bridge] Relaying MCP stdio to the existing bridge at ${base}/mcp`)
+        runStdioProxy({
+          localVersion: PKG_VERSION,
+          ensure: async () => ({ alreadyRunning: true, health: { status: 'ok' }, base }),
+        })
+          .then(() => process.exit(0))
+          .catch((relayErr: unknown) => {
+            console.error(`MCP STDIO relay failed: ${relayErr instanceof Error ? relayErr.message : String(relayErr)}`)
+            process.exit(1)
+          })
+      })
+      .catch(() => process.exit(1))
   })
 
   bridgeServer.listen(BRIDGE_PORT, process.env.BRIDGE_HOST || '127.0.0.1', () => {
     console.error('Bridge server running')
     console.error(`  ${bridgeScheme.toUpperCase()}: ${bridgeScheme}://localhost:${BRIDGE_PORT}`)
     console.error(`  ${bridgeWsScheme.toUpperCase()}:  ${bridgeWsScheme}://localhost:${BRIDGE_PORT}`)
+    console.error(`  MCP:  ${bridgeScheme}://localhost:${BRIDGE_PORT}/mcp`)
+    onListening?.()
   })
 }
 
@@ -642,21 +690,39 @@ function startMcpHttpServer(): void {
   })
 }
 
-// Start the transport servers per the CLI flags. (The stdio proxy path can
-// start them later via its in-process fallback.)
-if (bridgeActive) startBridgeServer()
+// Start the transport servers per the CLI flags. (The stdio paths start the
+// bridge themselves so they can wire the on-listening callback and the
+// EADDRINUSE relay; the stdio proxy can also start them later via its
+// in-process fallback.)
+if (bridgeActive && !stdioActive) startBridgeServer()
 if (httpActive) startMcpHttpServer()
 
 // ---------------------------------------------------------------------------
 // Start: STDIO MCP transport
 //
 // Two modes:
-//  - `--stdio --bridge` (legacy): everything in one process. Only works for a
-//    single harness session — a second session's bridge dies on EADDRINUSE.
 //  - `--stdio` (default): ensure a detached shared daemon (--http --bridge)
 //    and proxy stdio JSON-RPC to its HTTP MCP endpoint. Multiple harnesses
-//    share one daemon, which also serves the Office add-in.
+//    share one daemon, which also serves the Office add-in. When the daemon
+//    cannot start (Claude Desktop's sandboxed extension host kills detached
+//    spawns), the wrapper falls back to in-process bridge mode — and when
+//    even that hits EADDRINUSE (another session already owns the bridge),
+//    it relays MCP to that bridge's /mcp endpoint.
+//  - `--stdio --bridge`: in-process from the start; same EADDRINUSE relay
+//    when a sibling session already owns the bridge. This is what the
+//    Claude Desktop extension uses, which spawns one process per session.
 // ---------------------------------------------------------------------------
+
+function connectInProcessStdio(logLine: string): void {
+  const stdioTransport = new StdioServerTransport()
+  const stdioMcpServer = createMcpServer(
+    () => 'stdio',
+    () => 1,
+  )
+  stdioMcpServer.connect(stdioTransport).then(() => {
+    console.error(logLine)
+  })
+}
 
 if (enableStopDaemon) {
   stopDaemon().then((wasRunning) => {
@@ -681,30 +747,24 @@ if (enableStopDaemon) {
       httpActive = true
       bridgeActive = true
       try {
-        startBridgeServer()
         startMcpHttpServer()
+        // MCP over stdio connects only once the bridge actually listens; on
+        // EADDRINUSE the bridge's error handler relays to the existing owner.
+        startBridgeServer(() => connectInProcessStdio('MCP STDIO transport running (in-process bridge fallback)'))
       } catch (startErr: unknown) {
         console.error(`MCP STDIO fallback failed: ${startErr instanceof Error ? startErr.message : String(startErr)}`)
         process.exit(1)
       }
-      const stdioTransport = new StdioServerTransport()
-      const stdioMcpServer = createMcpServer(
-        () => 'stdio',
-        () => 1,
-      )
-      stdioMcpServer.connect(stdioTransport).then(() => {
-        console.error('MCP STDIO transport running (in-process bridge fallback)')
-      })
     })
 } else if (stdioActive) {
-  const stdioTransport = new StdioServerTransport()
-  const stdioMcpServer = createMcpServer(
-    () => 'stdio',
-    () => 1,
-  )
-  stdioMcpServer.connect(stdioTransport).then(() => {
-    console.error('MCP STDIO transport running (legacy in-process mode, --bridge active)')
-  })
+  try {
+    startBridgeServer(() =>
+      connectInProcessStdio('MCP STDIO transport running (legacy in-process mode, --bridge active)'),
+    )
+  } catch (startErr: unknown) {
+    console.error(`MCP STDIO startup failed: ${startErr instanceof Error ? startErr.message : String(startErr)}`)
+    process.exit(1)
+  }
 }
 
 // ---------------------------------------------------------------------------

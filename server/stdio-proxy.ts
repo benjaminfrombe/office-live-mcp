@@ -31,6 +31,15 @@ function mcpHttpBase(): string {
   return `http://127.0.0.1:${Number(process.env.MCP_PORT) || 8792}`
 }
 
+/**
+ * Base URL of the bridge server. The bridge serves the Office add-in and —
+ * in every build since MCP-on-the-bridge — also exposes /mcp, so any process
+ * that owns the bridge can serve MCP to other harness sessions.
+ */
+function bridgeHttpBase(): string {
+  return `http://127.0.0.1:${Number(process.env.BRIDGE_PORT) || 8790}`
+}
+
 const DAEMON_DIR = process.env.OLM_DAEMON_DIR || join(homedir(), '.office-live-mcp')
 const DAEMON_LOCK_FILE = join(DAEMON_DIR, 'daemon.lock')
 const DAEMON_LOG_FILE = process.env.OLM_DAEMON_LOG || join(DAEMON_DIR, 'daemon.log')
@@ -43,6 +52,8 @@ export interface DaemonHealth {
   status: string
   version?: string
   bridge?: boolean
+  /** True on bridge /health responses of builds that serve /mcp on the bridge port. */
+  mcp?: boolean
   [key: string]: unknown
 }
 
@@ -55,6 +66,38 @@ export async function fetchDaemonHealth(timeoutMs = HEALTH_TIMEOUT_MS): Promise<
   } catch {
     return undefined
   }
+}
+
+/**
+ * Probe the bridge's /health endpoint. Only matches when the listener is an
+ * office-live-mcp bridge that also serves /mcp on the same port (health.mcp
+ * === true), so a foreign app that happens to sit on the port is ignored.
+ * Plain-HTTP only: TLS setups always run a daemon, whose MCP endpoint is
+ * reachable over plain HTTP on the MCP port and found first.
+ */
+export async function fetchBridgeHealth(timeoutMs = HEALTH_TIMEOUT_MS): Promise<DaemonHealth | undefined> {
+  try {
+    const res = await fetch(`${bridgeHttpBase()}/health`, { signal: AbortSignal.timeout(timeoutMs) })
+    if (!res.ok) return undefined
+    const health = (await res.json()) as DaemonHealth
+    return health.mcp === true ? health : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Find any live office-live-mcp MCP endpoint: the shared daemon's HTTP server
+ * (MCP port) or — when no daemon exists — a bridge that serves /mcp itself
+ * (e.g. Claude Desktop's in-process extension bridge). Returns the base URL
+ * to POST JSON-RPC to, or undefined when neither answers.
+ */
+export async function discoverMcpEndpoint(): Promise<string | undefined> {
+  const daemon = await fetchDaemonHealth()
+  if (daemon) return mcpHttpBase()
+  const bridge = await fetchBridgeHealth()
+  if (bridge) return bridgeHttpBase()
+  return undefined
 }
 
 // ---------------------------------------------------------------------------
@@ -96,6 +139,8 @@ export interface EnsureDaemonResult {
   alreadyRunning: boolean
   /** Daemon health as reported after it became reachable. */
   health: DaemonHealth
+  /** Base URL of the MCP endpoint to proxy to (daemon MCP port, or a bridge that serves /mcp). */
+  base: string
 }
 
 /** Test seams for ensureDaemon. */
@@ -104,11 +149,17 @@ export interface EnsureDaemonDeps {
   startTimeoutMs?: number
 }
 
-async function waitForDaemonHealth(timeoutMs: number): Promise<DaemonHealth | undefined> {
+async function waitForDaemonHealth(timeoutMs: number): Promise<{ health: DaemonHealth; base: string } | undefined> {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     const health = await fetchDaemonHealth()
-    if (health) return health
+    if (health) return { health, base: mcpHttpBase() }
+    // Another session may have won the race and started an in-process bridge
+    // (e.g. inside Claude Desktop's sandbox, where daemon spawns die). Such a
+    // bridge serves /mcp itself — converge onto it instead of waiting out the
+    // full daemon timeout.
+    const bridge = await fetchBridgeHealth()
+    if (bridge) return { health: bridge, base: bridgeHttpBase() }
     await new Promise((r) => setTimeout(r, DAEMON_POLL_INTERVAL_MS))
   }
   return undefined
@@ -172,10 +223,13 @@ export async function ensureDaemon(localVersion: string, deps: EnsureDaemonDeps 
   const spawnFn = deps.spawnDaemon ?? spawnDaemon
   const startTimeoutMs = deps.startTimeoutMs ?? DAEMON_START_TIMEOUT_MS
 
-  let health = await fetchDaemonHealth()
-  if (health) {
-    warnOnVersionSkew(health, localVersion, false)
-    return { alreadyRunning: true, health }
+  // A bridge that serves /mcp counts as "already running" too: it owns the
+  // add-in, so no daemon should be spawned (it would die on EADDRINUSE).
+  const existingBase = await discoverMcpEndpoint()
+  if (existingBase) {
+    const existingHealth = await fetchDaemonHealth()
+    if (existingHealth) warnOnVersionSkew(existingHealth, localVersion, false)
+    return { alreadyRunning: true, health: existingHealth ?? { status: 'ok' }, base: existingBase }
   }
 
   const lock = readDaemonLock()
@@ -185,14 +239,14 @@ export async function ensureDaemon(localVersion: string, deps: EnsureDaemonDeps 
     if (pid > 0) writeDaemonLock(pid)
   }
 
-  health = await waitForDaemonHealth(startTimeoutMs)
-  if (!health) {
+  const found = await waitForDaemonHealth(startTimeoutMs)
+  if (!found) {
     throw new Error(
       `office-live-mcp daemon did not become healthy within ${startTimeoutMs / 1000}s ` + `(check ${DAEMON_LOG_FILE})`,
     )
   }
-  warnOnVersionSkew(health, localVersion, true)
-  return { alreadyRunning: false, health }
+  warnOnVersionSkew(found.health, localVersion, true)
+  return { alreadyRunning: false, health: found.health, base: found.base }
 }
 
 function warnOnVersionSkew(health: DaemonHealth, localVersion: string, started: boolean): void {
@@ -258,7 +312,7 @@ export async function runStdioProxy(options: ProxyOptions): Promise<void> {
   const stdin = options.stdin ?? process.stdin
   const stdout = options.stdout ?? process.stdout
   const ensure = options.ensure ?? (() => ensureDaemon(options.localVersion))
-  const { alreadyRunning } = await ensure()
+  const { alreadyRunning, base } = await ensure()
   if (!alreadyRunning) {
     console.error('[stdio-proxy] Daemon started (detached); it stays up after this session ends.')
   }
@@ -298,7 +352,7 @@ export async function runStdioProxy(options: ProxyOptions): Promise<void> {
     }
     if (sessionId) headers['Mcp-Session-Id'] = sessionId
 
-    const res = await fetch(`${mcpHttpBase()}/mcp`, {
+    const res = await fetch(`${base}/mcp`, {
       method: 'POST',
       headers,
       body: raw,
@@ -340,7 +394,7 @@ export async function runStdioProxy(options: ProxyOptions): Promise<void> {
       queue.then(() => {
         // Best-effort session cleanup so the daemon drops this session.
         if (sessionId) {
-          fetch(`${mcpHttpBase()}/mcp`, {
+          fetch(`${base}/mcp`, {
             method: 'DELETE',
             headers: { 'Mcp-Session-Id': sessionId },
           }).catch(() => {})
