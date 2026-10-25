@@ -34,18 +34,26 @@ There is a second advantage that matters just as much. Everything here runs loca
 ## Quick start
 
 ```bash
-git clone https://github.com/benjaminfrombe/office-live-mcp.git
-cd office-live-mcp
-npm install
-npm run build
+npm install -g office-live-mcp
 
 # install the add-in into the Office apps + print your MCP client config
-node dist/index.cjs setup
+office-live-mcp setup
 ```
 
 `setup` is idempotent — run it again any time. On macOS it sideloads the manifest into each installed Office app (needs Full Disk Access for your terminal; it tells you if macOS blocks it). Then open a document, click the add-in button in the Home ribbon, and connect your MCP client with the printed config. **No bridge to start manually.**
 
-> With an npm install (`npm i -g office-live-mcp`) the same command is just `office-live-mcp setup`.
+<details>
+<summary>Installing from source instead</summary>
+
+```bash
+git clone https://github.com/benjaminfrombe/office-live-mcp.git
+cd office-live-mcp
+npm install
+npm run build
+node dist/index.cjs setup
+```
+
+</details>
 
 ## Connecting an MCP client
 
@@ -54,10 +62,12 @@ The default mode is **stdio**: the client (Claude Code, OpenCode, Claude Desktop
 ```json
 {
   "mcpServers": {
-    "office-live-mcp": { "command": "node", "args": ["/absolute/path/to/office-live-mcp/dist/index.cjs"] }
+    "office-live-mcp": { "command": "npx", "args": ["office-live-mcp"] }
   }
 }
 ```
+
+(or point `node` at the installed `dist/index.cjs` — `npm root -g` shows where that is)
 
 What happens on connect:
 
@@ -67,9 +77,9 @@ What happens on connect:
 
 Useful extras:
 
-- `node dist/index.cjs --stop-daemon` — stop the shared daemon (however it was started).
+- `office-live-mcp --stop-daemon` — stop the shared daemon (however it was started).
 - `~/.office-live-mcp/daemon.log` — daemon log; `~/.office-live-mcp/daemon.env` — optional `KEY=VALUE` lines merged into the daemon environment (e.g. `BRIDGE_TLS=1`).
-- Prefer an HTTP MCP client? Start the daemon once (`node dist/index.cjs --http --bridge`) and connect to `http://127.0.0.1:8792/mcp`.
+- Prefer an HTTP MCP client? Start the daemon once (`office-live-mcp --http --bridge`) and connect to `http://127.0.0.1:8792/mcp`.
 - Legacy single-session mode (`--stdio --bridge`, everything in one process) still exists but does not survive multiple concurrent clients.
 
 ### Connect your harness
@@ -132,7 +142,7 @@ Then restart the Office apps. Without this step, just ignore the placeholder ico
 Verified on Windows 11 (ARM64, Office Insider 16.0.20430) in a Parallels VM. Recent Windows Office builds reject the old sideload shortcuts (Developer-registry manifests only load under a debugger, the new "Apps" storefront never queries custom catalogs, and neither the classic nor the new dialog offers an "Upload My Add-in" option), so the supported route is a **shared folder catalog**. `setup` automates all of it:
 
 ```bat
-node C:\path\to\office-live-mcp\dist\index.cjs setup
+office-live-mcp setup
 ```
 
 What it does:
