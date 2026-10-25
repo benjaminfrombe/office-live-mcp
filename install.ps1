@@ -111,7 +111,11 @@ Write-Step "Installing $pkg (npm registry first, GitHub fallback)..."
 $null = Invoke-NpmSafe @('install', '-g', $pkg)
 if (-not (Test-Path (Join-Path $installedDir 'package.json'))) {
     Write-Step "npm registry install failed or unavailable - installing from GitHub..."
-    $null = Invoke-NpmSafe @('install', '-g', 'https://github.com/benjaminfrombe/office-live-mcp/archive/refs/heads/main.tar.gz')
+    # Cache-buster: npm caches tarballs by URL, and this URL is the same for
+    # every commit - without a unique query string reinstalls would keep
+    # getting the first-cached tarball forever.
+    $tarball = "https://github.com/benjaminfrombe/office-live-mcp/archive/refs/heads/main.tar.gz?t=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+    $null = Invoke-NpmSafe @('install', '-g', $tarball)
     if (-not (Test-Path (Join-Path $installedDir 'package.json'))) {
         Write-Host "[installer] Installation failed. See the npm output above." -ForegroundColor Red
         exit 1
