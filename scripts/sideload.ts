@@ -5,10 +5,10 @@
  * substituting the correct port from BRIDGE_PORT env var.
  *
  * Usage:
- *   node --experimental-strip-types scripts/sideload.ts                    # PowerPoint (HTTP), default port 8080
+ *   node --experimental-strip-types scripts/sideload.ts                    # PowerPoint (HTTP), default port 8790
  *   node --experimental-strip-types scripts/sideload.ts --app word       # Word
  *   node --experimental-strip-types scripts/sideload.ts --app excel      # Excel
- *   node --experimental-strip-types scripts/sideload.ts --tls            # HTTPS manifest, default port 8443
+ *   node --experimental-strip-types scripts/sideload.ts --tls            # HTTPS manifest, default port 8791
  *   BRIDGE_PORT=9090 node --experimental-strip-types scripts/sideload.ts # Custom port
  */
 
@@ -37,7 +37,7 @@ function parseApp(): AppKey {
 
 const app = parseApp()
 const tls = process.argv.includes('--tls')
-const defaultPort = tls ? 8443 : 8080
+const defaultPort = tls ? 8791 : 8790
 const port = Number(process.env.BRIDGE_PORT) || defaultPort
 
 const manifestName = tls ? APPS[app].manifest.replace('.xml', '-https.xml') : APPS[app].manifest

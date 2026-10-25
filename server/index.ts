@@ -24,9 +24,9 @@ import { runVersionCheck } from './version-check.ts'
 // Constants
 // ---------------------------------------------------------------------------
 
-const BRIDGE_DEFAULT_HTTP_PORT = 8080
-const BRIDGE_DEFAULT_HTTPS_PORT = 8443
-const MCP_HTTP_PORT = Number(process.env.MCP_PORT) || 3001
+const BRIDGE_DEFAULT_HTTP_PORT = 8790
+const BRIDGE_DEFAULT_HTTPS_PORT = 8791
+const MCP_HTTP_PORT = Number(process.env.MCP_PORT) || 8792
 const MAX_HTTP_BODY_BYTES = 16 * 1024 * 1024 // 16 MiB — see README "HTTP body limit" for the sizing rationale
 const SCRIPT_DIR = typeof __dirname !== 'undefined' ? __dirname : dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = resolve(SCRIPT_DIR, '..')
@@ -59,8 +59,11 @@ const enableStopDaemon = cliArgs.includes('--stop-daemon')
 // Default: --stdio if no flags given
 const noFlagsGiven = !enableStdio && !enableHttp && !enableBridge && !setupRequested
 const stdioActive = (enableStdio || noFlagsGiven) && !enableStopDaemon && !setupRequested
-const httpActive = enableHttp && !setupRequested
-const bridgeActive = enableBridge && !setupRequested
+// Mutable: the stdio proxy can fall back to in-process mode (bridge + http)
+// when the shared daemon cannot start — e.g. inside Claude Desktop's
+// sandboxed extension host, which kills detached child processes.
+let httpActive = enableHttp && !setupRequested
+let bridgeActive = enableBridge && !setupRequested
 
 // ---------------------------------------------------------------------------
 // Stderr redirect: when STDIO transport is active, all console output → stderr
@@ -452,10 +455,13 @@ function serveStatic(req: IncomingMessage, res: ServerResponse): void {
 // Start: Bridge server (HTTP or HTTPS based on BRIDGE_TLS)
 // ---------------------------------------------------------------------------
 
-if (bridgeActive) {
+function startBridgeServer(): void {
   autoSideloadManifest(bridgeTls, BRIDGE_PORT)
 
-  const bridgeServer = bridgeTls
+  // The fallback path can start the bridge after module load; re-check the
+  // certs there so a missing cert degrades to plain HTTP instead of crashing.
+  const useTls = bridgeTls && existsSync(BRIDGE_CERT_PATH) && existsSync(BRIDGE_KEY_PATH)
+  const bridgeServer = useTls
     ? createHttpsServer({ cert: readFileSync(BRIDGE_CERT_PATH), key: readFileSync(BRIDGE_KEY_PATH) }, serveStatic)
     : createHttpServer(serveStatic)
 
@@ -478,12 +484,12 @@ if (bridgeActive) {
   // not authentication (see README "Security" — MCP auth remains deferred).
   const allowedOrigins = new Set<string>()
   for (const host of ['localhost', '127.0.0.1']) {
-    allowedOrigins.add(`${bridgeTls ? 'https' : 'http'}://${host}:${BRIDGE_PORT}`)
+    allowedOrigins.add(`${useTls ? 'https' : 'http'}://${host}:${BRIDGE_PORT}`)
   }
   for (const ifaces of Object.values(osNetworkInterfaces())) {
     for (const iface of ifaces ?? []) {
       if (iface.family === 'IPv4' && !iface.internal) {
-        allowedOrigins.add(`${bridgeTls ? 'https' : 'http'}://${iface.address}:${BRIDGE_PORT}`)
+        allowedOrigins.add(`${useTls ? 'https' : 'http'}://${iface.address}:${BRIDGE_PORT}`)
       }
     }
   }
@@ -555,8 +561,8 @@ if (bridgeActive) {
     })
   })
 
-  const bridgeScheme = bridgeTls ? 'https' : 'http'
-  const bridgeWsScheme = bridgeTls ? 'wss' : 'ws'
+  const bridgeScheme = useTls ? 'https' : 'http'
+  const bridgeWsScheme = useTls ? 'wss' : 'ws'
 
   bridgeServer.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'EADDRINUSE') {
@@ -577,7 +583,7 @@ if (bridgeActive) {
 // Start: HTTP MCP transport (on MCP_HTTP_PORT)
 // ---------------------------------------------------------------------------
 
-if (httpActive) {
+function startMcpHttpServer(): void {
   function handleMcpHttpRequest(req: IncomingMessage, res: ServerResponse): void {
     const url = (req.url ?? '/').split('?')[0]
 
@@ -636,6 +642,11 @@ if (httpActive) {
   })
 }
 
+// Start the transport servers per the CLI flags. (The stdio proxy path can
+// start them later via its in-process fallback.)
+if (bridgeActive) startBridgeServer()
+if (httpActive) startMcpHttpServer()
+
 // ---------------------------------------------------------------------------
 // Start: STDIO MCP transport
 //
@@ -660,8 +671,30 @@ if (enableStopDaemon) {
   runStdioProxy({ localVersion: PKG_VERSION })
     .then(() => process.exit(0))
     .catch((err: unknown) => {
-      console.error(`MCP STDIO proxy failed: ${err instanceof Error ? err.message : String(err)}`)
-      process.exit(1)
+      // The shared daemon could not be started or reached. In sandboxed
+      // hosts (Claude Desktop's extension runtime kills detached spawns) the
+      // right move is in-process mode: this process becomes the bridge.
+      console.error(
+        `[stdio-proxy] Shared daemon unavailable (${err instanceof Error ? err.message : String(err)}). ` +
+          'Falling back to in-process bridge mode.',
+      )
+      httpActive = true
+      bridgeActive = true
+      try {
+        startBridgeServer()
+        startMcpHttpServer()
+      } catch (startErr: unknown) {
+        console.error(`MCP STDIO fallback failed: ${startErr instanceof Error ? startErr.message : String(startErr)}`)
+        process.exit(1)
+      }
+      const stdioTransport = new StdioServerTransport()
+      const stdioMcpServer = createMcpServer(
+        () => 'stdio',
+        () => 1,
+      )
+      stdioMcpServer.connect(stdioTransport).then(() => {
+        console.error('MCP STDIO transport running (in-process bridge fallback)')
+      })
     })
 } else if (stdioActive) {
   const stdioTransport = new StdioServerTransport()

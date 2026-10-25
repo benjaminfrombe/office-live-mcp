@@ -19,8 +19,8 @@ function readManifest(req: IncomingMessage, serverRelativeUrl: string): string |
     const raw = readFileSync(join(resolve(manifestDir), name), 'utf-8')
     const host = String(req.headers.host ?? '')
     const portMatch = /:(\d+)$/.exec(host)
-    const targetPort = portMatch ? Number.parseInt(portMatch[1], 10) : 8443
-    return substituteManifestPort(raw, 8080, targetPort)
+    const targetPort = portMatch ? Number.parseInt(portMatch[1], 10) : 8791
+    return substituteManifestPort(raw, 8790, targetPort)
   } catch {
     return null
   }
@@ -143,7 +143,7 @@ function atomProperty(key: string, value: unknown): string {
 function sendAtom(res: ServerResponse, req: IncomingMessage, entries: Array<Record<string, unknown>>): void {
   // SharePoint-style Atom feed: Office's catalog enumerator parses this when
   // it sends requests without a JSON Accept header.
-  const base = `https://${req.headers.host ?? 'localhost:8443'}`
+  const base = `https://${req.headers.host ?? 'localhost:8791'}`
   const now = new Date().toISOString()
   const entriesXml = entries
     .map((entry, i) => {

@@ -61,7 +61,7 @@ The default mode is **stdio**: the client (Claude Code, OpenCode, Claude Desktop
 
 What happens on connect:
 
-- If no daemon is up, one is started **detached** (`--http --bridge`: taskpane on :8080, MCP on :3001) and it stays up after the client session ends — the Office add-in needs it even when no AI session is open.
+- If no daemon is up, one is started **detached** (`--http --bridge`: taskpane on :8790, MCP on :8792) and it stays up after the client session ends — the Office add-in needs it even when no AI session is open.
 - If a daemon is already up (another harness, an earlier session, the machine just rebooted), it is reused. Multiple harnesses share one daemon and see the same live documents.
 - If the daemon crashed or died with a reboot, the next client connect brings it back.
 
@@ -69,7 +69,7 @@ Useful extras:
 
 - `node dist/index.cjs --stop-daemon` — stop the shared daemon (however it was started).
 - `~/.office-live-mcp/daemon.log` — daemon log; `~/.office-live-mcp/daemon.env` — optional `KEY=VALUE` lines merged into the daemon environment (e.g. `BRIDGE_TLS=1`).
-- Prefer an HTTP MCP client? Start the daemon once (`node dist/index.cjs --http --bridge`) and connect to `http://127.0.0.1:3001/mcp`.
+- Prefer an HTTP MCP client? Start the daemon once (`node dist/index.cjs --http --bridge`) and connect to `http://127.0.0.1:8792/mcp`.
 - Legacy single-session mode (`--stdio --bridge`, everything in one process) still exists but does not survive multiple concurrent clients.
 
 ### Connect your harness
@@ -145,14 +145,14 @@ Then the one step no installer can do, because Office requires it:
 
 4. **Close and reopen the Office app** → **Home → Add-ins → Advanced...** → **SHARED FOLDER** tab → select *Office Live MCP* → **Add**.
 
-> **Why not an HTTPS catalog (no UNC at all)?** The bridge can emulate a SharePoint app catalog over `https://localhost:8443` (`OLM_HTTPS_CATALOG=1`, see `server/sharepoint-catalog.ts`), and Office would then list the add-in under MY ORGANIZATION. This worked on Office builds up to 16.0.20430, but Microsoft fully retired SharePoint add-in catalogs on April 2, 2026 — current builds still probe the catalog yet discard the results, so the route is dead on modern Office. The UNC route above is the only supported one.
+> **Why not an HTTPS catalog (no UNC at all)?** The bridge can emulate a SharePoint app catalog over `https://localhost:8791` (`OLM_HTTPS_CATALOG=1`, see `server/sharepoint-catalog.ts`), and Office would then list the add-in under MY ORGANIZATION. This worked on Office builds up to 16.0.20430, but Microsoft fully retired SharePoint add-in catalogs on April 2, 2026 — current builds still probe the catalog yet discard the results, so the route is dead on modern Office. The UNC route above is the only supported one.
 
 Notes:
 
 - The daemon's environment file lives at `%USERPROFILE%\.office-live-mcp\daemon.env`, its log at `%USERPROFILE%\.office-live-mcp\daemon.log`.
-- Use `manifest.xml` for PowerPoint, `manifest.word.xml` for Word, `manifest.excel.xml` for Excel. All point the taskpane at `http://localhost:8080`.
-- As on macOS, the ribbon icon stays a placeholder unless the bridge runs over HTTPS (see "Optional: the ribbon icon" above) and the manifests point at `https://localhost:8443`.
-- If a build refuses plain-HTTP catalogs, the bridge can also emulate a SharePoint-style HTTPS catalog (`server/sharepoint-catalog.ts`, enabled with `BRIDGE_TLS=1`): Office enumerates `https://<host>:8443` as a corporate catalog and the same manifests are served from there.
+- Use `manifest.xml` for PowerPoint, `manifest.word.xml` for Word, `manifest.excel.xml` for Excel. All point the taskpane at `http://localhost:8790`.
+- As on macOS, the ribbon icon stays a placeholder unless the bridge runs over HTTPS (see "Optional: the ribbon icon" above) and the manifests point at `https://localhost:8791`.
+- If a build refuses plain-HTTP catalogs, the bridge can also emulate a SharePoint-style HTTPS catalog (`server/sharepoint-catalog.ts`, enabled with `BRIDGE_TLS=1`): Office enumerates `https://<host>:8791` as a corporate catalog and the same manifests are served from there.
 
 ## How it is tested
 

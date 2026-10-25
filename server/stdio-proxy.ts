@@ -6,7 +6,7 @@
 // from stdin/stdout to the daemon's HTTP MCP endpoint.
 //
 // Why a proxy instead of running the bridge in-process: the bridge is a
-// single-instance server (one process binds :8080/:8443/:3001) that must stay
+// single-instance server (one process binds :8790/:8791/:8792) that must stay
 // alive for the Office add-in even when no harness session is open. Spawning a
 // bridge per harness session means port conflicts (EADDRINUSE) and a bridge
 // that dies with the session. With the proxy, the first harness to load the
@@ -28,7 +28,7 @@ const DAEMON_POLL_INTERVAL_MS = 200
 
 /** Base URL of the daemon's HTTP MCP server (read per call so tests can point it elsewhere). */
 function mcpHttpBase(): string {
-  return `http://127.0.0.1:${Number(process.env.MCP_PORT) || 3001}`
+  return `http://127.0.0.1:${Number(process.env.MCP_PORT) || 8792}`
 }
 
 const DAEMON_DIR = process.env.OLM_DAEMON_DIR || join(homedir(), '.office-live-mcp')

@@ -24,7 +24,7 @@ const CATALOG_GUID = '{7E3F2A11-93C4-4B5D-8E6F-1A2B3C4D5E6F}'
 const REG_KEY = `HKCU\\Software\\Microsoft\\Office\\16.0\\Wef\\TrustedCatalogs\\${CATALOG_GUID}`
 const CERT_PATH = () => process.env.BRIDGE_CERT_PATH || resolve(PROJECT_ROOT, 'certs', 'localhost.pem')
 const CERT_KEY_PATH = () => process.env.BRIDGE_KEY_PATH || resolve(PROJECT_ROOT, 'certs', 'localhost-key.pem')
-const HTTPS_CATALOG_URL = 'https://localhost:8443'
+const HTTPS_CATALOG_URL = 'https://localhost:8791'
 
 // ---------------------------------------------------------------------------
 // Pure helpers (unit-tested)
@@ -135,7 +135,7 @@ function daemonTlsEnabled(): boolean {
 
 function setupMac(): void {
   const tls = daemonTlsEnabled()
-  const defaultPort = tls ? 8443 : 8080
+  const defaultPort = tls ? 8791 : 8790
   const port = Number(process.env.BRIDGE_PORT) || defaultPort
   let installed = 0
   let found = 0
@@ -243,13 +243,13 @@ export function writeDaemonTlsEnv(): void {
     mkdirSync(dirname(envFile), { recursive: true })
     writeFileSync(envFile, merged)
   }
-  console.log(`[setup] Daemon env: ${envFile} (BRIDGE_TLS=1 — bridge serves https://localhost:8443)`)
+  console.log(`[setup] Daemon env: ${envFile} (BRIDGE_TLS=1 — bridge serves https://localhost:8791)`)
 }
 
 /**
  * Primary Windows route, no share involved: the bridge itself acts as an
  * HTTPS add-in catalog (SharePoint catalog emulation). Office enumerates
- * https://localhost:8443 and lists the add-in under MY ORGANIZATION.
+ * https://localhost:8791 and lists the add-in under MY ORGANIZATION.
  * Returns false when a step fails so the caller can fall back to UNC.
  */
 async function setupWindowsHttpsCatalog(): Promise<boolean> {

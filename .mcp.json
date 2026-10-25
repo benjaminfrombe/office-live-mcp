@@ -2,7 +2,7 @@
   "mcpServers": {
     "office-live-mcp": {
       "type": "http",
-      "url": "http://localhost:3001/mcp"
+      "url": "http://localhost:8792/mcp"
     }
   }
 }

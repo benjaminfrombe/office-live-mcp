@@ -72425,7 +72425,7 @@ var CATALOG_GUID = "{7E3F2A11-93C4-4B5D-8E6F-1A2B3C4D5E6F}";
 var REG_KEY = `HKCU\\Software\\Microsoft\\Office\\16.0\\Wef\\TrustedCatalogs\\${CATALOG_GUID}`;
 var CERT_PATH = () => process.env.BRIDGE_CERT_PATH || (0, import_node_path.resolve)(PROJECT_ROOT, "certs", "localhost.pem");
 var CERT_KEY_PATH = () => process.env.BRIDGE_KEY_PATH || (0, import_node_path.resolve)(PROJECT_ROOT, "certs", "localhost-key.pem");
-var HTTPS_CATALOG_URL = "https://localhost:8443";
+var HTTPS_CATALOG_URL = "https://localhost:8791";
 var MAC_APPS = {
   powerpoint: { manifest: "manifest.xml", container: "com.microsoft.Powerpoint", label: "PowerPoint" },
   word: { manifest: "manifest.word.xml", container: "com.microsoft.Word", label: "Word" },
@@ -72486,7 +72486,7 @@ function daemonTlsEnabled() {
 }
 function setupMac() {
   const tls = daemonTlsEnabled();
-  const defaultPort = tls ? 8443 : 8080;
+  const defaultPort = tls ? 8791 : 8790;
   const port = Number(process.env.BRIDGE_PORT) || defaultPort;
   let installed = 0;
   let found = 0;
@@ -72583,7 +72583,7 @@ function writeDaemonTlsEnv() {
     (0, import_node_fs.mkdirSync)((0, import_node_path.dirname)(envFile), { recursive: true });
     (0, import_node_fs.writeFileSync)(envFile, merged);
   }
-  console.log(`[setup] Daemon env: ${envFile} (BRIDGE_TLS=1 \u2014 bridge serves https://localhost:8443)`);
+  console.log(`[setup] Daemon env: ${envFile} (BRIDGE_TLS=1 \u2014 bridge serves https://localhost:8791)`);
 }
 async function setupWindowsHttpsCatalog() {
   if (!await ensureLocalhostCert()) return false;
@@ -72724,8 +72724,8 @@ function readManifest(req, serverRelativeUrl) {
     const raw = (0, import_node_fs2.readFileSync)((0, import_node_path2.join)((0, import_node_path2.resolve)(manifestDir), name), "utf-8");
     const host = String(req.headers.host ?? "");
     const portMatch = /:(\d+)$/.exec(host);
-    const targetPort = portMatch ? Number.parseInt(portMatch[1], 10) : 8443;
-    return substituteManifestPort(raw, 8080, targetPort);
+    const targetPort = portMatch ? Number.parseInt(portMatch[1], 10) : 8791;
+    return substituteManifestPort(raw, 8790, targetPort);
   } catch {
     return null;
   }
@@ -72791,7 +72791,7 @@ function atomProperty(key, value) {
   return `<d:${key}>${strValue}</d:${key}>`;
 }
 function sendAtom(res, req, entries) {
-  const base = `https://${req.headers.host ?? "localhost:8443"}`;
+  const base = `https://${req.headers.host ?? "localhost:8791"}`;
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const entriesXml = entries.map((entry, i) => {
     const props = Object.entries(entry).filter(([k]) => !NAVIGATION_KEYS.has(k)).map(([k, v]) => atomProperty(k, v)).join("");
@@ -72967,7 +72967,7 @@ var HEALTH_TIMEOUT_MS = 1e3;
 var DAEMON_START_TIMEOUT_MS = 15e3;
 var DAEMON_POLL_INTERVAL_MS = 200;
 function mcpHttpBase() {
-  return `http://127.0.0.1:${Number(process.env.MCP_PORT) || 3001}`;
+  return `http://127.0.0.1:${Number(process.env.MCP_PORT) || 8792}`;
 }
 var DAEMON_DIR = process.env.OLM_DAEMON_DIR || (0, import_node_path3.join)((0, import_node_os2.homedir)(), ".office-live-mcp");
 var DAEMON_LOCK_FILE = (0, import_node_path3.join)(DAEMON_DIR, "daemon.lock");
@@ -78162,9 +78162,9 @@ function runVersionCheck(currentVersion) {
 
 // server/index.ts
 var import_meta3 = {};
-var BRIDGE_DEFAULT_HTTP_PORT = 8080;
-var BRIDGE_DEFAULT_HTTPS_PORT = 8443;
-var MCP_HTTP_PORT = Number(process.env.MCP_PORT) || 3001;
+var BRIDGE_DEFAULT_HTTP_PORT = 8790;
+var BRIDGE_DEFAULT_HTTPS_PORT = 8791;
+var MCP_HTTP_PORT = Number(process.env.MCP_PORT) || 8792;
 var MAX_HTTP_BODY_BYTES = 16 * 1024 * 1024;
 var SCRIPT_DIR2 = typeof __dirname !== "undefined" ? __dirname : (0, import_node_path6.dirname)((0, import_node_url4.fileURLToPath)(import_meta3.url));
 var PROJECT_ROOT2 = (0, import_node_path6.resolve)(SCRIPT_DIR2, "..");
@@ -78463,17 +78463,18 @@ function serveStatic(req, res) {
   });
   res.end(content);
 }
-if (bridgeActive) {
+function startBridgeServer() {
   autoSideloadManifest(bridgeTls, BRIDGE_PORT);
-  const bridgeServer = bridgeTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs11.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs11.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http.createServer)(serveStatic);
+  const useTls = bridgeTls && (0, import_node_fs11.existsSync)(BRIDGE_CERT_PATH) && (0, import_node_fs11.existsSync)(BRIDGE_KEY_PATH);
+  const bridgeServer = useTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs11.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs11.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http.createServer)(serveStatic);
   const allowedOrigins = /* @__PURE__ */ new Set();
   for (const host of ["localhost", "127.0.0.1"]) {
-    allowedOrigins.add(`${bridgeTls ? "https" : "http"}://${host}:${BRIDGE_PORT}`);
+    allowedOrigins.add(`${useTls ? "https" : "http"}://${host}:${BRIDGE_PORT}`);
   }
   for (const ifaces of Object.values((0, import_node_os4.networkInterfaces)())) {
     for (const iface of ifaces ?? []) {
       if (iface.family === "IPv4" && !iface.internal) {
-        allowedOrigins.add(`${bridgeTls ? "https" : "http"}://${iface.address}:${BRIDGE_PORT}`);
+        allowedOrigins.add(`${useTls ? "https" : "http"}://${iface.address}:${BRIDGE_PORT}`);
       }
     }
   }
@@ -78530,8 +78531,8 @@ if (bridgeActive) {
       console.error("Add-in WebSocket error:", err.message);
     });
   });
-  const bridgeScheme = bridgeTls ? "https" : "http";
-  const bridgeWsScheme = bridgeTls ? "wss" : "ws";
+  const bridgeScheme = useTls ? "https" : "http";
+  const bridgeWsScheme = useTls ? "wss" : "ws";
   bridgeServer.on("error", (err) => {
     if (err.code === "EADDRINUSE") {
       console.error(`Error: Port ${BRIDGE_PORT} is already in use. Another bridge instance may be running.`);
@@ -78545,8 +78546,8 @@ if (bridgeActive) {
     console.error(`  ${bridgeWsScheme.toUpperCase()}:  ${bridgeWsScheme}://localhost:${BRIDGE_PORT}`);
   });
 }
-if (httpActive) {
-  let handleMcpHttpRequest = function(req, res) {
+function startMcpHttpServer() {
+  function handleMcpHttpRequest(req, res) {
     const url2 = (req.url ?? "/").split("?")[0];
     if (url2 === "/health" && req.method === "GET") {
       res.writeHead(200, { "Content-Type": "application/json" });
@@ -78583,8 +78584,7 @@ if (httpActive) {
     }
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("MCP endpoint is at /mcp");
-  };
-  handleMcpHttpRequest2 = handleMcpHttpRequest;
+  }
   const mcpHttpServer = (0, import_node_http.createServer)(handleMcpHttpRequest);
   mcpHttpServer.on("error", (err) => {
     if (err.code === "EADDRINUSE") {
@@ -78597,7 +78597,8 @@ if (httpActive) {
     console.error(`  MCP HTTP: http://localhost:${MCP_HTTP_PORT}/mcp`);
   });
 }
-var handleMcpHttpRequest2;
+if (bridgeActive) startBridgeServer();
+if (httpActive) startMcpHttpServer();
 if (enableStopDaemon) {
   stopDaemon().then((wasRunning) => {
     if (wasRunning) {
@@ -78609,8 +78610,26 @@ if (enableStopDaemon) {
   });
 } else if (stdioActive && !bridgeActive) {
   runStdioProxy({ localVersion: PKG_VERSION }).then(() => process.exit(0)).catch((err) => {
-    console.error(`MCP STDIO proxy failed: ${err instanceof Error ? err.message : String(err)}`);
-    process.exit(1);
+    console.error(
+      `[stdio-proxy] Shared daemon unavailable (${err instanceof Error ? err.message : String(err)}). Falling back to in-process bridge mode.`
+    );
+    httpActive = true;
+    bridgeActive = true;
+    try {
+      startBridgeServer();
+      startMcpHttpServer();
+    } catch (startErr) {
+      console.error(`MCP STDIO fallback failed: ${startErr instanceof Error ? startErr.message : String(startErr)}`);
+      process.exit(1);
+    }
+    const stdioTransport = new StdioServerTransport();
+    const stdioMcpServer = createMcpServer(
+      () => "stdio",
+      () => 1
+    );
+    stdioMcpServer.connect(stdioTransport).then(() => {
+      console.error("MCP STDIO transport running (in-process bridge fallback)");
+    });
   });
 } else if (stdioActive) {
   const stdioTransport = new StdioServerTransport();

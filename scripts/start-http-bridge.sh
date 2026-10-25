@@ -3,8 +3,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 LOG_FILE="${POWERPOINT_MCP_LOG:-/tmp/powerpoint-mcp.log}"
-MCP_PORT="${MCP_PORT:-3001}"
-BRIDGE_PORT="${BRIDGE_PORT:-8080}"
+MCP_PORT="${MCP_PORT:-8792}"
+BRIDGE_PORT="${BRIDGE_PORT:-8790}"
 TLS="${POWERPOINT_MCP_TLS:-0}"
 
 if curl -sf "http://127.0.0.1:${MCP_PORT}/health" >/dev/null 2>&1 \

@@ -26,16 +26,16 @@ describe('substituteManifestPort', () => {
   it('replaces all 9 occurrences in manifest.vm.xml', () => {
     const manifestPath = resolve(__dirname, '..', 'addin', 'manifest.vm.xml')
     const content = readFileSync(manifestPath, 'utf8')
-    const result = substituteManifestPort(content, 8080, 9090)
-    expect(result).not.toContain('localhost:8080')
+    const result = substituteManifestPort(content, 8790, 9090)
+    expect(result).not.toContain('localhost:8790')
     expect(result.match(/localhost:9090/g)?.length).toBe(9)
   })
 
   it('replaces all 9 occurrences in manifest-https.xml', () => {
     const manifestPath = resolve(__dirname, '..', 'addin', 'manifest-https.xml')
     const content = readFileSync(manifestPath, 'utf8')
-    const result = substituteManifestPort(content, 8443, 9443)
-    expect(result).not.toContain('localhost:8443')
+    const result = substituteManifestPort(content, 8791, 9443)
+    expect(result).not.toContain('localhost:8791')
     expect(result.match(/localhost:9443/g)?.length).toBe(9)
   })
 })
