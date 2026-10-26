@@ -87,14 +87,23 @@ export function registerSlideTools(
 
       const target = pool.resolveTarget(presentationId)
 
-      // Step 1: Read all layouts (every master) from OOXML, and confirm the
-      // requested name exists before round-tripping to Office.js.
-      const localPath = await getLocalCopyPath(pool, target)
-      const fileData = readFileSync(localPath)
-      const zip = await JSZip.loadAsync(fileData)
-      const layouts = await extractLayoutsFromZip(zip)
+      // Step 1: Pre-check the requested name against OOXML layouts when the
+      // file is readable. Unsaved presentations have no local file — skip the
+      // pre-check and let the Office.js path below resolve (it reports
+      // "Layout not found. Available: ..." itself).
+      let layouts: Awaited<ReturnType<typeof extractLayoutsFromZip>> = []
+      let preChecked = false
+      try {
+        const localPath = await getLocalCopyPath(pool, target)
+        const fileData = readFileSync(localPath)
+        const zip = await JSZip.loadAsync(fileData)
+        layouts = await extractLayoutsFromZip(zip)
+        preChecked = true
+      } catch {
+        // No readable local copy — defer to Office.js lookup
+      }
       const targetLower = layoutName.toLowerCase()
-      if (!layouts.some((l) => l.name.toLowerCase() === targetLower)) {
+      if (preChecked && !layouts.some((l) => l.name.toLowerCase() === targetLower)) {
         const available = layouts
           .filter((l) => !l.name.startsWith('_'))
           .map((l) => l.name)
@@ -179,25 +188,30 @@ export function registerSlideTools(
       // by re-searching by name, which is what let #120 silently mix
       // placeholder metadata from the wrong master. Name-match is kept only
       // as a defensive fallback for a malformed/mismatched file.
+      // When the OOXML pre-check was skipped (unsaved presentation), layouts
+      // is empty — proceed without placeholder metadata rather than failing.
       const layoutInfo =
         layouts.find(
           (l) => l.masterIndex === addResult.masterIndex && l.layoutIndexInMaster === addResult.layoutIndexInMaster,
-        ) ?? layouts.find((l) => l.name.toLowerCase() === targetLower)!
+        ) ?? layouts.find((l) => l.name.toLowerCase() === targetLower)
 
       // Build idx→name map from the matched layout's placeholders
       const idxToName = new Map<string, string>()
-      for (const ph of layoutInfo.placeholders) {
-        if (ph.idx !== undefined && ph.name) {
-          idxToName.set(String(ph.idx), ph.name)
+      const layoutPhNames = new Set<string>()
+      if (layoutInfo) {
+        for (const ph of layoutInfo.placeholders) {
+          if (ph.idx !== undefined && ph.name) {
+            idxToName.set(String(ph.idx), ph.name)
+            layoutPhNames.add(ph.name)
+          }
         }
       }
 
       // Warn about unknown placeholder names in the input
       const warnings: string[] = []
-      if (placeholders) {
-        const layoutNames = new Set(layoutInfo.placeholders.map((ph) => ph.name).filter(Boolean))
+      if (placeholders && layoutInfo) {
         for (const key of Object.keys(placeholders)) {
-          if (!layoutNames.has(key)) {
+          if (!layoutPhNames.has(key)) {
             warnings.push(`Placeholder "${key}" not found in layout "${layoutInfo.name}"`)
           }
         }

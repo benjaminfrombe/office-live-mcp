@@ -75,6 +75,7 @@ export function registerXmlTools(
       const { zip, xmlString } = await extractSlideXmlFromZip(exported.base64)
 
       let finalXml: string
+      let codeResultText: string | undefined
       if (code) {
         // Code mode: run agent-provided JS against the pre-parsed DOM
         const doc = parseSlideXml(xmlString)
@@ -91,7 +92,9 @@ export function registerXmlTools(
           const keys = Object.keys(sandbox)
           const values = Object.values(sandbox)
           const fn = new Function(...keys, code)
-          fn(...values)
+          const codeResult = fn(...values)
+          finalXml = serializeXml(doc)
+          codeResultText = typeof codeResult === 'string' ? codeResult : undefined
         } catch (codeErr: unknown) {
           const msg = codeErr instanceof Error ? codeErr.message : String(codeErr)
           throw new Error(`Code execution error: ${msg}`)
@@ -109,6 +112,20 @@ export function registerXmlTools(
         finalXml = xml!
       }
 
+      // Pre-validate known reimport footguns so the agent gets an actionable
+      // error instead of a bare InvalidArgument from Office.js.
+      if (/overrideClrMapping/.test(finalXml)) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Error: <a:overrideClrMapping> in p:clrMapOvr is rejected by the PowerPoint reimport (InvalidArgument). Use <a:masterClrMapping/> instead — theme colors resolve through the slide layout.',
+            },
+          ],
+          isError: true,
+        }
+      }
+
       const modifiedBase64 = await updateSlideXmlInZip(zip, finalXml)
       await reimportSlide(
         pool,
@@ -120,7 +137,9 @@ export function registerXmlTools(
         slideIndex,
       )
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount())
-      const text = JSON.stringify({ success: true }, null, 2) + (warning ?? '')
+      const text =
+        JSON.stringify({ success: true, ...(codeResultText ? { codeResult: codeResultText } : {}) }, null, 2) +
+        (warning ?? '')
       return { content: [{ type: 'text' as const, text }] }
     }),
   )

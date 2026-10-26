@@ -100,7 +100,7 @@ describe('MCP Tools', () => {
     pool = new ConnectionPool(100)
   })
 
-  it('lists all 86 tools', async () => {
+  it('lists all 88 tools', async () => {
     const { client } = await setupMcpClient(pool)
     const result = await client.listTools()
     const names = result.tools.map((t) => t.name).sort()
@@ -108,6 +108,7 @@ describe('MCP Tools', () => {
       'add_chart',
       'add_comment',
       'add_conditional_format',
+      'add_connector',
       'add_name',
       'add_slide',
       'add_table',
@@ -188,6 +189,7 @@ describe('MCP Tools', () => {
       'set_worksheet_protection',
       'show_slide',
       'sort_range',
+      'transform_slide',
       'update_worksheet',
       'verify_slides',
       'write_range',

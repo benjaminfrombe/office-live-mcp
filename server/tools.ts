@@ -3,6 +3,7 @@ import type { ConnectionPool } from './bridge.ts'
 import { registerChartTools } from './tools/charts.ts'
 import { registerExcelTools } from './tools/excel.ts'
 import { registerExecTools } from './tools/exec.ts'
+import { registerGeometryTools } from './tools/geometry.ts'
 import { registerInspectTools } from './tools/inspect.ts'
 import { registerMediaTools } from './tools/media.ts'
 import { registerNotesTools } from './tools/notes.ts'
@@ -36,6 +37,7 @@ export function registerTools(
   getActiveSessionCount: () => number,
 ): void {
   registerInspectTools(server, pool, getSessionId, getActiveSessionCount)
+  registerGeometryTools(server, pool, getSessionId, getActiveSessionCount)
   registerSlideTools(server, pool, getSessionId, getActiveSessionCount)
   registerTextTools(server, pool, getSessionId, getActiveSessionCount)
   registerXmlTools(server, pool, getSessionId, getActiveSessionCount)

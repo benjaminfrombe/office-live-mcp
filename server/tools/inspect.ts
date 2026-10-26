@@ -163,11 +163,31 @@ export function registerInspectTools(
         }
       }
 
-      // Full path: read all layouts from OOXML via local file
-      const localPath = await getLocalCopyPath(pool, target)
-      const fileData = readFileSync(localPath)
-      const zip = await JSZip.loadAsync(fileData)
-      const layouts = await extractLayoutsFromZip(zip)
+      // Full path: read all layouts from OOXML via local file.
+      // Unsaved/local-only presentations may not have a readable file — fall
+      // back to the Office.js enumeration instead of failing the whole call.
+      let layouts: Awaited<ReturnType<typeof extractLayoutsFromZip>>
+      try {
+        const localPath = await getLocalCopyPath(pool, target)
+        const fileData = readFileSync(localPath)
+        const zip = await JSZip.loadAsync(fileData)
+        layouts = await extractLayoutsFromZip(zip)
+      } catch {
+        const usage = await getLayoutUsage(pool, target.ws)
+        const fallback = usage.map((u) => ({ ...u, usedBySlides: u.usedBySlides.map((n) => n + 1) }))
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify({
+                layouts: fallback.map((l) => filterLayout(l as unknown as Record<string, unknown>)),
+                usedOnly: true,
+                note: 'Full OOXML layout list unavailable (presentation not saved to disk?) — returning layouts assigned to existing slides only.',
+              }),
+            },
+          ],
+        }
+      }
 
       // Enrich with usedBySlides from Office.js (best-effort)
       try {
