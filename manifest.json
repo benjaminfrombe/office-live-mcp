@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "office-live-mcp",
   "display_name": "Office Live MCP",
-  "version": "0.6.0",
+  "version": "0.7.1",
   "description": "Drive live, open Word, Excel and PowerPoint documents via Office.js — edits appear in real time.",
   "long_description": "Office Live MCP lets Claude control live, open Word, Excel and PowerPoint documents on macOS and Windows through Office.js APIs. Unlike file-based solutions, this extension manipulates the document in real time, and you watch every change happen.\n\n**Capabilities:**\n- PowerPoint: 27 tools — inspect decks, edit shapes and text, raw OOXML access, charts, screenshots, speaker notes\n- Excel: 32 tools — read/write ranges, formulas, formatting, worksheets, tables, charts, data validation, comments\n- Word: 26 tools — paragraphs, styles, search and replace, tables, comments, tracked changes\n- Plus an execute_officejs/execute_exceljs/execute_wordjs escape hatch per host\n\n**How it works:**\nThe extension runs a local bridge server that connects to an Office add-in via WebSocket. The add-in must be installed into the Office apps (one-time; see the project README for the setup command).",
   "author": {

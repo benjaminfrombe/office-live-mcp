@@ -1495,13 +1495,15 @@ describe('MCP Tools', () => {
       const reimportJson = await waitForSend(ws, 1)
       expect(reimportJson.params.code).toContain('insertSlidesFromBase64')
       expect(reimportJson.params.code).toContain('slide-0')
-      // Verify atomic reimport: delete + insert batched before sync, with post-verification
+      // Verify loss-free reimport: the insert runs BEFORE the delete so a
+      // rejected package (invalid XML) leaves the original slide in place
       const reimportCode = reimportJson.params.code as string
-      const deleteIdx = reimportCode.indexOf('.delete()')
       const insertIdx = reimportCode.indexOf('insertSlidesFromBase64')
-      const firstSyncAfterDelete = reimportCode.indexOf('await context.sync()', deleteIdx)
-      expect(insertIdx).toBeGreaterThan(deleteIdx)
-      expect(insertIdx).toBeLessThan(firstSyncAfterDelete)
+      const deleteIdx = reimportCode.indexOf('.delete()')
+      const firstSyncAfterInsert = reimportCode.indexOf('await context.sync()', insertIdx)
+      expect(insertIdx).toBeGreaterThan(-1)
+      expect(deleteIdx).toBeGreaterThan(insertIdx)
+      expect(deleteIdx).toBeGreaterThan(firstSyncAfterInsert)
       expect(reimportCode).toContain('countBefore')
       pool.handleResponse(reimportJson.id, 'response', { success: true })
 

@@ -79471,7 +79471,6 @@ async function reimportSlide(pool2, modifiedBase64, slideId, prevSlideId, target
     var found = false;
     for (var i = 0; i < slides.items.length; i++) {
       if (slides.items[i].id === "${slideId}") {
-        slides.items[i].delete();
         found = true;
         break;
       }
@@ -79479,10 +79478,28 @@ async function reimportSlide(pool2, modifiedBase64, slideId, prevSlideId, target
     if (!found) {
       throw new Error("Original slide not found for reimport (ID: ${slideId})");
     }
-    // Batch delete + insert in one sync to reduce the window for partial failure
+    // INSERT FIRST, DELETE AFTER. The insert is the step that can fail (an
+    // invalid slide package raises InvalidArgument); doing it before the
+    // delete means a failed insert leaves the deck untouched instead of
+    // losing the original slide.
     context.presentation.insertSlidesFromBase64("${modifiedBase64}", ${optionsStr});
     await context.sync();
-    // Verify slide count is unchanged (deleted one, inserted one)
+    // Delete the original slide by ID (the insert added a copy; the original still exists)
+    slides.load("items");
+    await context.sync();
+    var deleted = false;
+    for (var i = 0; i < slides.items.length; i++) {
+      if (slides.items[i].id === "${slideId}") {
+        slides.items[i].delete();
+        deleted = true;
+        break;
+      }
+    }
+    if (!deleted) {
+      throw new Error("Original slide disappeared before delete (ID: ${slideId})");
+    }
+    await context.sync();
+    // Verify slide count is unchanged (inserted one, deleted one)
     slides.load("items");
     await context.sync();
     if (slides.items.length !== countBefore) {
