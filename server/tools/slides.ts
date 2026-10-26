@@ -17,13 +17,14 @@ export function registerSlideTools(
     'show_slide',
     'Bring a slide into view in the live presentation (navigates the user to that slide). Call this BEFORE editing a slide so the user can watch the changes happen; also useful to walk the user through a deck slide by slide.',
     {
-      slideIndex: z.number().int().min(0).describe('Zero-based slide index to show.'),
+      slide: z.number().int().min(1).describe('Slide number, 1-based (slide 1 = first slide).'),
       presentationId: z
         .string()
         .optional()
         .describe('Target presentation ID from list_presentations. Optional when only one presentation is connected.'),
     },
-    withTool(async ({ slideIndex, presentationId }) => {
+    withTool(async ({ slide, presentationId }) => {
+      const slideIndex = slide - 1
       const target = pool.resolveTarget(presentationId)
       const code = `return new Promise(function(resolve, reject) {
   Office.context.document.goToByIdAsync(${slideIndex + 1}, Office.GoToType.Index, function(navResult) {
@@ -31,19 +32,19 @@ export function registerSlideTools(
       reject(new Error("Navigation failed: " + navResult.error.message));
       return;
     }
-    resolve({ shown: ${slideIndex} });
+    resolve({ shown: ${slide} });
   });
 });`
       const result = await pool.sendCommand('executeCode', { code }, target.ws)
       return {
-        content: [{ type: 'text' as const, text: JSON.stringify(result ?? { shown: slideIndex }) }],
+        content: [{ type: 'text' as const, text: JSON.stringify(result ?? { shown: slide }) }],
       }
     }),
   )
 
   server.tool(
     'add_slide',
-    'Add a new slide from a layout at a specific position, with placeholder text pre-filled and shapes renamed to layout names. Use inspect_layouts to find available layout names and placeholder names. Returns the new slide index and its placeholder shapes with semantic names.',
+    'Add a new slide from a layout at a specific position, with placeholder text pre-filled and shapes renamed to layout names. Use inspect_layouts to find available layout names and placeholder names. Returns the new slide number (1-based) and its placeholder shapes with semantic names.',
     {
       layoutName: z
         .string()
@@ -53,10 +54,10 @@ export function registerSlideTools(
       position: z
         .number()
         .int()
-        .min(0)
+        .min(1)
         .optional()
         .describe(
-          'Zero-based target slide index. The new slide is inserted at this position (existing slides shift right). Default: append at end.',
+          '1-based insertion position (position 1 = the new slide becomes the first slide; existing slides shift right). Default: append at end.',
         ),
       placeholders: z
         .record(z.string(), z.string())
@@ -70,6 +71,7 @@ export function registerSlideTools(
         .describe('Target presentation ID from list_presentations. Optional when only one presentation is connected.'),
     },
     withTool(async ({ layoutName, position, placeholders, presentationId }) => {
+      const positionIndex = position !== undefined ? position - 1 : undefined
       // Reject technical layouts
       if (layoutName.startsWith('_')) {
         return {
@@ -151,7 +153,7 @@ export function registerSlideTools(
           slides.load("items");
           await context.sync();
           var newSlide = slides.items[slides.items.length - 1];
-          var targetPos = ${position !== undefined ? position : 'undefined'};
+          var targetPos = ${positionIndex !== undefined ? positionIndex : 'undefined'};
           if (targetPos !== undefined) {
             newSlide.moveTo(targetPos);
             await context.sync();
@@ -289,7 +291,7 @@ export function registerSlideTools(
       }>
 
       const result: Record<string, unknown> = {
-        slideIndex: addResult.slideIndex,
+        slide: addResult.slideIndex + 1,
         slideCount: addResult.slideCount,
         layoutName: addResult.layoutName,
         placeholders: phResult,
@@ -308,33 +310,38 @@ export function registerSlideTools(
     'duplicate_slide',
     'Duplicate a slide within the same presentation. Exports the slide and reimports it at the specified position. Data stays server-side. The reimport makes PowerPoint view jump to the first slide.',
     {
-      slideIndex: z.number().int().min(0).describe('Zero-based index of the slide to duplicate'),
-      insertAfter: z
+      slide: z
         .number()
         .int()
-        .min(0)
+        .min(1)
+        .describe('Slide number, 1-based (slide 1 = first slide), of the slide to duplicate'),
+      insertAfterSlide: z
+        .number()
+        .int()
+        .min(1)
         .optional()
         .describe(
-          'Zero-based slide index to insert the duplicate after. Default: same as slideIndex (duplicate appears right after the source).',
+          '1-based slide number to insert the duplicate after. Default: same as slide (duplicate appears right after the source).',
         ),
       presentationId: z
         .string()
         .optional()
         .describe('Target presentation ID from list_presentations. Optional when only one presentation is connected.'),
     },
-    withTool(async ({ slideIndex, insertAfter, presentationId }) => {
+    withTool(async ({ slide, insertAfterSlide, presentationId }) => {
+      const slideIndex = slide - 1
       const target = pool.resolveTarget(presentationId)
-      const insertPos = insertAfter ?? slideIndex
+      const insertPos = (insertAfterSlide ?? slide) - 1
 
       const code = `
           var slides = context.presentation.slides;
           slides.load("items");
           await context.sync();
           if (${slideIndex} >= slides.items.length) {
-            throw new Error("Slide index " + ${slideIndex} + " out of range (presentation has " + slides.items.length + " slides)");
+            throw new Error("Slide number " + ${slide} + " out of range (presentation has " + slides.items.length + " slides)");
           }
           if (${insertPos} >= slides.items.length) {
-            throw new Error("insertAfter index " + ${insertPos} + " out of range (presentation has " + slides.items.length + " slides)");
+            throw new Error("insertAfterSlide number " + ${insertAfterSlide ?? slide} + " out of range (presentation has " + slides.items.length + " slides)");
           }
           var slide = slides.items[${slideIndex}];
           var result = slide.exportAsBase64();
@@ -347,7 +354,7 @@ export function registerSlideTools(
           await context.sync();
           slides.load("items");
           await context.sync();
-          return { duplicatedSlideIndex: ${slideIndex}, insertedAfter: ${insertPos}, slideCount: slides.items.length };
+          return { duplicatedSlide: ${slide}, insertedAfterSlide: ${insertAfterSlide ?? slide}, slideCount: slides.items.length };
         `
       const result = await pool.sendCommand('executeCode', { code }, target.ws)
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount())
@@ -360,7 +367,11 @@ export function registerSlideTools(
     'copy_slides',
     'Copies slides between two open presentations entirely server-side — the Base64 data never enters Claude context. Exports from the source presentation and inserts into the destination in a single operation. Both presentations must be connected to the bridge. Requires PowerPointApi 1.8.',
     {
-      sourceSlideIndex: z.number().int().min(0).describe('Zero-based slide index to copy from the source presentation'),
+      sourceSlide: z
+        .number()
+        .int()
+        .min(1)
+        .describe('Slide number, 1-based (slide 1 = first slide), to copy from the source presentation'),
       sourcePresentationId: z.string().describe('Source presentation ID from list_presentations'),
       destinationPresentationId: z.string().describe('Destination presentation ID from list_presentations'),
       targetSlideId: z
@@ -374,33 +385,32 @@ export function registerSlideTools(
         .optional()
         .describe('Formatting mode. Default: KeepSourceFormatting.'),
     },
-    withTool(
-      async ({ sourceSlideIndex, sourcePresentationId, destinationPresentationId, targetSlideId, formatting }) => {
-        // Step 1: Export slide from source presentation
-        const source = pool.resolveTarget(sourcePresentationId)
-        const exportCode = `
+    withTool(async ({ sourceSlide, sourcePresentationId, destinationPresentationId, targetSlideId, formatting }) => {
+      const sourceSlideIndex = sourceSlide - 1
+      // Step 1: Export slide from source presentation
+      const source = pool.resolveTarget(sourcePresentationId)
+      const exportCode = `
           var slides = context.presentation.slides;
           slides.load("items");
           await context.sync();
           if (${sourceSlideIndex} >= slides.items.length) {
-            throw new Error("Slide index " + ${sourceSlideIndex} + " out of range (presentation has " + slides.items.length + " slides)");
+            throw new Error("Slide number " + ${sourceSlide} + " out of range (presentation has " + slides.items.length + " slides)");
           }
           var slide = slides.items[${sourceSlideIndex}];
           var result = slide.exportAsBase64();
           await context.sync();
-          return { base64: result.value, slideIndex: ${sourceSlideIndex}, slideId: slide.id };
-        `
-        const exported = (await pool.sendCommand('executeCode', { code: exportCode }, source.ws)) as {
-          base64: string
-          slideIndex: number
-          slideId: string
-        }
+          return { base64: result.value, slideIndex: ${sourceSlideIndex}, slideId: slide.id };        `
+      const exported = (await pool.sendCommand('executeCode', { code: exportCode }, source.ws)) as {
+        base64: string
+        slideIndex: number
+        slideId: string
+      }
 
-        // Step 2: Insert into destination presentation
-        const dest = pool.resolveTarget(destinationPresentationId)
-        const optionsArg = buildInsertOptions(formatting, targetSlideId)
+      // Step 2: Insert into destination presentation
+      const dest = pool.resolveTarget(destinationPresentationId)
+      const optionsArg = buildInsertOptions(formatting, targetSlideId)
 
-        const insertCode = `
+      const insertCode = `
           context.presentation.insertSlidesFromBase64("${exported.base64}"${optionsArg});
           await context.sync();
           var slides = context.presentation.slides;
@@ -408,22 +418,21 @@ export function registerSlideTools(
           await context.sync();
           return { slideCount: slides.items.length };
         `
-        const inserted = (await pool.sendCommand('executeCode', { code: insertCode }, dest.ws)) as {
-          slideCount: number
-        }
+      const inserted = (await pool.sendCommand('executeCode', { code: insertCode }, dest.ws)) as {
+        slideCount: number
+      }
 
-        const warning = getConcurrentWarning(getSessionId(), dest.presentationId, getActiveSessionCount())
-        const text =
-          JSON.stringify(
-            {
-              copied: { slideIndex: exported.slideIndex, slideId: exported.slideId },
-              destination: { slideCount: inserted.slideCount },
-            },
-            null,
-            2,
-          ) + (warning ?? '')
-        return { content: [{ type: 'text' as const, text }] }
-      },
-    ),
+      const warning = getConcurrentWarning(getSessionId(), dest.presentationId, getActiveSessionCount())
+      const text =
+        JSON.stringify(
+          {
+            copied: { slide: sourceSlide, slideId: exported.slideId },
+            destination: { slideCount: inserted.slideCount },
+          },
+          null,
+          2,
+        ) + (warning ?? '')
+      return { content: [{ type: 'text' as const, text }] }
+    }),
   )
 }

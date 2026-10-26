@@ -37,7 +37,7 @@ export function registerExecTools(
     'verify_slides',
     'Run programmatic checks on a slide: detect overlapping shapes, out-of-bounds shapes, empty text, tiny shapes, unused placeholders, placeholder drift from layout defaults, and full-bleed background covers. Returns a list of issues found. Uses the same shape data as inspect_slide — no OOXML needed.',
     {
-      slideIndex: z.number().int().min(0).describe('Zero-based slide index'),
+      slide: z.number().int().min(1).describe('Slide number, 1-based (slide 1 = first slide)'),
       checks: z
         .array(
           z.enum([
@@ -57,7 +57,8 @@ export function registerExecTools(
         .optional()
         .describe('Target presentation ID from list_presentations. Optional when only one presentation is connected.'),
     },
-    withTool(async ({ slideIndex, checks, presentationId }) => {
+    withTool(async ({ slide, checks, presentationId }) => {
+      const slideIndex = slide - 1
       const target = pool.resolveTarget(presentationId)
       const enabledChecks = checks ?? [
         'overlap',
@@ -77,7 +78,7 @@ export function registerExecTools(
           slides.load("items");
           await context.sync();
           if (${slideIndex} >= slides.items.length) {
-            throw new Error("Slide index " + ${slideIndex} + " out of range (presentation has " + slides.items.length + " slides)");
+            throw new Error("Slide number " + ${slide} + " out of range (presentation has " + slides.items.length + " slides)");
           }
           var slide = slides.items[${slideIndex}];
           slide.shapes.load("items");
@@ -317,7 +318,7 @@ export function registerExecTools(
         }
       }
 
-      const result = { slideIndex, shapeCount: shapes.length, issueCount: issues.length, issues }
+      const result = { slide, shapeCount: shapes.length, issueCount: issues.length, issues }
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     }),
   )

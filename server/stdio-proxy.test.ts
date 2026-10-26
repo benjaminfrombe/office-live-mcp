@@ -127,6 +127,62 @@ describe('ensureDaemon', () => {
     }
   })
 
+  it('restarts a stale daemon when versions mismatch', async () => {
+    // The fake daemon reports the old version until it receives /shutdown,
+    // after which it reports the new one (simulating a fresh daemon on the
+    // same endpoint).
+    let version = '0.5.0'
+    let shutdownHit = false
+    const server = await startFakeDaemon({
+      health: () => ({ status: 200, body: { status: 'ok', version, bridge: true } }),
+      shutdown: () => {
+        shutdownHit = true
+        version = '0.6.0'
+        return true
+      },
+    })
+    try {
+      const spawn = vi.fn(() => 12345)
+      const result = await ensureDaemon('0.6.0', { spawnDaemon: spawn, shutdownWaitMs: 200 })
+      expect(shutdownHit).toBe(true)
+      expect(spawn).toHaveBeenCalledTimes(1)
+      expect(result.alreadyRunning).toBe(false)
+      expect(result.health.version).toBe('0.6.0')
+    } finally {
+      await closeServer(server)
+    }
+  })
+
+  it('does not restart a daemon whose version matches', async () => {
+    const server = await startFakeDaemon({
+      health: () => ({ status: 200, body: { status: 'ok', version: '0.6.0', bridge: true } }),
+    })
+    try {
+      const stopFn = vi.fn(async () => true)
+      const spawn = vi.fn(() => -1)
+      const result = await ensureDaemon('0.6.0', { spawnDaemon: spawn, stopDaemonFn: stopFn })
+      expect(result.alreadyRunning).toBe(true)
+      expect(stopFn).not.toHaveBeenCalled()
+      expect(spawn).not.toHaveBeenCalled()
+    } finally {
+      await closeServer(server)
+    }
+  })
+
+  it('treats a daemon without a version field as matching and leaves it running', async () => {
+    const server = await startFakeDaemon({
+      health: () => ({ status: 200, body: { status: 'ok', bridge: true } }),
+    })
+    try {
+      const stopFn = vi.fn(async () => true)
+      const result = await ensureDaemon('0.6.0', { spawnDaemon: () => -1, stopDaemonFn: stopFn })
+      expect(result.alreadyRunning).toBe(true)
+      expect(stopFn).not.toHaveBeenCalled()
+    } finally {
+      await closeServer(server)
+    }
+  })
+
   it('throws when the daemon never becomes healthy', async () => {
     // Nothing listens here (port 1 cannot be bound by userland): the spawn
     // seam is a no-op, so the start timeout is the only way out.

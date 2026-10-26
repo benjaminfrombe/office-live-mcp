@@ -43,6 +43,11 @@ export function clearSessionWarnings(sessionId: string): void {
   sessionConcurrentWarnings.delete(sessionId)
 }
 
+/**
+ * Parse a 1-based slide range string ("1", "1-5", "2,4,7") into zero-based
+ * indices for internal use. Slide numbers coming from tool callers are
+ * 1-based: slide 1 is the first slide.
+ */
 export function parseSlideRange(range: string | undefined): number[] | null {
   if (!range) return null
   const indices = new Set<number>()
@@ -52,15 +57,15 @@ export function parseSlideRange(range: string | undefined): number[] | null {
     const dashIdx = trimmed.indexOf('-', 1)
     if (dashIdx === -1) {
       const n = Number(trimmed)
-      if (!Number.isInteger(n) || n < 0) throw new Error(`Invalid slide index: "${trimmed}"`)
-      indices.add(n)
+      if (!Number.isInteger(n) || n < 1) throw new Error(`Invalid slide number: "${trimmed}" (slides are 1-based)`)
+      indices.add(n - 1)
     } else {
       const start = Number(trimmed.slice(0, dashIdx))
       const end = Number(trimmed.slice(dashIdx + 1))
-      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start) {
-        throw new Error(`Invalid slide range: "${trimmed}"`)
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start) {
+        throw new Error(`Invalid slide range: "${trimmed}" (slides are 1-based)`)
       }
-      for (let i = start; i <= end; i++) indices.add(i)
+      for (let i = start; i <= end; i++) indices.add(i - 1)
     }
   }
   if (indices.size === 0) return null

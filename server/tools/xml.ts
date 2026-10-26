@@ -31,7 +31,7 @@ export function registerXmlTools(
     'edit_slide_xml',
     "Edit slide XML and reimport. Two modes: (1) xml mode — provide finished XML string (use read_slide_xml first to get current XML), (2) code mode — provide JS code that manipulates the pre-parsed DOM (receives: doc, findShapeById, NS_P, NS_A, escapeXml, serializeXml, DOMParser). Code mode preserves untouched attributes. The slide is exported, modified server-side, and reimported — data never enters Claude's context. NOTE: the reimport deletes and reinserts the slide, which makes PowerPoint's view jump to the first slide — reserve this for structural changes (new shapes, layout rebuilds).",
     {
-      slideIndex: z.number().int().min(0).describe('Zero-based slide index'),
+      slide: z.number().int().min(1).describe('Slide number, 1-based (slide 1 = first slide)'),
       xml: z
         .string()
         .optional()
@@ -59,7 +59,8 @@ export function registerXmlTools(
         .optional()
         .describe('Target presentation ID from list_presentations. Optional when only one presentation is connected.'),
     },
-    withTool(async ({ slideIndex, xml, code, shapeId, presentationId }) => {
+    withTool(async ({ slide, xml, code, shapeId, presentationId }) => {
+      const slideIndex = slide - 1
       if ((!xml && !code) || (xml && code)) {
         return {
           content: [
@@ -100,7 +101,7 @@ export function registerXmlTools(
         const doc = parseSlideXml(xmlString)
         const shape = findShapeById(doc, shapeId)
         if (!shape) {
-          throw new Error(`Shape with ID "${shapeId}" not found on slide ${slideIndex}`)
+          throw new Error(`Shape with ID "${shapeId}" not found on slide ${slide}`)
         }
         replaceShape(doc, shape, xml!)
         finalXml = serializeXml(doc)
@@ -128,7 +129,7 @@ export function registerXmlTools(
     'edit_slide_zip',
     'Update multiple files in the slide zip and reimport in a single operation. Accepts a map of { path: content } — can modify existing files or add new ones (e.g. chart XML + rels). Auto-registers Content_Types for new chart files. Use read_slide_zip first to get the current content.',
     {
-      slideIndex: z.number().int().min(0).describe('Zero-based slide index'),
+      slide: z.number().int().min(1).describe('Slide number, 1-based (slide 1 = first slide)'),
       files: z
         .record(z.string(), z.string())
         .describe(
@@ -139,7 +140,8 @@ export function registerXmlTools(
         .optional()
         .describe('Target presentation ID from list_presentations. Optional when only one presentation is connected.'),
     },
-    withTool(async ({ slideIndex, files, presentationId }) => {
+    withTool(async ({ slide, files, presentationId }) => {
+      const slideIndex = slide - 1
       const target = pool.resolveTarget(presentationId)
       const exported = await exportSlide(pool, slideIndex, target.ws)
       const newPaths = await applyZipEditAndReimport(pool, exported, files, target.ws, slideIndex)
@@ -156,7 +158,7 @@ export function registerXmlTools(
     'read_slide_xml',
     "Read the full raw OOXML of a slide, or filter to a specific shape. Returns the slide's ppt/slides/slide1.xml content. Use with the /pptx skill's OOXML knowledge to understand the XML structure.",
     {
-      slideIndex: z.number().int().min(0).describe('Zero-based slide index from scan_slide results'),
+      slide: z.number().int().min(1).describe('Slide number, 1-based (slide 1 = first slide), from scan_slide results'),
       shapeId: z
         .string()
         .optional()
@@ -166,7 +168,8 @@ export function registerXmlTools(
         .optional()
         .describe('Target presentation ID from list_presentations. Optional when only one presentation is connected.'),
     },
-    withTool(async ({ slideIndex, shapeId, presentationId }) => {
+    withTool(async ({ slide, shapeId, presentationId }) => {
+      const slideIndex = slide - 1
       const target = pool.resolveTarget(presentationId)
       const exported = await exportSlide(pool, slideIndex, target.ws)
       const { xmlString } = await extractSlideXmlFromZip(exported.base64)
@@ -175,7 +178,7 @@ export function registerXmlTools(
         const doc = parseSlideXml(xmlString)
         const shape = findShapeById(doc, shapeId)
         if (!shape) {
-          throw new Error(`Shape with ID "${shapeId}" not found on slide ${slideIndex}`)
+          throw new Error(`Shape with ID "${shapeId}" not found on slide ${slide}`)
         }
         return { content: [{ type: 'text' as const, text: serializeXml(shape) }] }
       }
@@ -188,7 +191,7 @@ export function registerXmlTools(
     'read_slide_zip',
     'Read multiple files from the exported slide zip. Returns slide XML, relationships, chart XMLs, and Content_Types. Use this to inspect chart data, rels, or other zip contents beyond what read_slide_xml provides. When no paths specified, auto-discovers all text/XML files in the zip.',
     {
-      slideIndex: z.number().int().min(0).describe('Zero-based slide index'),
+      slide: z.number().int().min(1).describe('Slide number, 1-based (slide 1 = first slide)'),
       paths: z
         .array(z.string())
         .optional()
@@ -200,7 +203,8 @@ export function registerXmlTools(
         .optional()
         .describe('Target presentation ID from list_presentations. Optional when only one presentation is connected.'),
     },
-    withTool(async ({ slideIndex, paths, presentationId }) => {
+    withTool(async ({ slide, paths, presentationId }) => {
+      const slideIndex = slide - 1
       const target = pool.resolveTarget(presentationId)
       const exported = await exportSlide(pool, slideIndex, target.ws)
       const { zip, files } = await extractZipFiles(exported.base64, paths)

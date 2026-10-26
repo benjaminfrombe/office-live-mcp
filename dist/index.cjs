@@ -78952,6 +78952,7 @@ var import_node_path3 = require("node:path");
 var HEALTH_TIMEOUT_MS = 1e3;
 var DAEMON_START_TIMEOUT_MS = 15e3;
 var DAEMON_POLL_INTERVAL_MS = 200;
+var DAEMON_SHUTDOWN_WAIT_MS = 3e3;
 function mcpHttpBase() {
   return `http://127.0.0.1:${Number(process.env.MCP_PORT) || 8792}`;
 }
@@ -79057,11 +79058,19 @@ function spawnDaemon() {
 async function ensureDaemon(localVersion, deps = {}) {
   const spawnFn = deps.spawnDaemon ?? spawnDaemon;
   const startTimeoutMs = deps.startTimeoutMs ?? DAEMON_START_TIMEOUT_MS;
+  const shutdownWaitMs = deps.shutdownWaitMs ?? DAEMON_SHUTDOWN_WAIT_MS;
+  const stopFn = deps.stopDaemonFn ?? stopDaemon;
   const existingBase = await discoverMcpEndpoint();
   if (existingBase) {
     const existingHealth = await fetchDaemonHealth();
-    if (existingHealth) warnOnVersionSkew(existingHealth, localVersion, false);
-    return { alreadyRunning: true, health: existingHealth ?? { status: "ok" }, base: existingBase };
+    if (existingHealth && versionsMatch(existingHealth.version, localVersion)) {
+      return { alreadyRunning: true, health: existingHealth, base: existingBase };
+    }
+    console.error(
+      `[stdio-proxy] Daemon is v${existingHealth?.version ?? "unknown"} but this wrapper is v${localVersion}. Restarting the daemon to pick up the new version.`
+    );
+    await stopFn();
+    await waitForEndpointToDisappear(shutdownWaitMs);
   }
   const lock = readDaemonLock();
   const lockHeldByLiveProcess = lock !== void 0 && isPidAlive(lock.pid);
@@ -79084,6 +79093,16 @@ function warnOnVersionSkew(health, localVersion, started) {
     console.error(
       `[stdio-proxy] Warning: daemon ${verb} is v${health.version} but this wrapper is v${localVersion}. Restart the daemon (office-live-mcp --stop-daemon, then reconnect) to pick up the new version.`
     );
+  }
+}
+function versionsMatch(daemonVersion, localVersion) {
+  return !daemonVersion || daemonVersion === localVersion;
+}
+async function waitForEndpointToDisappear(timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!await discoverMcpEndpoint()) return;
+    await new Promise((r) => setTimeout(r, DAEMON_POLL_INTERVAL_MS));
   }
 }
 async function stopDaemon() {
@@ -79429,7 +79448,21 @@ async function reimportSlide(pool2, modifiedBase64, slideId, prevSlideId, target
     optionsParts.push(`targetSlideId: "${prevSlideId}"`);
   }
   const optionsStr = `{ ${optionsParts.join(", ")} }`;
-  let code = `
+  const restoreViewCode = restoredSlideIndex === void 0 ? "" : `
+    await new Promise(function(res) { setTimeout(res, 300); });
+    await new Promise(function(res, rej) {
+      var attempt = 0;
+      function tryGoToRestoredSlide() {
+        Office.context.document.goToByIdAsync(${restoredSlideIndex + 1}, Office.GoToType.Index, function(navResult) {
+          if (navResult.status === Office.AsyncResultStatus.Succeeded) { res(); }
+          else if (++attempt < 5) { setTimeout(tryGoToRestoredSlide, 250); }
+          else { rej(new Error("View restore failed: " + navResult.error.message)); }
+        });
+      }
+      tryGoToRestoredSlide();
+    });
+  `;
+  const code = `
     var slides = context.presentation.slides;
     slides.load("items");
     await context.sync();
@@ -79455,17 +79488,9 @@ async function reimportSlide(pool2, modifiedBase64, slideId, prevSlideId, target
     if (slides.items.length !== countBefore) {
       throw new Error("Reimport verification failed: expected " + countBefore + " slides but found " + slides.items.length);
     }
+    ${restoreViewCode}
     return { success: true };
   `;
-  if (restoredSlideIndex !== void 0) {
-    code += `
-    Office.context.document.goToByIdAsync(${restoredSlideIndex + 1}, Office.GoToType.Index, function(navResult) {
-      if (navResult.status !== Office.AsyncResultStatus.Succeeded) {
-        console.error("View restore failed: " + navResult.error.message);
-      }
-    });
-  `;
-  }
   await pool2.sendCommand("executeCode", { code }, targetWs, timeout);
 }
 var NS_P = "http://schemas.openxmlformats.org/presentationml/2006/main";
@@ -79969,15 +79994,15 @@ function parseSlideRange(range) {
     const dashIdx = trimmed.indexOf("-", 1);
     if (dashIdx === -1) {
       const n = Number(trimmed);
-      if (!Number.isInteger(n) || n < 0) throw new Error(`Invalid slide index: "${trimmed}"`);
-      indices.add(n);
+      if (!Number.isInteger(n) || n < 1) throw new Error(`Invalid slide number: "${trimmed}" (slides are 1-based)`);
+      indices.add(n - 1);
     } else {
       const start = Number(trimmed.slice(0, dashIdx));
       const end = Number(trimmed.slice(dashIdx + 1));
-      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start) {
-        throw new Error(`Invalid slide range: "${trimmed}"`);
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start) {
+        throw new Error(`Invalid slide range: "${trimmed}" (slides are 1-based)`);
       }
-      for (let i = start; i <= end; i++) indices.add(i);
+      for (let i = start; i <= end; i++) indices.add(i - 1);
     }
   }
   if (indices.size === 0) return null;
@@ -80121,7 +80146,7 @@ function registerChartTools(server, pool2, getSessionId, getActiveSessionCount) 
     "edit_slide_chart",
     "Create a chart on a slide from structured data. Generates all OOXML automatically (chart XML, rels, graphic frame, Content_Types). Supports column, bar, line, pie, doughnut, and area charts with multiple series.",
     {
-      slideIndex: external_exports.number().int().min(0).describe("Zero-based slide index"),
+      slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide)"),
       chartType: external_exports.enum(["column", "bar", "line", "pie", "doughnut", "area"]).describe("Chart type"),
       title: external_exports.string().describe("Chart title"),
       categories: external_exports.array(external_exports.string()).describe("Category labels (x-axis or pie slices)"),
@@ -80145,7 +80170,8 @@ function registerChartTools(server, pool2, getSessionId, getActiveSessionCount) 
       }).optional().describe("Chart options"),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
-    withTool(async ({ slideIndex, chartType, title, categories, series, position, options, presentationId }) => {
+    withTool(async ({ slide, chartType, title, categories, series, position, options, presentationId }) => {
+      const slideIndex = slide - 1;
       const target = pool2.resolveTarget(presentationId);
       const exported = await exportSlide(pool2, slideIndex, target.ws);
       const { zip } = await extractZipFiles(exported.base64);
@@ -81286,7 +81312,7 @@ function registerExecTools(server, pool2, getSessionId, getActiveSessionCount) {
     "verify_slides",
     "Run programmatic checks on a slide: detect overlapping shapes, out-of-bounds shapes, empty text, tiny shapes, unused placeholders, placeholder drift from layout defaults, and full-bleed background covers. Returns a list of issues found. Uses the same shape data as inspect_slide \u2014 no OOXML needed.",
     {
-      slideIndex: external_exports.number().int().min(0).describe("Zero-based slide index"),
+      slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide)"),
       checks: external_exports.array(
         external_exports.enum([
           "overlap",
@@ -81300,7 +81326,8 @@ function registerExecTools(server, pool2, getSessionId, getActiveSessionCount) {
       ).optional().describe("Checks to run. Default: all checks."),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
-    withTool(async ({ slideIndex, checks, presentationId }) => {
+    withTool(async ({ slide, checks, presentationId }) => {
+      const slideIndex = slide - 1;
       const target = pool2.resolveTarget(presentationId);
       const enabledChecks = checks ?? [
         "overlap",
@@ -81317,7 +81344,7 @@ function registerExecTools(server, pool2, getSessionId, getActiveSessionCount) {
           slides.load("items");
           await context.sync();
           if (${slideIndex} >= slides.items.length) {
-            throw new Error("Slide index " + ${slideIndex} + " out of range (presentation has " + slides.items.length + " slides)");
+            throw new Error("Slide number " + ${slide} + " out of range (presentation has " + slides.items.length + " slides)");
           }
           var slide = slides.items[${slideIndex}];
           slide.shapes.load("items");
@@ -81510,7 +81537,7 @@ function registerExecTools(server, pool2, getSessionId, getActiveSessionCount) {
           }
         }
       }
-      const result = { slideIndex, shapeCount: shapes.length, issueCount: issues.length, issues };
+      const result = { slide, shapeCount: shapes.length, issueCount: issues.length, issues };
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     })
   );
@@ -81544,7 +81571,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
   );
   server.tool(
     "inspect_deck",
-    "Deck overview: slide dimensions, theme (colors + fonts), and all slides with index, ID, and shape count. Use as the first call to understand deck structure. Theme is cached after the first call. For shape details, follow up with scan_slide or inspect_slide on specific slides. For available layouts, use inspect_layouts.",
+    "Deck overview: slide dimensions, theme (colors + fonts), and all slides with slide number (1-based), ID, and shape count. Use as the first call to understand deck structure. Theme is cached after the first call. For shape details, follow up with scan_slide or inspect_slide on specific slides. For available layouts, use inspect_layouts.",
     {
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
@@ -81565,7 +81592,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
           await context.sync();
           for (var i = 0; i < slides.items.length; i++) {
             var slide = slides.items[i];
-            output.push({ index: i, id: slide.id, layout: slide.layout.name, shapeCount: slide.shapes.items.length });
+            output.push({ index: i + 1, id: slide.id, layout: slide.layout.name, shapeCount: slide.shapes.items.length });
           }
           return { slideWidth: ps.slideWidth, slideHeight: ps.slideHeight, slides: output };
         `;
@@ -81627,7 +81654,10 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
       const target = pool2.resolveTarget(presentationId);
       if (usedOnly) {
         const layouts2 = await getLayoutUsage(pool2, target.ws);
-        return { content: [{ type: "text", text: JSON.stringify({ layouts: layouts2, usedOnly: true }) }] };
+        const layouts1Based = layouts2.map((l) => ({ ...l, usedBySlides: l.usedBySlides.map((n) => n + 1) }));
+        return {
+          content: [{ type: "text", text: JSON.stringify({ layouts: layouts1Based, usedOnly: true }) }]
+        };
       }
       const localPath = await getLocalCopyPath(pool2, target);
       const fileData = (0, import_node_fs5.readFileSync)(localPath);
@@ -81635,7 +81665,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
       const layouts = await extractLayoutsFromZip(zip);
       try {
         const usage = await getLayoutUsage(pool2, target.ws);
-        const usageByName = new Map(usage.map((u) => [u.name, u.usedBySlides]));
+        const usageByName = new Map(usage.map((u) => [u.name, u.usedBySlides.map((n) => n + 1)]));
         for (const layout of layouts) {
           layout.usedBySlides = usageByName.get(layout.name) ?? [];
         }
@@ -81649,7 +81679,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
     "inspect_slide",
     "Detailed slide inspector (~80 tokens/shape): returns every shape with text content, positions, sizes, and fill colors, plus slide dimensions. Supports slideRange for multiple slides. For just positions without text/fills, use scan_slide instead.",
     {
-      slideRange: external_exports.string().describe('Slide indices to inspect, e.g. "0", "0-5", "2,4,7". Single index or range.'),
+      slideRange: external_exports.string().describe('Slide numbers, 1-based, e.g. "1", "1-5", "2,4,7". Single number or range.'),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
     withTool(async ({ slideRange, presentationId }) => {
@@ -81666,7 +81696,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
           var requestedIndices = ${indicesJs};
           for (var i = 0; i < requestedIndices.length; i++) {
             if (requestedIndices[i] >= slides.items.length) {
-              throw new Error("Slide index " + requestedIndices[i] + " out of range (presentation has " + slides.items.length + " slides)");
+              throw new Error("Slide number " + (requestedIndices[i] + 1) + " out of range (presentation has " + slides.items.length + " slides)");
             }
           }
           for (var i = 0; i < requestedIndices.length; i++) {
@@ -81705,7 +81735,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
               }
               shapes.push(info);
             }
-            output.push({ slideIndex: idx, slideId: slide.id, shapes: shapes });
+            output.push({ slide: idx + 1, slideId: slide.id, shapes: shapes });
           }
           return { slideWidth: ps.slideWidth, slideHeight: ps.slideHeight, slides: output };
         `;
@@ -81720,7 +81750,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
     "scan_slide",
     "Lightweight shape scanner (~40 tokens/shape): lists shape IDs, types, and positions on slides, plus slide dimensions. Supports slideRange for multiple slides. For text content and fills, use inspect_slide instead.",
     {
-      slideRange: external_exports.string().describe('Slide indices to scan, e.g. "0", "0-5", "2,4,7". Single index or range.'),
+      slideRange: external_exports.string().describe('Slide numbers, 1-based, e.g. "1", "1-5", "2,4,7". Single number or range.'),
       namePattern: external_exports.string().optional().describe('Glob-style filter on shape name, e.g. "Title*", "*_source", "Card*_bg". Case-insensitive.'),
       shapeType: external_exports.string().optional().describe('Filter by shape type: "Placeholder", "TextBox", "GeometricShape", "Graphic", "Picture", etc.'),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
@@ -81739,7 +81769,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
           var requestedIndices = ${indicesJs};
           for (var i = 0; i < requestedIndices.length; i++) {
             if (requestedIndices[i] >= slides.items.length) {
-              throw new Error("Slide index " + requestedIndices[i] + " out of range (presentation has " + slides.items.length + " slides)");
+              throw new Error("Slide number " + (requestedIndices[i] + 1) + " out of range (presentation has " + slides.items.length + " slides)");
             }
           }
           for (var i = 0; i < requestedIndices.length; i++) {
@@ -81763,7 +81793,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
                 height: s.height
               });
             }
-            output.push({ slideIndex: idx, slideId: slide.id, shapes: shapes });
+            output.push({ slide: idx + 1, slideId: slide.id, shapes: shapes });
           }
           return { slideWidth: ps.slideWidth, slideHeight: ps.slideHeight, slides: output };
         `;
@@ -81789,14 +81819,15 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
     "screenshot_slide",
     "Slide screenshot (~1000 tokens): captures one slide as PNG image. Use to visually verify layout after changes. Do NOT loop over all slides \u2014 use preview_deck instead.",
     {
-      slideIndex: external_exports.number().int().min(0).describe("Zero-based slide index from scan_slide results"),
+      slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide), from scan_slide results"),
       width: external_exports.number().int().min(1).max(4096).optional().describe(
         "Image width in pixels. Default: 720. Height auto-calculated to preserve aspect ratio unless also specified."
       ),
       height: external_exports.number().int().min(1).max(4096).optional().describe("Image height in pixels. If omitted, auto-calculated from width to preserve aspect ratio."),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
-    withTool(async ({ slideIndex, width, height, presentationId }) => {
+    withTool(async ({ slide, width, height, presentationId }) => {
+      const slideIndex = slide - 1;
       const imgWidth = width ?? 720;
       const optionsParts = [`width: ${imgWidth}`];
       if (height !== void 0) {
@@ -81808,18 +81839,18 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
           slides.load("items");
           await context.sync();
           if (${slideIndex} >= slides.items.length) {
-            throw new Error("Slide index " + ${slideIndex} + " out of range (presentation has " + slides.items.length + " slides)");
+            throw new Error("Slide number " + ${slide} + " out of range (presentation has " + slides.items.length + " slides)");
           }
           var slide = slides.items[${slideIndex}];
           var result = slide.getImageAsBase64(${optionsStr});
           await context.sync();
-          return { base64: result.value, slideIndex: ${slideIndex}, slideId: slide.id };
+          return { base64: result.value, slide: ${slide}, slideId: slide.id };
         `;
       try {
         const target = pool2.resolveTarget(presentationId);
         const result = await pool2.sendCommand("executeCode", { code }, target.ws);
         const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount());
-        const description = `Slide ${result.slideIndex} (ID: ${result.slideId})${warning ?? ""}`;
+        const description = `Slide ${result.slide} (ID: ${result.slideId})${warning ?? ""}`;
         return {
           content: [
             {
@@ -81846,7 +81877,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
     "preview_deck",
     "Deck preview: batch overview of all/selected slides with optional thumbnails + text. With images: ~900 tokens/slide; text-only (includeImages=false): ~35 tokens/slide. Use for visual review or content audit. Do NOT use to inspect one slide \u2014 use inspect_slide or screenshot_slide instead.",
     {
-      slideRange: external_exports.string().optional().describe('Slide indices to include, e.g. "0-5", "2,4,7", "0-2,5,8-10". Omit for all slides.'),
+      slideRange: external_exports.string().optional().describe('Slide numbers, 1-based, e.g. "1-6", "2,4,7", "1-3,5,8-11". Omit for all slides.'),
       imageWidth: external_exports.number().int().min(120).max(1920).optional().describe("Thumbnail width in pixels. Default: 480. Height auto-calculated to preserve aspect ratio."),
       includeImages: external_exports.boolean().optional().describe("Include slide thumbnails. Default: true. Set false for text-only overview (faster)."),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
@@ -81871,7 +81902,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
           // Validate indices
           for (var i = 0; i < indicesToProcess.length; i++) {
             if (indicesToProcess[i] >= slides.items.length) {
-              throw new Error("Slide index " + indicesToProcess[i] + " out of range (presentation has " + slides.items.length + " slides)");
+              throw new Error("Slide number " + (indicesToProcess[i] + 1) + " out of range (presentation has " + slides.items.length + " slides)");
             }
           }
           // Load shapes for all requested slides
@@ -81894,7 +81925,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
               } catch (e) {}
               shapes.push(info);
             }
-            var slideData = { index: idx, id: slide.id, shapeCount: shapes.length, shapes: shapes };
+            var slideData = { index: idx + 1, id: slide.id, shapeCount: shapes.length, shapes: shapes };
             ${withImages ? `var img = slide.getImageAsBase64({ width: ${width} });
             await context.sync();
             slideData.imageBase64 = img.value;` : ""}
@@ -82098,8 +82129,8 @@ function registerMediaTools(server, pool2, getSessionId, getActiveSessionCount) 
       sourceType: external_exports.enum(["file", "url", "base64"]).describe(
         'How to interpret source: "file" reads from disk, "url" fetches from network, "base64" uses data directly'
       ),
-      slideIndex: external_exports.number().int().min(0).optional().describe(
-        "Zero-based slide index to navigate to before inserting. If omitted, inserts on the currently active slide."
+      slide: external_exports.number().int().min(1).optional().describe(
+        "Slide number, 1-based (slide 1 = first slide), to navigate to before inserting. If omitted, inserts on the currently active slide."
       ),
       left: external_exports.number().optional().describe("Horizontal position in points (1 point = 1/72 inch)"),
       top: external_exports.number().optional().describe("Vertical position in points"),
@@ -82110,7 +82141,8 @@ function registerMediaTools(server, pool2, getSessionId, getActiveSessionCount) 
       ),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
-    withTool(async ({ source, sourceType, slideIndex, left, top, width, height, color, presentationId }) => {
+    withTool(async ({ source, sourceType, slide, left, top, width, height, color, presentationId }) => {
+      const slideIndex = slide !== void 0 ? slide - 1 : void 0;
       let base64Data;
       if (sourceType === "file") {
         base64Data = (0, import_node_fs7.readFileSync)(source).toString("base64");
@@ -82164,7 +82196,7 @@ allSlides.load("items/id");
 await context.sync();
 var targetId = allSlides.items[${slideIndex}] ? allSlides.items[${slideIndex}].id : null;
 if (targetId === null) {
-  throw new Error("Slide index " + ${slideIndex} + " out of range (presentation has " + allSlides.items.length + " slides)");
+  throw new Error("Slide number " + ${slide} + " out of range (presentation has " + allSlides.items.length + " slides)");
 }
 var alreadyThere = originalId !== null && originalId === targetId;
 return new Promise(function(resolve, reject) {
@@ -82434,7 +82466,7 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
     {
       notes: external_exports.array(
         external_exports.object({
-          slideIndex: external_exports.number().int().min(0).describe("Zero-based slide index"),
+          slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide)"),
           text: external_exports.string().describe(
             'Notes content. Supports markdown: **bold**, *italic*, paragraphs separated by blank lines. Use empty string "" to clear notes.'
           )
@@ -82446,17 +82478,18 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
       const target = pool2.resolveTarget(presentationId);
       const results = [];
       for (const entry of notes) {
+        const slideIndex = entry.slide - 1;
         try {
-          const exported = await exportSlide(pool2, entry.slideIndex, target.ws);
+          const exported = await exportSlide(pool2, slideIndex, target.ws);
           const { zip } = await extractZipFiles(exported.base64);
           const slideRelsFile = zip.file("ppt/slides/_rels/slide1.xml.rels");
           const slideRelsXml = slideRelsFile ? await slideRelsFile.async("string") : `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
           const files = buildNotesInjection(slideRelsXml, entry.text);
           await applyZipEditAndReimport(pool2, exported, files, target.ws);
-          results.push({ slideIndex: entry.slideIndex, success: true });
+          results.push({ slide: entry.slide, success: true });
         } catch (err) {
-          results.push({ slideIndex: entry.slideIndex, success: false, error: errorMessage(err) });
+          results.push({ slide: entry.slide, success: false, error: errorMessage(err) });
         }
       }
       localCopyCache.delete(target.presentationId);
@@ -82469,7 +82502,7 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
     "read_speaker_notes",
     "Read speaker notes from slides. Uses full-deck export (cached by revision) to parse notes from OOXML \u2014 Office.js has no notes API. Returns plain text per slide.",
     {
-      slideRange: external_exports.string().optional().describe('Slide indices, e.g. "0", "0-5", "2,4,7". Omit to read all slides.'),
+      slideRange: external_exports.string().optional().describe('Slide numbers, 1-based, e.g. "1", "1-5", "2,4,7". Omit to read all slides.'),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
     withTool(async ({ slideRange, presentationId }) => {
@@ -82479,7 +82512,7 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
       const zip = await import_jszip3.default.loadAsync(data);
       const indices = parseSlideRange(slideRange);
       const notesMap = await readNotesFromDeck(zip, indices);
-      const slides = [...notesMap.entries()].sort(([a], [b]) => a - b).map(([slideIndex, notes]) => ({ slideIndex, notes }));
+      const slides = [...notesMap.entries()].sort(([a], [b]) => a - b).map(([slideIndex, notes]) => ({ slide: slideIndex + 1, notes }));
       return {
         content: [{ type: "text", text: JSON.stringify({ slides }, null, 2) }]
       };
@@ -82495,10 +82528,11 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
     "show_slide",
     "Bring a slide into view in the live presentation (navigates the user to that slide). Call this BEFORE editing a slide so the user can watch the changes happen; also useful to walk the user through a deck slide by slide.",
     {
-      slideIndex: external_exports.number().int().min(0).describe("Zero-based slide index to show."),
+      slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide)."),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
-    withTool(async ({ slideIndex, presentationId }) => {
+    withTool(async ({ slide, presentationId }) => {
+      const slideIndex = slide - 1;
       const target = pool2.resolveTarget(presentationId);
       const code = `return new Promise(function(resolve, reject) {
   Office.context.document.goToByIdAsync(${slideIndex + 1}, Office.GoToType.Index, function(navResult) {
@@ -82506,24 +82540,24 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
       reject(new Error("Navigation failed: " + navResult.error.message));
       return;
     }
-    resolve({ shown: ${slideIndex} });
+    resolve({ shown: ${slide} });
   });
 });`;
       const result = await pool2.sendCommand("executeCode", { code }, target.ws);
       return {
-        content: [{ type: "text", text: JSON.stringify(result ?? { shown: slideIndex }) }]
+        content: [{ type: "text", text: JSON.stringify(result ?? { shown: slide }) }]
       };
     })
   );
   server.tool(
     "add_slide",
-    "Add a new slide from a layout at a specific position, with placeholder text pre-filled and shapes renamed to layout names. Use inspect_layouts to find available layout names and placeholder names. Returns the new slide index and its placeholder shapes with semantic names.",
+    "Add a new slide from a layout at a specific position, with placeholder text pre-filled and shapes renamed to layout names. Use inspect_layouts to find available layout names and placeholder names. Returns the new slide number (1-based) and its placeholder shapes with semantic names.",
     {
       layoutName: external_exports.string().describe(
         'Layout name from inspect_layouts (e.g. "Title and Content", "Section Header"). Case-insensitive match. Layouts starting with "_" are rejected (technical layouts).'
       ),
-      position: external_exports.number().int().min(0).optional().describe(
-        "Zero-based target slide index. The new slide is inserted at this position (existing slides shift right). Default: append at end."
+      position: external_exports.number().int().min(1).optional().describe(
+        "1-based insertion position (position 1 = the new slide becomes the first slide; existing slides shift right). Default: append at end."
       ),
       placeholders: external_exports.record(external_exports.string(), external_exports.string()).optional().describe(
         'Map of layout placeholder name \u2192 text content. E.g. {"section_title": "Backup Slides", "section_subtitle": "Evidence & appendix"}. Names must match layout placeholder names from inspect_layouts.'
@@ -82531,6 +82565,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
     withTool(async ({ layoutName, position, placeholders, presentationId }) => {
+      const positionIndex = position !== void 0 ? position - 1 : void 0;
       if (layoutName.startsWith("_")) {
         return {
           content: [
@@ -82597,7 +82632,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
           slides.load("items");
           await context.sync();
           var newSlide = slides.items[slides.items.length - 1];
-          var targetPos = ${position !== void 0 ? position : "undefined"};
+          var targetPos = ${positionIndex !== void 0 ? positionIndex : "undefined"};
           if (targetPos !== undefined) {
             newSlide.moveTo(targetPos);
             await context.sync();
@@ -82704,7 +82739,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
         `;
       const phResult = await pool2.sendCommand("executeCode", { code: renameCode }, target.ws);
       const result = {
-        slideIndex: addResult.slideIndex,
+        slide: addResult.slideIndex + 1,
         slideCount: addResult.slideCount,
         layoutName: addResult.layoutName,
         placeholders: phResult
@@ -82721,24 +82756,25 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
     "duplicate_slide",
     "Duplicate a slide within the same presentation. Exports the slide and reimports it at the specified position. Data stays server-side. The reimport makes PowerPoint view jump to the first slide.",
     {
-      slideIndex: external_exports.number().int().min(0).describe("Zero-based index of the slide to duplicate"),
-      insertAfter: external_exports.number().int().min(0).optional().describe(
-        "Zero-based slide index to insert the duplicate after. Default: same as slideIndex (duplicate appears right after the source)."
+      slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide), of the slide to duplicate"),
+      insertAfterSlide: external_exports.number().int().min(1).optional().describe(
+        "1-based slide number to insert the duplicate after. Default: same as slide (duplicate appears right after the source)."
       ),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
-    withTool(async ({ slideIndex, insertAfter, presentationId }) => {
+    withTool(async ({ slide, insertAfterSlide, presentationId }) => {
+      const slideIndex = slide - 1;
       const target = pool2.resolveTarget(presentationId);
-      const insertPos = insertAfter ?? slideIndex;
+      const insertPos = (insertAfterSlide ?? slide) - 1;
       const code = `
           var slides = context.presentation.slides;
           slides.load("items");
           await context.sync();
           if (${slideIndex} >= slides.items.length) {
-            throw new Error("Slide index " + ${slideIndex} + " out of range (presentation has " + slides.items.length + " slides)");
+            throw new Error("Slide number " + ${slide} + " out of range (presentation has " + slides.items.length + " slides)");
           }
           if (${insertPos} >= slides.items.length) {
-            throw new Error("insertAfter index " + ${insertPos} + " out of range (presentation has " + slides.items.length + " slides)");
+            throw new Error("insertAfterSlide number " + ${insertAfterSlide ?? slide} + " out of range (presentation has " + slides.items.length + " slides)");
           }
           var slide = slides.items[${slideIndex}];
           var result = slide.exportAsBase64();
@@ -82751,7 +82787,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
           await context.sync();
           slides.load("items");
           await context.sync();
-          return { duplicatedSlideIndex: ${slideIndex}, insertedAfter: ${insertPos}, slideCount: slides.items.length };
+          return { duplicatedSlide: ${slide}, insertedAfterSlide: ${insertAfterSlide ?? slide}, slideCount: slides.items.length };
         `;
       const result = await pool2.sendCommand("executeCode", { code }, target.ws);
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount());
@@ -82763,7 +82799,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
     "copy_slides",
     "Copies slides between two open presentations entirely server-side \u2014 the Base64 data never enters Claude context. Exports from the source presentation and inserts into the destination in a single operation. Both presentations must be connected to the bridge. Requires PowerPointApi 1.8.",
     {
-      sourceSlideIndex: external_exports.number().int().min(0).describe("Zero-based slide index to copy from the source presentation"),
+      sourceSlide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide), to copy from the source presentation"),
       sourcePresentationId: external_exports.string().describe("Source presentation ID from list_presentations"),
       destinationPresentationId: external_exports.string().describe("Destination presentation ID from list_presentations"),
       targetSlideId: external_exports.string().optional().describe(
@@ -82771,25 +82807,24 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
       ),
       formatting: external_exports.enum(["KeepSourceFormatting", "UseDestinationTheme"]).optional().describe("Formatting mode. Default: KeepSourceFormatting.")
     },
-    withTool(
-      async ({ sourceSlideIndex, sourcePresentationId, destinationPresentationId, targetSlideId, formatting }) => {
-        const source = pool2.resolveTarget(sourcePresentationId);
-        const exportCode = `
+    withTool(async ({ sourceSlide, sourcePresentationId, destinationPresentationId, targetSlideId, formatting }) => {
+      const sourceSlideIndex = sourceSlide - 1;
+      const source = pool2.resolveTarget(sourcePresentationId);
+      const exportCode = `
           var slides = context.presentation.slides;
           slides.load("items");
           await context.sync();
           if (${sourceSlideIndex} >= slides.items.length) {
-            throw new Error("Slide index " + ${sourceSlideIndex} + " out of range (presentation has " + slides.items.length + " slides)");
+            throw new Error("Slide number " + ${sourceSlide} + " out of range (presentation has " + slides.items.length + " slides)");
           }
           var slide = slides.items[${sourceSlideIndex}];
           var result = slide.exportAsBase64();
           await context.sync();
-          return { base64: result.value, slideIndex: ${sourceSlideIndex}, slideId: slide.id };
-        `;
-        const exported = await pool2.sendCommand("executeCode", { code: exportCode }, source.ws);
-        const dest = pool2.resolveTarget(destinationPresentationId);
-        const optionsArg = buildInsertOptions(formatting, targetSlideId);
-        const insertCode = `
+          return { base64: result.value, slideIndex: ${sourceSlideIndex}, slideId: slide.id };        `;
+      const exported = await pool2.sendCommand("executeCode", { code: exportCode }, source.ws);
+      const dest = pool2.resolveTarget(destinationPresentationId);
+      const optionsArg = buildInsertOptions(formatting, targetSlideId);
+      const insertCode = `
           context.presentation.insertSlidesFromBase64("${exported.base64}"${optionsArg});
           await context.sync();
           var slides = context.presentation.slides;
@@ -82797,19 +82832,18 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
           await context.sync();
           return { slideCount: slides.items.length };
         `;
-        const inserted = await pool2.sendCommand("executeCode", { code: insertCode }, dest.ws);
-        const warning = getConcurrentWarning(getSessionId(), dest.presentationId, getActiveSessionCount());
-        const text = JSON.stringify(
-          {
-            copied: { slideIndex: exported.slideIndex, slideId: exported.slideId },
-            destination: { slideCount: inserted.slideCount }
-          },
-          null,
-          2
-        ) + (warning ?? "");
-        return { content: [{ type: "text", text }] };
-      }
-    )
+      const inserted = await pool2.sendCommand("executeCode", { code: insertCode }, dest.ws);
+      const warning = getConcurrentWarning(getSessionId(), dest.presentationId, getActiveSessionCount());
+      const text = JSON.stringify(
+        {
+          copied: { slide: sourceSlide, slideId: exported.slideId },
+          destination: { slideCount: inserted.slideCount }
+        },
+        null,
+        2
+      ) + (warning ?? "");
+      return { content: [{ type: "text", text }] };
+    })
   );
 }
 
@@ -82820,19 +82854,20 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
     "edit_shape_paragraphs",
     "Replace paragraph content of a shape with raw OOXML <a:p> XML. Preserves <a:bodyPr> and <a:lstStyle>. Use read_shape_paragraphs first to get the current XML, modify it (using /pptx skill knowledge), then write it back. The slide is exported, modified server-side, and reimported \u2014 data never enters Claude's context. NOTE: the reimport deletes and reinserts the slide, which makes PowerPoint's view jump to the first slide. For text-only changes, prefer execute_officejs (in place via shape.textFrame.textRange \u2014 view position is preserved).",
     {
-      slideIndex: external_exports.number().int().min(0).describe("Zero-based slide index"),
+      slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide)"),
       shapeId: external_exports.string().describe("Shape ID from inspect_slide results"),
       xml: external_exports.string().describe("The <a:p> paragraph XML to replace the current text body content with"),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
-    withTool(async ({ slideIndex, shapeId, xml, presentationId }) => {
+    withTool(async ({ slide, shapeId, xml, presentationId }) => {
+      const slideIndex = slide - 1;
       const target = pool2.resolveTarget(presentationId);
       const exported = await exportSlide(pool2, slideIndex, target.ws);
       const { zip, xmlString } = await extractSlideXmlFromZip(exported.base64);
       const doc = parseSlideXml(xmlString);
       const shape = findShapeById(doc, shapeId);
       if (!shape) {
-        throw new Error(`Shape with ID "${shapeId}" not found on slide ${slideIndex}`);
+        throw new Error(`Shape with ID "${shapeId}" not found on slide ${slide}`);
       }
       replaceParagraphs(doc, shape, xml);
       const modifiedBase64 = await updateSlideXmlInZip(zip, serializeXml(doc));
@@ -82854,18 +82889,19 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
     "read_shape_paragraphs",
     "Read raw OOXML <a:p> paragraphs from a shape's text body. Returns the paragraph XML as a string \u2014 preserves all formatting (bold, colors, bullets, etc.) that textRange.text strips. Use with the /pptx skill's OOXML knowledge to understand and modify the XML.",
     {
-      slideIndex: external_exports.number().int().min(0).describe("Zero-based slide index from scan_slide results"),
+      slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide), from scan_slide results"),
       shapeId: external_exports.string().describe('Shape ID from inspect_slide results (e.g. "5")'),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
-    withTool(async ({ slideIndex, shapeId, presentationId }) => {
+    withTool(async ({ slide, shapeId, presentationId }) => {
+      const slideIndex = slide - 1;
       const target = pool2.resolveTarget(presentationId);
       const exported = await exportSlide(pool2, slideIndex, target.ws);
       const { xmlString } = await extractSlideXmlFromZip(exported.base64);
       const doc = parseSlideXml(xmlString);
       const shape = findShapeById(doc, shapeId);
       if (!shape) {
-        throw new Error(`Shape with ID "${shapeId}" not found on slide ${slideIndex}`);
+        throw new Error(`Shape with ID "${shapeId}" not found on slide ${slide}`);
       }
       const paragraphXml = extractParagraphs(shape);
       return { content: [{ type: "text", text: paragraphXml }] };
@@ -82875,7 +82911,7 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
     "read_deck_text",
     "Lightweight text extractor: returns slide titles and body text as plain strings (~20x smaller than inspect_slide). Use for content review, narrative analysis, or any read-only text task. Supports slideRange and optional speaker notes.",
     {
-      slideRange: external_exports.string().optional().describe('Slide range, e.g. "0-5", "2,4,7". Zero-based. Omit for all slides.'),
+      slideRange: external_exports.string().optional().describe('Slide numbers, 1-based, e.g. "1", "1-5", "2,4,7". Omit for all slides.'),
       includeNotes: external_exports.boolean().optional().describe("Include speaker notes. Default: false."),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
@@ -82884,7 +82920,8 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
       const localPath = await getLocalCopyPath(pool2, target);
       const zipBuffer = (0, import_node_fs10.readFileSync)(localPath);
       const indices = slideRange ? parseSlideRange(slideRange) : null;
-      const result = await extractDeckText(zipBuffer, indices, includeNotes === true);
+      const deckText = await extractDeckText(zipBuffer, indices, includeNotes === true);
+      const result = deckText.map((s) => ({ ...s, slide: s.slide + 1 }));
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount());
       const text = JSON.stringify(result) + (warning ?? "");
       return { content: [{ type: "text", text }] };
@@ -82895,7 +82932,9 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
     "Search for text across all slides (or a slide range) in the presentation \u2014 like grep for slides. Searches shape text, table cells, and speaker notes. Returns matching shapes with context at the chosen level. Case-insensitive substring by default; supports regex.",
     {
       query: external_exports.string().describe("Text to search for. Plain substring by default, or a regex pattern when regex=true."),
-      slideRange: external_exports.string().optional().describe('Optional slide range to search, e.g. "0-4" or "2-7". Zero-based. Omit to search all slides.'),
+      slideRange: external_exports.string().optional().describe(
+        'Optional slide range to search, e.g. "1-5" or "2-8". Slide numbers are 1-based. Omit to search all slides.'
+      ),
       caseSensitive: external_exports.boolean().optional().describe("Case-sensitive search. Default: false."),
       regex: external_exports.boolean().optional().describe("Treat query as a regular expression. Default: false (plain substring)."),
       context: external_exports.enum(["shape", "slide", "none"]).optional().describe(
@@ -82956,8 +82995,8 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
           var endIdx = total - 1;
           if (slideRangeStr) {
             var parts = slideRangeStr.split("-");
-            startIdx = parseInt(parts[0], 10);
-            if (parts.length > 1) endIdx = parseInt(parts[1], 10);
+            startIdx = parseInt(parts[0], 10) - 1;
+            if (parts.length > 1) endIdx = parseInt(parts[1], 10) - 1;
             else endIdx = startIdx;
             if (startIdx < 0) startIdx = 0;
             if (endIdx >= total) endIdx = total - 1;
@@ -83047,9 +83086,9 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
 
             if (slideHasMatch) {
               if (ctxLevel === "none") {
-                slideResults.push(si);
+                slideResults.push(si + 1);
               } else if (ctxLevel === "slide") {
-                var entry = { slideIndex: si, shapes: [] };
+                var entry = { slide: si + 1, shapes: [] };
                 for (var k = 0; k < shapeEntries.length; k++) {
                   var se = shapeEntries[k];
                   var shapeInfo = {
@@ -83076,13 +83115,13 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
                   for (var ti3 = 0; ti3 < se2.texts.length; ti3++) {
                     var tx2 = se2.texts[ti3];
                     if (!testMatch(tx2.text)) continue;
-                    var m = { slideIndex: si, shapeId: se2.shapeId, shapeName: se2.shapeName, source: tx2.source, text: tx2.text };
+                    var m = { slide: si + 1, shapeId: se2.shapeId, shapeName: se2.shapeName, source: tx2.source, text: tx2.text };
                     if (tx2.source === "tableCell") { m.row = tx2.row; m.col = tx2.col; }
                     slideResults.push(m);
                   }
                 }
                 if (noteMatched) {
-                  slideResults.push({ slideIndex: si, source: "note", text: noteText });
+                  slideResults.push({ slide: si + 1, source: "note", text: noteText });
                 }
               }
             }
@@ -83108,7 +83147,7 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
     "format_shapes",
     "Apply formatting to multiple shapes on a slide in one call. Generates Office.js code internally. Use for fill color, font bold/italic/size/color/name. Cannot set corner radius or borders (use edit_slide_xml code mode for those). Runs in place (no slide reimport), so PowerPoint view position is preserved.",
     {
-      slideIndex: external_exports.number().int().min(0).describe("Zero-based slide index"),
+      slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide)"),
       shapes: external_exports.array(
         external_exports.object({
           id: external_exports.string().describe("Shape ID from inspect_slide or scan_slide"),
@@ -83124,9 +83163,10 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
       ).min(1).describe("Shapes to format with their properties"),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
-    withTool(async ({ slideIndex, shapes, presentationId }) => {
+    withTool(async ({ slide, shapes, presentationId }) => {
+      const slideIndex = slide - 1;
       const target = pool2.resolveTarget(presentationId);
-      const shapeOps = buildFormatShapeOps(shapes, slideIndex);
+      const shapeOps = buildFormatShapeOps(shapes, slide);
       const code = `
 var slides = context.presentation.slides;
 slides.load("items");
@@ -83967,7 +84007,7 @@ function registerXmlTools(server, pool2, getSessionId, getActiveSessionCount) {
     "edit_slide_xml",
     "Edit slide XML and reimport. Two modes: (1) xml mode \u2014 provide finished XML string (use read_slide_xml first to get current XML), (2) code mode \u2014 provide JS code that manipulates the pre-parsed DOM (receives: doc, findShapeById, NS_P, NS_A, escapeXml, serializeXml, DOMParser). Code mode preserves untouched attributes. The slide is exported, modified server-side, and reimported \u2014 data never enters Claude's context. NOTE: the reimport deletes and reinserts the slide, which makes PowerPoint's view jump to the first slide \u2014 reserve this for structural changes (new shapes, layout rebuilds).",
     {
-      slideIndex: external_exports.number().int().min(0).describe("Zero-based slide index"),
+      slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide)"),
       xml: external_exports.string().optional().describe(
         "Modified XML \u2014 full slide XML or a single shape's <p:sp> element (when shapeId is provided). Mutually exclusive with 'code'."
       ),
@@ -83980,7 +84020,8 @@ function registerXmlTools(server, pool2, getSessionId, getActiveSessionCount) {
       ),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
-    withTool(async ({ slideIndex, xml, code, shapeId, presentationId }) => {
+    withTool(async ({ slide, xml, code, shapeId, presentationId }) => {
+      const slideIndex = slide - 1;
       if (!xml && !code || xml && code) {
         return {
           content: [
@@ -84018,7 +84059,7 @@ function registerXmlTools(server, pool2, getSessionId, getActiveSessionCount) {
         const doc = parseSlideXml(xmlString);
         const shape = findShapeById(doc, shapeId);
         if (!shape) {
-          throw new Error(`Shape with ID "${shapeId}" not found on slide ${slideIndex}`);
+          throw new Error(`Shape with ID "${shapeId}" not found on slide ${slide}`);
         }
         replaceShape(doc, shape, xml);
         finalXml = serializeXml(doc);
@@ -84044,13 +84085,14 @@ function registerXmlTools(server, pool2, getSessionId, getActiveSessionCount) {
     "edit_slide_zip",
     "Update multiple files in the slide zip and reimport in a single operation. Accepts a map of { path: content } \u2014 can modify existing files or add new ones (e.g. chart XML + rels). Auto-registers Content_Types for new chart files. Use read_slide_zip first to get the current content.",
     {
-      slideIndex: external_exports.number().int().min(0).describe("Zero-based slide index"),
+      slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide)"),
       files: external_exports.record(external_exports.string(), external_exports.string()).describe(
         'Map of { zipPath: newContent }. Can include existing paths (to modify) or new paths (to add). Example: { "ppt/slides/slide1.xml": "<p:sld>...</p:sld>", "ppt/charts/chart1.xml": "<c:chartSpace>...</c:chartSpace>" }'
       ),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
-    withTool(async ({ slideIndex, files, presentationId }) => {
+    withTool(async ({ slide, files, presentationId }) => {
+      const slideIndex = slide - 1;
       const target = pool2.resolveTarget(presentationId);
       const exported = await exportSlide(pool2, slideIndex, target.ws);
       const newPaths = await applyZipEditAndReimport(pool2, exported, files, target.ws, slideIndex);
@@ -84063,11 +84105,12 @@ function registerXmlTools(server, pool2, getSessionId, getActiveSessionCount) {
     "read_slide_xml",
     "Read the full raw OOXML of a slide, or filter to a specific shape. Returns the slide's ppt/slides/slide1.xml content. Use with the /pptx skill's OOXML knowledge to understand the XML structure.",
     {
-      slideIndex: external_exports.number().int().min(0).describe("Zero-based slide index from scan_slide results"),
+      slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide), from scan_slide results"),
       shapeId: external_exports.string().optional().describe("Optional shape ID to filter to. If provided, returns only that shape's <p:sp> element."),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
-    withTool(async ({ slideIndex, shapeId, presentationId }) => {
+    withTool(async ({ slide, shapeId, presentationId }) => {
+      const slideIndex = slide - 1;
       const target = pool2.resolveTarget(presentationId);
       const exported = await exportSlide(pool2, slideIndex, target.ws);
       const { xmlString } = await extractSlideXmlFromZip(exported.base64);
@@ -84075,7 +84118,7 @@ function registerXmlTools(server, pool2, getSessionId, getActiveSessionCount) {
         const doc = parseSlideXml(xmlString);
         const shape = findShapeById(doc, shapeId);
         if (!shape) {
-          throw new Error(`Shape with ID "${shapeId}" not found on slide ${slideIndex}`);
+          throw new Error(`Shape with ID "${shapeId}" not found on slide ${slide}`);
         }
         return { content: [{ type: "text", text: serializeXml(shape) }] };
       }
@@ -84086,13 +84129,14 @@ function registerXmlTools(server, pool2, getSessionId, getActiveSessionCount) {
     "read_slide_zip",
     "Read multiple files from the exported slide zip. Returns slide XML, relationships, chart XMLs, and Content_Types. Use this to inspect chart data, rels, or other zip contents beyond what read_slide_xml provides. When no paths specified, auto-discovers all text/XML files in the zip.",
     {
-      slideIndex: external_exports.number().int().min(0).describe("Zero-based slide index"),
+      slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide)"),
       paths: external_exports.array(external_exports.string()).optional().describe(
         'Specific zip paths to read (e.g. ["ppt/slides/slide1.xml", "ppt/charts/chart1.xml"]). If omitted, auto-discovers all text/XML files.'
       ),
       presentationId: external_exports.string().optional().describe("Target presentation ID from list_presentations. Optional when only one presentation is connected.")
     },
-    withTool(async ({ slideIndex, paths, presentationId }) => {
+    withTool(async ({ slide, paths, presentationId }) => {
+      const slideIndex = slide - 1;
       const target = pool2.resolveTarget(presentationId);
       const exported = await exportSlide(pool2, slideIndex, target.ws);
       const { zip, files } = await extractZipFiles(exported.base64, paths);

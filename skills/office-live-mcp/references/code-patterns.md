@@ -27,7 +27,7 @@ return slides.items.length;
 ## Adding Slides with Layouts
 
 **Preferred**: Use the `add_slide` tool — it handles layout lookup, positioning, and returns placeholder IDs in one call:
-- `add_slide({ layoutName: "Title and Content", position: 2 })` → adds slide at index 2 with that layout, returns `{ slideIndex, placeholders: [{ id, name, type }] }`
+- `add_slide({ layoutName: "Title and Content", position: 2 })` → adds slide at position 2 (becomes the second slide) with that layout, returns `{ slide, placeholders: [{ id, name, type }] }`
 
 **Manual approach** (only if `add_slide` is unavailable): use `execute_officejs` with the code below.
 
@@ -395,7 +395,7 @@ Use the `preview_deck` MCP tool to review an entire presentation efficiently. Re
 
 ```
 preview_deck()                              // all slides, thumbnails at 480px
-preview_deck(slideRange: "0-5")             // first 6 slides only
+preview_deck(slideRange: "1-6")             // first 6 slides only
 preview_deck(slideRange: "2,4,7")           // specific slides
 preview_deck(includeImages: false)           // text-only (fastest)
 preview_deck(imageWidth: 720)                // larger thumbnails
@@ -425,7 +425,7 @@ Use the `insert_image` MCP tool to insert images onto slides. Three source modes
 insert_image(
   source: "/path/to/image.png",
   sourceType: "file",         // reads from disk, data stays server-side
-  slideIndex: 0,              // optional: navigate to this slide first (0-based)
+  slide: 1,              // optional: navigate to this slide first (1-based)
   left: 100,                  // optional: position in points
   top: 100,
   width: 400,
@@ -451,7 +451,7 @@ Use the `copy_slides` MCP tool to copy slides between two open presentations. Th
 
 ```
 copy_slides(
-  sourceSlideIndex: 2,
+  sourceSlide: 3,
   sourcePresentationId: "deck-a.pptx",
   destinationPresentationId: "deck-b.pptx",
   formatting: "UseDestinationTheme",  // optional
@@ -499,28 +499,28 @@ Use the OOXML tools for fine-grained formatting control. Load the `/pptx` skill 
 
 ```
 // 1. Read current paragraphs (raw OOXML)
-read_shape_paragraphs(slideIndex: 0, shapeId: "2")
+read_shape_paragraphs(slide: 1, shapeId: "2")
 // Returns: <a:p><a:r><a:rPr lang="en-US" b="1"/><a:t>Hello</a:t></a:r></a:p>
 
 // 2. Modify the XML (add color, change text, etc.)
 // 3. Write back
-edit_shape_paragraphs(slideIndex: 0, shapeId: "2", xml: '<a:p><a:r><a:rPr lang="en-US" b="1"><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill></a:rPr><a:t>Red Bold</a:t></a:r></a:p>')
+edit_shape_paragraphs(slide: 1, shapeId: "2", xml: '<a:p><a:r><a:rPr lang="en-US" b="1"><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill></a:rPr><a:t>Red Bold</a:t></a:r></a:p>')
 ```
 
 For full slide or shape XML editing:
 
 ```
 // Read full slide XML
-read_slide_xml(slideIndex: 0)
+read_slide_xml(slide: 1)
 
 // Read specific shape XML
-read_slide_xml(slideIndex: 0, shapeId: "5")
+read_slide_xml(slide: 1, shapeId: "5")
 
 // Replace a shape's XML
-edit_slide_xml(slideIndex: 0, shapeId: "5", xml: '<p:sp>...</p:sp>')
+edit_slide_xml(slide: 1, shapeId: "5", xml: '<p:sp>...</p:sp>')
 
 // Replace full slide XML (batch multiple shapes in one reimport)
-edit_slide_xml(slideIndex: 0, xml: '<p:sld>...</p:sld>')
+edit_slide_xml(slide: 1, xml: '<p:sld>...</p:sld>')
 ```
 
 ## Multi-File Zip Editing
@@ -529,14 +529,14 @@ For charts, rels, Content_Types, or other zip entries beyond slide XML. See [oox
 
 ```
 // 1. Read all text/xml files from the slide zip (auto-discovers)
-read_slide_zip(slideIndex: 0)
+read_slide_zip(slide: 1)
 // Returns: { zipContents: { "ppt/slides/slide1.xml": "...", "[Content_Types].xml": "...", ... }, allPaths: [...] }
 
 // 2. Read specific files
-read_slide_zip(slideIndex: 0, paths: ["ppt/charts/chart1.xml", "ppt/slides/_rels/slide1.xml.rels"])
+read_slide_zip(slide: 1, paths: ["ppt/charts/chart1.xml", "ppt/slides/_rels/slide1.xml.rels"])
 
 // 3. Update multiple files in one reimport
-edit_slide_zip(slideIndex: 0, files: {
+edit_slide_zip(slide: 1, files: {
   "ppt/slides/slide1.xml": "<p:sld>...modified...</p:sld>",
   "ppt/charts/chart1.xml": "<c:chartSpace>...</c:chartSpace>"
 })
@@ -547,10 +547,10 @@ edit_slide_zip(slideIndex: 0, files: {
 
 ```
 // Duplicate slide 2 right after itself
-duplicate_slide(slideIndex: 2)
+duplicate_slide(slide: 3)
 
-// Duplicate slide 0, insert after slide 4
-duplicate_slide(slideIndex: 0, insertAfter: 4)
+// Duplicate slide 1, insert after slide 5
+duplicate_slide(slide: 1, insertAfterSlide: 5)
 ```
 
 ## Charts (Declarative)
@@ -560,7 +560,7 @@ Use `edit_slide_chart` for automatic chart creation from structured data — no 
 ```
 // Column chart
 edit_slide_chart(
-  slideIndex: 0,
+  slide: 1,
   chartType: "column",
   title: "Revenue by Quarter",
   categories: ["Q1", "Q2", "Q3", "Q4"],
@@ -572,7 +572,7 @@ edit_slide_chart(
 
 // Pie chart
 edit_slide_chart(
-  slideIndex: 1,
+  slide: 2,
   chartType: "pie",
   title: "Market Share",
   categories: ["Product A", "Product B", "Other"],
@@ -581,7 +581,7 @@ edit_slide_chart(
 
 // Stacked bar with custom position
 edit_slide_chart(
-  slideIndex: 2,
+  slide: 3,
   chartType: "bar",
   title: "Team Capacity",
   categories: ["Dev", "Design", "QA"],
@@ -600,12 +600,12 @@ Supported chart types: `column`, `bar`, `line`, `pie`, `doughnut`, `area`. For a
 
 ```
 // Run all checks (overlap, bounds, empty_text, tiny_shapes)
-verify_slides(slideIndex: 0)
+verify_slides(slide: 1)
 
 // Run specific checks only
-verify_slides(slideIndex: 0, checks: ["overlap", "bounds"])
+verify_slides(slide: 1, checks: ["overlap", "bounds"])
 
-// Returns: { slideIndex, shapeCount, issueCount, issues: [{ check, severity, shapes, message }] }
+// Returns: { slide, shapeCount, issueCount, issues: [{ check, severity, shapes, message }] }
 ```
 
 ### Full Verification Loop
@@ -622,10 +622,10 @@ shape.textFrame.autoSizeSetting = "AutoSizeShapeToFitText";
 await context.sync();
 ```
 
-2. **Structural check:** `verify_slides(slideIndex)` — overlap, bounds, empty text, tiny shapes
+2. **Structural check:** `verify_slides(slide)` — overlap, bounds, empty text, tiny shapes
 3. **Visual check:** Spawn a subagent for independent visual review. The subagent has no conversation context, providing an objective check. Use this prompt (replace N with slide index):
 
-> Call screenshot_slide(slideIndex: N) to capture the slide, then review it for: text overflow or truncation, overlapping shapes or text, unreadable text (too small, poor contrast), misalignment or inconsistent spacing, empty or unused space, inconsistent styling (mixed fonts, colors, sizes). Return a JSON array of issues found, each with: severity (error/warning/info), category, description, and suggestion. If no issues found, return [].
+> Call screenshot_slide(slide: N) to capture the slide, then review it for: text overflow or truncation, overlapping shapes or text, unreadable text (too small, poor contrast), misalignment or inconsistent spacing, empty or unused space, inconsistent styling (mixed fonts, colors, sizes). Return a JSON array of issues found, each with: severity (error/warning/info), category, description, and suggestion. If no issues found, return [].
 
 4. **Fix and re-verify** until clean.
 
@@ -704,7 +704,7 @@ Workflow: `search_fluent_icons` → `insert_image`
 search_fluent_icons(query: "warning", top: 5)
 // Returns: [{ id, description, isMono, contentTier, searchScore, svgUrl }]
 
-insert_image(source: result.svgUrl, sourceType: "url", slideIndex: 0, left: 100, top: 100, width: 48, height: 48, color: "#FF5733")
+insert_image(source: result.svgUrl, sourceType: "url", slide: 1, left: 100, top: 100, width: 48, height: 48, color: "#FF5733")
 ```
 
 **Variants:** filled (`isMono: false`, e.g. `Icons_Dog`) = colorful. Mono (`isMono: true`, e.g. `Icons_Dog_M`) = clean line-art. Prefer mono (`_M`) variants for professional decks — they're cleaner and recolorable.

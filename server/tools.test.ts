@@ -239,7 +239,7 @@ describe('MCP Tools', () => {
 
       const result = await client.callTool({
         name: 'add_slide',
-        arguments: { layoutName: '_Content Slides', position: 0 },
+        arguments: { layoutName: '_Content Slides', position: 1 },
       })
 
       expect(result.isError).toBe(true)
@@ -351,7 +351,7 @@ describe('MCP Tools', () => {
 
       const result = await toolPromise
       const parsed = JSON.parse((result.content as Array<{ text: string }>)[0].text)
-      expect(parsed.slideIndex).toBe(2)
+      expect(parsed.slide).toBe(3)
       expect(parsed.layoutName).toBe('Title and Content')
       expect(parsed.placeholders).toHaveLength(2)
       expect(parsed.placeholders[0].name).toBe('slide_title')
@@ -592,7 +592,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'screenshot_slide',
-        arguments: { slideIndex: 0 },
+        arguments: { slide: 1 },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -602,7 +602,7 @@ describe('MCP Tools', () => {
 
       pool.handleResponse(sentJson.id, 'response', {
         base64: 'iVBORw0KGgo=',
-        slideIndex: 0,
+        slide: 1,
         slideId: 'slide-abc',
       })
 
@@ -614,7 +614,7 @@ describe('MCP Tools', () => {
       expect(content[0].mimeType).toBe('image/png')
 
       expect(content[1].type).toBe('text')
-      expect(content[1].text).toContain('Slide 0')
+      expect(content[1].text).toContain('Slide 1')
       expect(content[1].text).toContain('slide-abc')
     })
 
@@ -631,7 +631,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'screenshot_slide',
-        arguments: { slideIndex: 0, width: 1280, height: 720 },
+        arguments: { slide: 1, width: 1280, height: 720 },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -640,7 +640,7 @@ describe('MCP Tools', () => {
 
       pool.handleResponse(sentJson.id, 'response', {
         base64: 'abc123',
-        slideIndex: 0,
+        slide: 1,
         slideId: 'slide-xyz',
       })
 
@@ -651,7 +651,7 @@ describe('MCP Tools', () => {
       const { client } = await setupMcpClient(pool)
       const result = await client.callTool({
         name: 'screenshot_slide',
-        arguments: { slideIndex: 0 },
+        arguments: { slide: 1 },
       })
       expect(result.isError).toBe(true)
       const text = (result.content as Array<{ text: string }>)[0].text
@@ -681,7 +681,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'copy_slides',
         arguments: {
-          sourceSlideIndex: 2,
+          sourceSlide: 3,
           sourcePresentationId: 'source.pptx',
           destinationPresentationId: 'dest.pptx',
         },
@@ -711,7 +711,7 @@ describe('MCP Tools', () => {
       const result = await toolPromise
       const text = (result.content as Array<{ text: string }>)[0].text
       const parsed = JSON.parse(text)
-      expect(parsed.copied.slideIndex).toBe(2)
+      expect(parsed.copied.slide).toBe(3)
       expect(parsed.copied.slideId).toBe('slide-src')
       expect(parsed.destination.slideCount).toBe(8)
     })
@@ -737,7 +737,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'copy_slides',
         arguments: {
-          sourceSlideIndex: 0,
+          sourceSlide: 1,
           sourcePresentationId: 'a.pptx',
           destinationPresentationId: 'b.pptx',
           formatting: 'UseDestinationTheme',
@@ -773,7 +773,7 @@ describe('MCP Tools', () => {
       const result = await client.callTool({
         name: 'copy_slides',
         arguments: {
-          sourceSlideIndex: 0,
+          sourceSlide: 1,
           sourcePresentationId: 'missing.pptx',
           destinationPresentationId: 'dest.pptx',
         },
@@ -797,7 +797,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'copy_slides',
         arguments: {
-          sourceSlideIndex: 0,
+          sourceSlide: 1,
           sourcePresentationId: 'source.pptx',
           destinationPresentationId: 'missing.pptx',
         },
@@ -951,7 +951,7 @@ describe('MCP Tools', () => {
       await toolPromise
     })
 
-    it('wraps with goToByIdAsync when slideIndex is provided', async () => {
+    it('wraps with goToByIdAsync when slide is provided', async () => {
       const ws = mockWs()
       pool.add('test.pptx', {
         ws,
@@ -967,12 +967,12 @@ describe('MCP Tools', () => {
         arguments: {
           source: 'AAAA',
           sourceType: 'base64',
-          slideIndex: 2,
+          slide: 3,
         },
       })
 
       const sentJson = await waitForSend(ws, 0)
-      // slideIndex 2 (0-based) → goToByIdAsync(3, ...) (1-based)
+      // slide 3 (1-based) → goToByIdAsync(3, ...) (1-based Office.js index)
       expect(sentJson.params.code).toContain('goToByIdAsync(3,')
       expect(sentJson.params.code).toContain('GoToType.Index')
 
@@ -1037,36 +1037,41 @@ describe('MCP Tools', () => {
       expect(parseSlideRange('')).toBeNull()
     })
 
-    it('parses single index', () => {
-      expect(parseSlideRange('5')).toEqual([5])
+    it('parses a single 1-based slide number to a 0-based index', () => {
+      expect(parseSlideRange('1')).toEqual([0])
+      expect(parseSlideRange('5')).toEqual([4])
     })
 
-    it('parses comma-separated indices', () => {
-      expect(parseSlideRange('2,4,7')).toEqual([2, 4, 7])
+    it('parses comma-separated 1-based slide numbers', () => {
+      expect(parseSlideRange('2,4')).toEqual([1, 3])
     })
 
-    it('parses a range', () => {
-      expect(parseSlideRange('0-3')).toEqual([0, 1, 2, 3])
+    it('parses a 1-based range to 0-based indices', () => {
+      expect(parseSlideRange('1-3')).toEqual([0, 1, 2])
     })
 
     it('parses mixed ranges and indices', () => {
-      expect(parseSlideRange('0-2,5,8-10')).toEqual([0, 1, 2, 5, 8, 9, 10])
+      expect(parseSlideRange('1-3,6,9-11')).toEqual([0, 1, 2, 5, 8, 9, 10])
     })
 
     it('deduplicates overlapping ranges', () => {
-      expect(parseSlideRange('0-3,2-5')).toEqual([0, 1, 2, 3, 4, 5])
+      expect(parseSlideRange('1-4,3-6')).toEqual([0, 1, 2, 3, 4, 5])
     })
 
     it('throws on invalid index', () => {
-      expect(() => parseSlideRange('abc')).toThrow('Invalid slide index')
+      expect(() => parseSlideRange('abc')).toThrow('Invalid slide number')
     })
 
     it('throws on invalid range', () => {
       expect(() => parseSlideRange('5-2')).toThrow('Invalid slide range')
     })
 
+    it('throws on zero (slides are 1-based)', () => {
+      expect(() => parseSlideRange('0')).toThrow('Invalid slide number')
+    })
+
     it('throws on negative index', () => {
-      expect(() => parseSlideRange('-1')).toThrow('Invalid slide index')
+      expect(() => parseSlideRange('-1')).toThrow('Invalid slide number')
     })
   })
 
@@ -1098,7 +1103,7 @@ describe('MCP Tools', () => {
         slideHeight: 540,
         slides: [
           {
-            index: 0,
+            index: 1,
             id: 'slide-0',
             shapeCount: 2,
             shapes: [
@@ -1108,14 +1113,14 @@ describe('MCP Tools', () => {
             imageBase64: 'img0data',
           },
           {
-            index: 1,
+            index: 2,
             id: 'slide-1',
             shapeCount: 1,
             shapes: [{ name: 'Picture', type: 'Image', id: '3' }],
             imageBase64: 'img1data',
           },
           {
-            index: 2,
+            index: 3,
             id: 'slide-2',
             shapeCount: 1,
             shapes: [{ name: 'Body', type: 'TextBox', id: '4', text: 'Content here' }],
@@ -1131,22 +1136,22 @@ describe('MCP Tools', () => {
       expect(content[0].type).toBe('text')
       expect(content[0].text).toContain('3 total slides (960 x 540 pt), showing 3')
 
-      // Slide 0: image then text
+      // Slide 1: image then text
       expect(content[1].type).toBe('image')
       expect(content[1].data).toBe('img0data')
       expect(content[1].mimeType).toBe('image/png')
       expect(content[2].type).toBe('text')
-      expect(content[2].text).toContain('Slide 0')
+      expect(content[2].text).toContain('Slide 1')
       expect(content[2].text).toContain('Hello World')
       expect(content[2].text).toContain('Intro')
 
-      // Slide 1: image then text (no text content)
+      // Slide 2: image then text (no text content)
       expect(content[3].type).toBe('image')
       expect(content[4].type).toBe('text')
-      expect(content[4].text).toContain('Slide 1')
+      expect(content[4].text).toContain('Slide 2')
       expect(content[4].text).toContain('(no text content)')
 
-      // Slide 2: image then text
+      // Slide 3: image then text
       expect(content[5].type).toBe('image')
       expect(content[6].type).toBe('text')
       expect(content[6].text).toContain('Content here')
@@ -1178,12 +1183,12 @@ describe('MCP Tools', () => {
         slideHeight: 540,
         slides: [
           {
-            index: 0,
+            index: 1,
             id: 'slide-0',
             shapeCount: 1,
             shapes: [{ name: 'Title', type: 'TextBox', id: '1', text: 'Slide text' }],
           },
-          { index: 1, id: 'slide-1', shapeCount: 0, shapes: [] },
+          { index: 2, id: 'slide-1', shapeCount: 0, shapes: [] },
         ],
       })
 
@@ -1235,7 +1240,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'preview_deck',
-        arguments: { slideRange: '0-2,5' },
+        arguments: { slideRange: '1-3,6' },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -1420,7 +1425,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'read_shape_paragraphs',
-        arguments: { slideIndex: 0, shapeId: '2' },
+        arguments: { slide: 1, shapeId: '2' },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -1444,7 +1449,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'read_shape_paragraphs',
-        arguments: { slideIndex: 0, shapeId: '999' },
+        arguments: { slide: 1, shapeId: '999' },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -1460,7 +1465,7 @@ describe('MCP Tools', () => {
       const { client } = await setupMcpClient(pool)
       const result = await client.callTool({
         name: 'read_shape_paragraphs',
-        arguments: { slideIndex: 0, shapeId: '2' },
+        arguments: { slide: 1, shapeId: '2' },
       })
       expect(result.isError).toBe(true)
     })
@@ -1478,7 +1483,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'edit_shape_paragraphs',
-        arguments: { slideIndex: 0, shapeId: '2', xml: newParagraphXml },
+        arguments: { slide: 1, shapeId: '2', xml: newParagraphXml },
       })
 
       // Export command
@@ -1514,7 +1519,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'edit_shape_paragraphs',
-        arguments: { slideIndex: 0, shapeId: '999', xml: '<a:p/>' },
+        arguments: { slide: 1, shapeId: '999', xml: '<a:p/>' },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -1536,7 +1541,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'read_slide_xml',
-        arguments: { slideIndex: 0 },
+        arguments: { slide: 1 },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -1557,7 +1562,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'read_slide_xml',
-        arguments: { slideIndex: 0, shapeId: '5' },
+        arguments: { slide: 1, shapeId: '5' },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -1579,7 +1584,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'read_slide_xml',
-        arguments: { slideIndex: 0, shapeId: '999' },
+        arguments: { slide: 1, shapeId: '999' },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -1599,7 +1604,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'edit_slide_xml',
-        arguments: { slideIndex: 0, xml: SAMPLE_SLIDE_XML.replace('Hello', 'Modified') },
+        arguments: { slide: 1, xml: SAMPLE_SLIDE_XML.replace('Hello', 'Modified') },
       })
 
       // Export
@@ -1630,7 +1635,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'edit_slide_xml',
-        arguments: { slideIndex: 0, xml: newShapeXml, shapeId: '5' },
+        arguments: { slide: 1, xml: newShapeXml, shapeId: '5' },
       })
 
       // Export
@@ -1653,7 +1658,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'edit_slide_xml',
-        arguments: { slideIndex: 0, xml: '<p:sp/>', shapeId: '999' },
+        arguments: { slide: 1, xml: '<p:sp/>', shapeId: '999' },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -1672,7 +1677,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'edit_slide_xml',
         arguments: {
-          slideIndex: 0,
+          slide: 1,
           code: `
             var shape = findShapeById("2");
             var spPr = shape.getElementsByTagNameNS(NS_P, "spPr")[0];
@@ -1706,7 +1711,7 @@ describe('MCP Tools', () => {
 
       const result = await client.callTool({
         name: 'edit_slide_xml',
-        arguments: { slideIndex: 0, xml: '<p:sld/>', code: 'var x = 1;' },
+        arguments: { slide: 1, xml: '<p:sld/>', code: 'var x = 1;' },
       })
       expect(result.isError).toBe(true)
       const text = (result.content as Array<{ text: string }>)[0].text
@@ -1720,7 +1725,7 @@ describe('MCP Tools', () => {
 
       const result = await client.callTool({
         name: 'edit_slide_xml',
-        arguments: { slideIndex: 0 },
+        arguments: { slide: 1 },
       })
       expect(result.isError).toBe(true)
       const text = (result.content as Array<{ text: string }>)[0].text
@@ -1736,7 +1741,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'edit_slide_xml',
         arguments: {
-          slideIndex: 0,
+          slide: 1,
           code: 'throw new Error("shape not found");',
         },
       })
@@ -1762,7 +1767,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'format_shapes',
         arguments: {
-          slideIndex: 0,
+          slide: 1,
           shapes: [{ id: '2', fill: '1A1A1E' }],
         },
       })
@@ -1785,7 +1790,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'format_shapes',
         arguments: {
-          slideIndex: 0,
+          slide: 1,
           shapes: [{ id: '5', font: { bold: true, size: 16, color: 'FFFFFF', name: 'Arial' } }],
         },
       })
@@ -1809,7 +1814,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'format_shapes',
         arguments: {
-          slideIndex: 1,
+          slide: 2,
           shapes: [
             { id: '2', fill: 'FF0000' },
             { id: '5', fill: '00FF00', font: { bold: false } },
@@ -1835,7 +1840,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'format_shapes',
         arguments: {
-          slideIndex: 0,
+          slide: 1,
           shapes: [{ id: '2', font: { italic: true } }],
         },
       })
@@ -1853,7 +1858,7 @@ describe('MCP Tools', () => {
       const { client } = await setupMcpClient(pool)
       const result = await client.callTool({
         name: 'format_shapes',
-        arguments: { slideIndex: 0, shapes: [{ id: '2', fill: 'FF0000' }] },
+        arguments: { slide: 1, shapes: [{ id: '2', fill: 'FF0000' }] },
       })
       expect(result.isError).toBe(true)
     })
@@ -1933,7 +1938,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'duplicate_slide',
-        arguments: { slideIndex: 1 },
+        arguments: { slide: 2 },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -1941,15 +1946,15 @@ describe('MCP Tools', () => {
       expect(sentJson.params.code).toContain('insertSlidesFromBase64')
 
       pool.handleResponse(sentJson.id, 'response', {
-        duplicatedSlideIndex: 1,
-        insertedAfter: 1,
+        duplicatedSlide: 2,
+        insertedAfterSlide: 2,
         slideCount: 4,
       })
 
       const result = await toolPromise
       const text = (result.content as Array<{ text: string }>)[0].text
       const parsed = JSON.parse(text)
-      expect(parsed.duplicatedSlideIndex).toBe(1)
+      expect(parsed.duplicatedSlide).toBe(2)
       expect(parsed.slideCount).toBe(4)
     })
 
@@ -1960,7 +1965,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'duplicate_slide',
-        arguments: { slideIndex: 0, insertAfter: 3 },
+        arguments: { slide: 1, insertAfterSlide: 4 },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -1969,14 +1974,14 @@ describe('MCP Tools', () => {
       expect(sentJson.params.code).toContain('items[3]')
 
       pool.handleResponse(sentJson.id, 'response', {
-        duplicatedSlideIndex: 0,
-        insertedAfter: 3,
+        duplicatedSlide: 1,
+        insertedAfterSlide: 4,
         slideCount: 5,
       })
 
       const result = await toolPromise
       const parsed = JSON.parse((result.content as Array<{ text: string }>)[0].text)
-      expect(parsed.insertedAfter).toBe(3)
+      expect(parsed.insertedAfterSlide).toBe(4)
     })
   })
 
@@ -1988,7 +1993,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'scan_slide',
-        arguments: { slideRange: '0' },
+        arguments: { slideRange: '1' },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -1998,7 +2003,7 @@ describe('MCP Tools', () => {
         slideHeight: 540,
         slides: [
           {
-            slideIndex: 0,
+            slide: 1,
             slideId: 'slide-1',
             shapes: [
               { id: '10', name: 'Title 1', type: 'Rectangle', left: 50, top: 20, width: 400, height: 60 },
@@ -2029,7 +2034,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'scan_slide',
-        arguments: { slideRange: '0' },
+        arguments: { slideRange: '1' },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2044,7 +2049,7 @@ describe('MCP Tools', () => {
         slideHeight: 540,
         slides: [
           {
-            slideIndex: 0,
+            slide: 1,
             slideId: 'slide-1',
             shapes: [{ id: '10', name: 'Title 1', type: 'Rectangle', left: 50, top: 20, width: 400, height: 60 }],
           },
@@ -2064,7 +2069,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'scan_slide',
-        arguments: { slideRange: '0', shapeType: 'Placeholder' },
+        arguments: { slideRange: '1', shapeType: 'Placeholder' },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2074,7 +2079,7 @@ describe('MCP Tools', () => {
         slideHeight: 540,
         slides: [
           {
-            slideIndex: 0,
+            slide: 1,
             slideId: 'slide-1',
             shapes: [
               { id: '10', name: 'Title 1', type: 'Placeholder', left: 50, top: 20, width: 400, height: 60 },
@@ -2098,7 +2103,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'scan_slide',
-        arguments: { slideRange: '0', namePattern: 'Title*' },
+        arguments: { slideRange: '1', namePattern: 'Title*' },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2108,7 +2113,7 @@ describe('MCP Tools', () => {
         slideHeight: 540,
         slides: [
           {
-            slideIndex: 0,
+            slide: 1,
             slideId: 'slide-1',
             shapes: [
               { id: '10', name: 'Title 1', type: 'Placeholder', left: 50, top: 20, width: 400, height: 60 },
@@ -2132,7 +2137,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'scan_slide',
-        arguments: { slideRange: '0', namePattern: 'Card*', shapeType: 'GeometricShape' },
+        arguments: { slideRange: '1', namePattern: 'Card*', shapeType: 'GeometricShape' },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2142,7 +2147,7 @@ describe('MCP Tools', () => {
         slideHeight: 540,
         slides: [
           {
-            slideIndex: 0,
+            slide: 1,
             slideId: 'slide-1',
             shapes: [
               { id: '10', name: 'Card_bg', type: 'GeometricShape', left: 50, top: 20, width: 200, height: 200 },
@@ -2166,7 +2171,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'scan_slide',
-        arguments: { slideRange: '0', shapeType: 'Picture' },
+        arguments: { slideRange: '1', shapeType: 'Picture' },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2176,7 +2181,7 @@ describe('MCP Tools', () => {
         slideHeight: 540,
         slides: [
           {
-            slideIndex: 0,
+            slide: 1,
             slideId: 'slide-1',
             shapes: [{ id: '10', name: 'Title 1', type: 'Placeholder', left: 50, top: 20, width: 400, height: 60 }],
           },
@@ -2197,7 +2202,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'verify_slides',
-        arguments: { slideIndex: 0, checks: ['overlap'] },
+        arguments: { slide: 1, checks: ['overlap'] },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2227,7 +2232,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'verify_slides',
-        arguments: { slideIndex: 0, checks: ['bounds'] },
+        arguments: { slide: 1, checks: ['bounds'] },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2256,7 +2261,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'verify_slides',
-        arguments: { slideIndex: 0, checks: ['empty_text', 'tiny_shapes'] },
+        arguments: { slide: 1, checks: ['empty_text', 'tiny_shapes'] },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2291,7 +2296,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'verify_slides',
-        arguments: { slideIndex: 0 },
+        arguments: { slide: 1 },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2315,7 +2320,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'verify_slides',
-        arguments: { slideIndex: 0, checks: ['layout_drift'] },
+        arguments: { slide: 1, checks: ['layout_drift'] },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2355,7 +2360,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'verify_slides',
-        arguments: { slideIndex: 0, checks: ['layout_drift'] },
+        arguments: { slide: 1, checks: ['layout_drift'] },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2390,7 +2395,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'verify_slides',
-        arguments: { slideIndex: 0, checks: ['layout_drift'] },
+        arguments: { slide: 1, checks: ['layout_drift'] },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2422,7 +2427,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'verify_slides',
-        arguments: { slideIndex: 0, checks: ['layout_drift'] },
+        arguments: { slide: 1, checks: ['layout_drift'] },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2461,7 +2466,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'verify_slides',
-        arguments: { slideIndex: 0, checks: ['background_cover'] },
+        arguments: { slide: 1, checks: ['background_cover'] },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2490,7 +2495,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'verify_slides',
-        arguments: { slideIndex: 0, checks: ['background_cover'] },
+        arguments: { slide: 1, checks: ['background_cover'] },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2523,7 +2528,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'verify_slides',
-        arguments: { slideIndex: 0, checks: ['background_cover'] },
+        arguments: { slide: 1, checks: ['background_cover'] },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2558,7 +2563,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'read_slide_zip',
-        arguments: { slideIndex: 0 },
+        arguments: { slide: 1 },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2591,7 +2596,7 @@ describe('MCP Tools', () => {
 
       const toolPromise = client.callTool({
         name: 'read_slide_zip',
-        arguments: { slideIndex: 0, paths: ['ppt/charts/chart1.xml'] },
+        arguments: { slide: 1, paths: ['ppt/charts/chart1.xml'] },
       })
 
       const sentJson = await waitForSend(ws, 0)
@@ -2622,7 +2627,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'edit_slide_zip',
         arguments: {
-          slideIndex: 0,
+          slide: 1,
           files: { 'ppt/slides/slide1.xml': SAMPLE_SLIDE_XML.replace('Hello', 'Updated') },
         },
       })
@@ -2664,7 +2669,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'edit_slide_zip',
         arguments: {
-          slideIndex: 0,
+          slide: 1,
           files: {
             'ppt/slides/slide1.xml': SAMPLE_SLIDE_XML,
             'ppt/charts/chart1.xml': '<c:chartSpace/>',
@@ -2715,7 +2720,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'edit_slide_zip',
         arguments: {
-          slideIndex: 0,
+          slide: 1,
           files: {
             'ppt/charts/chart1.xml': '<c:chartSpace/>',
             '[Content_Types].xml': customCt,
@@ -2763,7 +2768,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'edit_slide_chart',
         arguments: {
-          slideIndex: 0,
+          slide: 1,
           chartType: 'column',
           title: 'Revenue by Quarter',
           categories: ['Q1', 'Q2', 'Q3'],
@@ -2840,7 +2845,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'edit_slide_chart',
         arguments: {
-          slideIndex: 0,
+          slide: 1,
           chartType: 'pie',
           title: 'Market Share',
           categories: ['A', 'B', 'C'],
@@ -2887,7 +2892,7 @@ describe('MCP Tools', () => {
       const toolPromise = client.callTool({
         name: 'edit_slide_chart',
         arguments: {
-          slideIndex: 0,
+          slide: 1,
           chartType: 'line',
           title: 'Trends',
           categories: ['Jan', 'Feb'],
@@ -2946,14 +2951,14 @@ describe('MCP Tools', () => {
         totalSlides: 5,
         matches: [
           {
-            slideIndex: 1,
+            slide: 2,
             shapeId: '42',
             shapeName: 'TextBox 3',
             source: 'shape',
             text: 'The budget for Q3 is $1.2M',
           },
           {
-            slideIndex: 3,
+            slide: 4,
             shapeId: '78',
             shapeName: 'Content Placeholder',
             source: 'shape',
@@ -2967,10 +2972,10 @@ describe('MCP Tools', () => {
       const parsed = JSON.parse(text)
       expect(parsed.query).toBe('budget')
       expect(parsed.matches).toHaveLength(2)
-      expect(parsed.matches[0].slideIndex).toBe(1)
+      expect(parsed.matches[0].slide).toBe(2)
       expect(parsed.matches[0].shapeId).toBe('42')
       expect(parsed.matches[0].source).toBe('shape')
-      expect(parsed.matches[1].slideIndex).toBe(3)
+      expect(parsed.matches[1].slide).toBe(4)
     })
 
     it('searches specific slide range when slideRange is provided', async () => {
@@ -2985,11 +2990,11 @@ describe('MCP Tools', () => {
       const { client } = await setupMcpClient(pool)
       const toolPromise = client.callTool({
         name: 'search_text',
-        arguments: { query: 'hello', slideRange: '2-4' },
+        arguments: { query: 'hello', slideRange: '3-5' },
       })
 
       const sent = await waitForSend(ws, 0)
-      expect(sent.params.code).toContain('2-4')
+      expect(sent.params.code).toContain('3-5')
 
       pool.handleResponse(sent.id, 'response', {
         query: 'hello',
@@ -3030,7 +3035,7 @@ describe('MCP Tools', () => {
         totalSlides: 5,
         matches: [
           {
-            slideIndex: 3,
+            slide: 4,
             shapeId: '78',
             shapeName: 'Title',
             source: 'shape',
@@ -3072,7 +3077,7 @@ describe('MCP Tools', () => {
         totalSlides: 5,
         matches: [
           {
-            slideIndex: 2,
+            slide: 3,
             shapeId: '10',
             shapeName: 'Body',
             source: 'shape',
@@ -3113,7 +3118,7 @@ describe('MCP Tools', () => {
         totalSlides: 5,
         matches: [
           {
-            slideIndex: 1,
+            slide: 2,
             shapes: [
               { shapeId: '2', shapeName: 'Title', matched: false, text: 'Q3 Overview' },
               { shapeId: '4', shapeName: 'Body', matched: true, text: 'The budget is $1.2M' },
@@ -3127,7 +3132,7 @@ describe('MCP Tools', () => {
       const text = (result.content as Array<{ text: string }>)[0].text
       const parsed = JSON.parse(text)
       expect(parsed.matches).toHaveLength(1)
-      expect(parsed.matches[0].slideIndex).toBe(1)
+      expect(parsed.matches[0].slide).toBe(2)
       expect(parsed.matches[0].shapes).toHaveLength(3)
       expect(parsed.matches[0].shapes[0].matched).toBe(false)
       expect(parsed.matches[0].shapes[1].matched).toBe(true)
@@ -3156,13 +3161,13 @@ describe('MCP Tools', () => {
         caseSensitive: false,
         regex: false,
         totalSlides: 10,
-        matchingSlides: [0, 1, 3, 5, 7],
+        matchingSlides: [1, 2, 4, 6, 8],
       })
 
       const result = await toolPromise
       const text = (result.content as Array<{ text: string }>)[0].text
       const parsed = JSON.parse(text)
-      expect(parsed.matchingSlides).toEqual([0, 1, 3, 5, 7])
+      expect(parsed.matchingSlides).toEqual([1, 2, 4, 6, 8])
       expect(parsed.matches).toBeUndefined()
     })
 
@@ -3192,7 +3197,7 @@ describe('MCP Tools', () => {
         totalSlides: 5,
         matches: [
           {
-            slideIndex: 2,
+            slide: 3,
             source: 'note',
             text: 'Reminder: mention the Q3 deadline',
           },
@@ -3204,7 +3209,7 @@ describe('MCP Tools', () => {
       const parsed = JSON.parse(text)
       expect(parsed.matches).toHaveLength(1)
       expect(parsed.matches[0].source).toBe('note')
-      expect(parsed.matches[0].slideIndex).toBe(2)
+      expect(parsed.matches[0].slide).toBe(3)
     })
 
     it('skips notes search when includeNotes is false', async () => {
@@ -3265,7 +3270,7 @@ describe('MCP Tools', () => {
         totalSlides: 5,
         matches: [
           {
-            slideIndex: 4,
+            slide: 5,
             shapeId: '20',
             shapeName: 'Table 1',
             source: 'tableCell',

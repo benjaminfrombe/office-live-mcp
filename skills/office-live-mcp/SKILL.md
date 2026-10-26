@@ -26,31 +26,31 @@ When asked to enable or configure PowerPoint MCP in a project — follow the [se
 | `add_slide` | Add a new slide with a specific layout at a given position. Returns placeholder shape IDs | `layoutName`, `position?`, `presentationId?` |
 | `inspect_slide` | Detailed shape inspector (~80 tok/shape): text, positions, fills | `slideRange`, `presentationId?` |
 | `scan_slide` | Lightweight shape scanner (~40 tok/shape): IDs, types, positions | `slideRange`, `presentationId?` |
-| `screenshot_slide` | Capture one slide as PNG (~1000 tok) | `slideIndex`, `width?` (default 720), `presentationId?` |
-| `show_slide` | Navigate the user's view to a slide (call BEFORE editing it, so the user watches the changes) | `slideIndex`, `presentationId?` |
+| `screenshot_slide` | Capture one slide as PNG (~1000 tok) | `slide`, `width?` (default 720), `presentationId?` |
+| `show_slide` | Navigate the user's view to a slide (call BEFORE editing it, so the user watches the changes) | `slide`, `presentationId?` |
 | `preview_deck` | Batch overview of all/selected slides with thumbnails + text | `slideRange?`, `imageWidth?` (default 480), `includeImages?`, `presentationId?` |
-| `copy_slides` | Copy slides between two open presentations (data stays server-side) | `sourceSlideIndex`, `sourcePresentationId`, `destinationPresentationId`, `formatting?`, `targetSlideId?` |
-| `insert_image` | Insert image from file path, URL, or base64 data (data stays server-side for file/url) | `source`, `sourceType` (`file`/`url`/`base64`), `slideIndex?`, `left?`, `top?`, `width?`, `height?`, `presentationId?` |
+| `copy_slides` | Copy slides between two open presentations (data stays server-side) | `sourceSlide`, `sourcePresentationId`, `destinationPresentationId`, `formatting?`, `targetSlideId?` |
+| `insert_image` | Insert image from file path, URL, or base64 data (data stays server-side for file/url) | `source`, `sourceType` (`file`/`url`/`base64`), `slide?`, `left?`, `top?`, `width?`, `height?`, `presentationId?` |
 | `get_local_copy` | Get a local .pptx file path (passthrough for local files, exports cloud files to temp) | `presentationId?` |
 | `read_deck_text` | Lightweight text extractor: titles + body as plain strings (~20x smaller than inspect_slide) | `slideRange?`, `includeNotes?`, `presentationId?` |
-| `read_shape_paragraphs` | Read raw OOXML `<a:p>` paragraphs from a shape (preserves formatting) | `slideIndex`, `shapeId`, `presentationId?` |
-| `edit_shape_paragraphs` | Replace paragraph content with raw OOXML (preserves bodyPr/lstStyle) | `slideIndex`, `shapeId`, `xml`, `presentationId?` |
-| `read_slide_xml` | Read full slide OOXML or a specific shape's XML | `slideIndex`, `shapeId?`, `presentationId?` |
-| `edit_slide_xml` | Replace full slide XML or a specific shape's XML | `slideIndex`, `xml`, `shapeId?`, `presentationId?` |
-| `read_slide_zip` | Read multiple files from exported slide zip (slide XML, rels, charts) | `slideIndex`, `paths?`, `presentationId?` |
-| `edit_slide_zip` | Update multiple zip files and reimport (auto-registers Content_Types for charts) | `slideIndex`, `files`, `presentationId?` |
-| `duplicate_slide` | Clone a slide within the same presentation | `slideIndex`, `insertAfter?`, `presentationId?` |
-| `verify_slides` | Check for overlapping, out-of-bounds, empty-text, tiny shapes, or unused placeholders | `slideIndex`, `checks?`, `presentationId?` |
-| `edit_slide_chart` | Create chart from structured data (generates all OOXML automatically) | `slideIndex`, `chartType`, `title`, `categories`, `series`, `position?`, `options?`, `presentationId?` |
+| `read_shape_paragraphs` | Read raw OOXML `<a:p>` paragraphs from a shape (preserves formatting) | `slide`, `shapeId`, `presentationId?` |
+| `edit_shape_paragraphs` | Replace paragraph content with raw OOXML (preserves bodyPr/lstStyle) | `slide`, `shapeId`, `xml`, `presentationId?` |
+| `read_slide_xml` | Read full slide OOXML or a specific shape's XML | `slide`, `shapeId?`, `presentationId?` |
+| `edit_slide_xml` | Replace full slide XML or a specific shape's XML | `slide`, `xml`, `shapeId?`, `presentationId?` |
+| `read_slide_zip` | Read multiple files from exported slide zip (slide XML, rels, charts) | `slide`, `paths?`, `presentationId?` |
+| `edit_slide_zip` | Update multiple zip files and reimport (auto-registers Content_Types for charts) | `slide`, `files`, `presentationId?` |
+| `duplicate_slide` | Clone a slide within the same presentation | `slide`, `insertAfterSlide?`, `presentationId?` |
+| `verify_slides` | Check for overlapping, out-of-bounds, empty-text, tiny shapes, or unused placeholders | `slide`, `checks?`, `presentationId?` |
+| `edit_slide_chart` | Create chart from structured data (generates all OOXML automatically) | `slide`, `chartType`, `title`, `categories`, `series`, `position?`, `options?`, `presentationId?` |
 | `search_text` | Grep for slides — search text across shapes, tables, and speaker notes with regex support | `query`, `slideRange?`, `caseSensitive?`, `regex?`, `context?` (`shape`/`slide`/`none`), `includeNotes?`, `presentationId?` |
-| `format_shapes` | Batch-apply fill and font formatting to shapes in one call | `slideIndex`, `shapes: [{ id, fill?, font? }]`, `presentationId?` |
+| `format_shapes` | Batch-apply fill and font formatting to shapes in one call | `slide`, `shapes: [{ id, fill?, font? }]`, `presentationId?` |
 | `execute_officejs` | Run arbitrary Office.js code in the live presentation | `code`, `presentationId?` |
 
 `presentationId` is required only when multiple presentations are connected. Get it from `list_presentations`.
 
 All positioning values are in **points** (1 pt = 1/72 inch). **Always read `slideWidth` and `slideHeight` from `inspect_deck` or `inspect_slide` response** — never assume 960 × 540. Common sizes: 960×540 (standard 16:9), 1440×810 (widescreen), 960×720 (4:3).
 
-**Slide numbering**: Users refer to slides by 1-based number ("slide 3"), but all tools use 0-based indices. When a user says "slide 3", use `slideIndex: 2`. When they say "after slide 2", use `insertAfter: 1`.
+**Slide numbering**: All slide numbers are **1-based** — "slide 1" is the first slide, matching how users refer to slides. The same applies to `slideRange` values ("1-5"), `position` in add_slide (1 = new first slide), and `insertAfterSlide` in duplicate_slide. When a user says "slide 3", use `slide: 3`. When they say "after slide 2", use `insertAfterSlide: 2`.
 
 ### Read Tool Selection — pick the lightest tool that gives you what you need
 
@@ -69,8 +69,8 @@ All positioning values are in **points** (1 pt = 1/72 inch). **Always read `slid
 
 Key return formats to know:
 
-- **`scan_slide`** returns `{ slideWidth, slideHeight, slides: [{ slideIndex, slideId, shapes: [{ id, name, type, left, top, width, height }] }] }` — `id` is a stable numeric string (use this for read/edit tools); `name` is locale-dependent (never use as selector); `type` is one of "GeometricShape", "TextBox", "Table", "Chart", "Picture", "Group"
-- **`verify_slides`** returns `{ slideIndex, issues: [{ type, description, shapeIds }] }` — `type` is "overlap", "bounds", "empty_text", "tiny_shapes", "unused_placeholder", or "background_cover"; `shapeIds` are stable IDs
+- **`scan_slide`** returns `{ slideWidth, slideHeight, slides: [{ slide, slideId, shapes: [{ id, name, type, left, top, width, height }] }] }` — `id` is a stable numeric string (use this for read/edit tools); `name` is locale-dependent (never use as selector); `type` is one of "GeometricShape", "TextBox", "Table", "Chart", "Picture", "Group"
+- **`verify_slides`** returns `{ slide, issues: [{ type, description, shapeIds }] }` — `type` is "overlap", "bounds", "empty_text", "tiny_shapes", "unused_placeholder", or "background_cover"; `shapeIds` are stable IDs
 - **`search_fluent_icons`** returns `[{ id, description, isMono, contentTier, searchScore, svgUrl, svgBase64 }]` — `isMono: false` = filled/colorful, `isMono: true` = outline/mono; pick highest `searchScore` matching intent; insert with `insert_image` (sourceType: **"base64"**, source = `svgBase64`). Add `color: "#RRGGBB"` to recolor mono icons. The SVG content is fetched server-side, so the icon CDN can never break the insert.
 - **`read_shape_paragraphs`** returns raw OOXML `<a:p>` paragraph elements (does NOT include `<a:bodyPr>` or `<a:lstStyle>`)
 - **`read_slide_zip`** returns `{ zipContents: { path: content }, allPaths: [...] }`
@@ -80,7 +80,7 @@ Key return formats to know:
 | Tool | Key non-obvious behavior |
 |------|--------------------------|
 | `edit_shape_paragraphs` | The `xml` field takes raw OOXML paragraph XML, not executable code. Preserves `<a:bodyPr>` and `<a:lstStyle>` automatically. Must auto-size shapes after edit. |
-| `edit_slide_xml` | Two modes: `xml` (finished XML string) or `code` (JS that manipulates pre-parsed DOM server-side). Code mode preserves untouched attributes. Exported slide is ALWAYS `ppt/slides/slide1.xml` in the zip regardless of `slideIndex`. |
+| `edit_slide_xml` | Two modes: `xml` (finished XML string) or `code` (JS that manipulates pre-parsed DOM server-side). Code mode preserves untouched attributes. Exported slide is ALWAYS `ppt/slides/slide1.xml` in the zip regardless of `slide`. |
 | `format_shapes` | Uses `getTextFrameOrNullObject()` internally. Cannot set corner radius, borders, or gradients — use `edit_slide_xml` code mode for those. Color format: hex without `#`. |
 | `verify_slides` | Must auto-size shapes first or stale dimensions cause missed overlaps. Table overflow needs API fix, not OOXML. |
 | `insert_image` | `color` param recolors SVG images only (e.g. Fluent UI icons from `search_fluent_icons`). Errors on non-SVG. `#` prefix required: `"#FF5733"`. |
@@ -162,7 +162,7 @@ For multi-step work, check in at key milestones. Show interim outputs and confir
 
 1. **Discover**: `list_presentations` — find connected presentations
 2. **Audit**: Check existing state — slide count, available layouts, which slides already have content. Use `preview_deck` for a visual overview, or `inspect_deck` then `inspect_slide` per slide. This is essential for resuming partial builds or modifying existing decks.
-3. **Find**: `search_text` — grep for slides. Searches shapes, tables, and speaker notes. Use `context: "none"` for just slide indices, `"shape"` (default) for matching shapes, or `"slide"` for full slide context with all shapes. Supports regex.
+3. **Find**: `search_text` — grep for slides. Searches shapes, tables, and speaker notes. Use `context: "none"` for just matching slide numbers, `"shape"` (default) for matching shapes, or `"slide"` for full slide context with all shapes. Supports regex.
 4. **Detect deck type**: Determine blank / custom-styled / template (see above) — this decides whether to apply a theme first.
 4. **See**: `screenshot_slide` — visually inspect specific slides
 5. **Modify**: `execute_officejs` — build entire slides in a single call (all shapes, text, connectors, accents at once) for efficiency and to avoid mid-build visual flashing
@@ -215,7 +215,7 @@ If overlaps/overflow: shorten text, reduce font, reposition body content (not ti
 
 **When**: After every slide edit — step 4 of the verification loop. This is the final gate before declaring a slide done.
 
-**How**: Invoke `/review-slide-visual N presentationId` (N = 0-based slide index). Always pass the full presentationId — skips lookup and avoids ambiguity. The skill runs in a forked context with no conversation knowledge — it evaluates purely what it sees, eliminating confirmation bias.
+**How**: Invoke `/review-slide-visual N presentationId` (N = 1-based slide number). Always pass the full presentationId — skips lookup and avoids ambiguity. The skill runs in a forked context with no conversation knowledge — it evaluates purely what it sees, eliminating confirmation bias.
 
 **Why mandatory**: `verify_slides` catches structural issues (overlaps, bounds) but cannot detect spacing problems, visual imbalance, contrast issues, misaligned elements, or text overflow that Office.js doesn't report. Only a visual screenshot review catches these.
 
@@ -301,7 +301,7 @@ One call — the code reads and modifies the pre-parsed DOM server-side. Only to
 
 **Example — remove rounded corners from multiple shapes:**
 ```js
-edit_slide_xml(slideIndex: 0, code: `
+edit_slide_xml(slide: 1, code: `
   var ids = ["5", "7", "9"];
   for (var i = 0; i < ids.length; i++) {
     var shape = findShapeById(ids[i]);
@@ -316,7 +316,7 @@ edit_slide_xml(slideIndex: 0, code: `
 
 **Example — change text color on a shape without losing formatting:**
 ```js
-edit_slide_xml(slideIndex: 2, code: `
+edit_slide_xml(slide: 3, code: `
   var shape = findShapeById("3");
   var runs = shape.getElementsByTagNameNS(NS_A, "rPr");
   for (var i = 0; i < runs.length; i++) {

@@ -21,7 +21,7 @@ export function registerNotesTools(
       notes: z
         .array(
           z.object({
-            slideIndex: z.number().int().min(0).describe('Zero-based slide index'),
+            slide: z.number().int().min(1).describe('Slide number, 1-based (slide 1 = first slide)'),
             text: z
               .string()
               .describe(
@@ -38,12 +38,13 @@ export function registerNotesTools(
     },
     withTool(async ({ notes, presentationId }) => {
       const target = pool.resolveTarget(presentationId)
-      const results: Array<{ slideIndex: number; success: boolean; error?: string }> = []
+      const results: Array<{ slide: number; success: boolean; error?: string }> = []
 
       for (const entry of notes) {
+        const slideIndex = entry.slide - 1
         try {
           // Export the single slide
-          const exported = await exportSlide(pool, entry.slideIndex, target.ws)
+          const exported = await exportSlide(pool, slideIndex, target.ws)
           const { zip } = await extractZipFiles(exported.base64)
 
           // Read current slide rels
@@ -57,9 +58,9 @@ export function registerNotesTools(
 
           await applyZipEditAndReimport(pool, exported, files, target.ws)
 
-          results.push({ slideIndex: entry.slideIndex, success: true })
+          results.push({ slide: entry.slide, success: true })
         } catch (err: unknown) {
-          results.push({ slideIndex: entry.slideIndex, success: false, error: errorMessage(err) })
+          results.push({ slide: entry.slide, success: false, error: errorMessage(err) })
         }
       }
 
@@ -76,7 +77,10 @@ export function registerNotesTools(
     'read_speaker_notes',
     'Read speaker notes from slides. Uses full-deck export (cached by revision) to parse notes from OOXML — Office.js has no notes API. Returns plain text per slide.',
     {
-      slideRange: z.string().optional().describe('Slide indices, e.g. "0", "0-5", "2,4,7". Omit to read all slides.'),
+      slideRange: z
+        .string()
+        .optional()
+        .describe('Slide numbers, 1-based, e.g. "1", "1-5", "2,4,7". Omit to read all slides.'),
       presentationId: z
         .string()
         .optional()
@@ -93,7 +97,7 @@ export function registerNotesTools(
 
       const slides = [...notesMap.entries()]
         .sort(([a], [b]) => a - b)
-        .map(([slideIndex, notes]) => ({ slideIndex, notes }))
+        .map(([slideIndex, notes]) => ({ slide: slideIndex + 1, notes }))
 
       return {
         content: [{ type: 'text' as const, text: JSON.stringify({ slides }, null, 2) }],

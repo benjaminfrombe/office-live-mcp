@@ -16,7 +16,7 @@ export function registerChartTools(
     'edit_slide_chart',
     'Create a chart on a slide from structured data. Generates all OOXML automatically (chart XML, rels, graphic frame, Content_Types). Supports column, bar, line, pie, doughnut, and area charts with multiple series.',
     {
-      slideIndex: z.number().int().min(0).describe('Zero-based slide index'),
+      slide: z.number().int().min(1).describe('Slide number, 1-based (slide 1 = first slide)'),
       chartType: z.enum(['column', 'bar', 'line', 'pie', 'doughnut', 'area']).describe('Chart type'),
       title: z.string().describe('Chart title'),
       categories: z.array(z.string()).describe('Category labels (x-axis or pie slices)'),
@@ -55,7 +55,8 @@ export function registerChartTools(
         .optional()
         .describe('Target presentation ID from list_presentations. Optional when only one presentation is connected.'),
     },
-    withTool(async ({ slideIndex, chartType, title, categories, series, position, options, presentationId }) => {
+    withTool(async ({ slide, chartType, title, categories, series, position, options, presentationId }) => {
+      const slideIndex = slide - 1
       const target = pool.resolveTarget(presentationId)
 
       // 1. Export the slide

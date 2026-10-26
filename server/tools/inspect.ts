@@ -48,7 +48,7 @@ export function registerInspectTools(
 
   server.tool(
     'inspect_deck',
-    'Deck overview: slide dimensions, theme (colors + fonts), and all slides with index, ID, and shape count. Use as the first call to understand deck structure. Theme is cached after the first call. For shape details, follow up with scan_slide or inspect_slide on specific slides. For available layouts, use inspect_layouts.',
+    'Deck overview: slide dimensions, theme (colors + fonts), and all slides with slide number (1-based), ID, and shape count. Use as the first call to understand deck structure. Theme is cached after the first call. For shape details, follow up with scan_slide or inspect_slide on specific slides. For available layouts, use inspect_layouts.',
     {
       presentationId: z
         .string()
@@ -72,7 +72,7 @@ export function registerInspectTools(
           await context.sync();
           for (var i = 0; i < slides.items.length; i++) {
             var slide = slides.items[i];
-            output.push({ index: i, id: slide.id, layout: slide.layout.name, shapeCount: slide.shapes.items.length });
+            output.push({ index: i + 1, id: slide.id, layout: slide.layout.name, shapeCount: slide.shapes.items.length });
           }
           return { slideWidth: ps.slideWidth, slideHeight: ps.slideHeight, slides: output };
         `
@@ -157,7 +157,10 @@ export function registerInspectTools(
       if (usedOnly) {
         // Fast path: just Office.js enumeration
         const layouts = await getLayoutUsage(pool, target.ws)
-        return { content: [{ type: 'text' as const, text: JSON.stringify({ layouts, usedOnly: true }) }] }
+        const layouts1Based = layouts.map((l) => ({ ...l, usedBySlides: l.usedBySlides.map((n) => n + 1) }))
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ layouts: layouts1Based, usedOnly: true }) }],
+        }
       }
 
       // Full path: read all layouts from OOXML via local file
@@ -169,7 +172,7 @@ export function registerInspectTools(
       // Enrich with usedBySlides from Office.js (best-effort)
       try {
         const usage = await getLayoutUsage(pool, target.ws)
-        const usageByName = new Map(usage.map((u) => [u.name, u.usedBySlides]))
+        const usageByName = new Map(usage.map((u) => [u.name, u.usedBySlides.map((n) => n + 1)]))
         for (const layout of layouts) {
           layout.usedBySlides = usageByName.get(layout.name) ?? []
         }
@@ -186,7 +189,7 @@ export function registerInspectTools(
     'inspect_slide',
     'Detailed slide inspector (~80 tokens/shape): returns every shape with text content, positions, sizes, and fill colors, plus slide dimensions. Supports slideRange for multiple slides. For just positions without text/fills, use scan_slide instead.',
     {
-      slideRange: z.string().describe('Slide indices to inspect, e.g. "0", "0-5", "2,4,7". Single index or range.'),
+      slideRange: z.string().describe('Slide numbers, 1-based, e.g. "1", "1-5", "2,4,7". Single number or range.'),
       presentationId: z
         .string()
         .optional()
@@ -206,7 +209,7 @@ export function registerInspectTools(
           var requestedIndices = ${indicesJs};
           for (var i = 0; i < requestedIndices.length; i++) {
             if (requestedIndices[i] >= slides.items.length) {
-              throw new Error("Slide index " + requestedIndices[i] + " out of range (presentation has " + slides.items.length + " slides)");
+              throw new Error("Slide number " + (requestedIndices[i] + 1) + " out of range (presentation has " + slides.items.length + " slides)");
             }
           }
           for (var i = 0; i < requestedIndices.length; i++) {
@@ -245,7 +248,7 @@ export function registerInspectTools(
               }
               shapes.push(info);
             }
-            output.push({ slideIndex: idx, slideId: slide.id, shapes: shapes });
+            output.push({ slide: idx + 1, slideId: slide.id, shapes: shapes });
           }
           return { slideWidth: ps.slideWidth, slideHeight: ps.slideHeight, slides: output };
         `
@@ -261,7 +264,7 @@ export function registerInspectTools(
     'scan_slide',
     'Lightweight shape scanner (~40 tokens/shape): lists shape IDs, types, and positions on slides, plus slide dimensions. Supports slideRange for multiple slides. For text content and fills, use inspect_slide instead.',
     {
-      slideRange: z.string().describe('Slide indices to scan, e.g. "0", "0-5", "2,4,7". Single index or range.'),
+      slideRange: z.string().describe('Slide numbers, 1-based, e.g. "1", "1-5", "2,4,7". Single number or range.'),
       namePattern: z
         .string()
         .optional()
@@ -289,7 +292,7 @@ export function registerInspectTools(
           var requestedIndices = ${indicesJs};
           for (var i = 0; i < requestedIndices.length; i++) {
             if (requestedIndices[i] >= slides.items.length) {
-              throw new Error("Slide index " + requestedIndices[i] + " out of range (presentation has " + slides.items.length + " slides)");
+              throw new Error("Slide number " + (requestedIndices[i] + 1) + " out of range (presentation has " + slides.items.length + " slides)");
             }
           }
           for (var i = 0; i < requestedIndices.length; i++) {
@@ -313,7 +316,7 @@ export function registerInspectTools(
                 height: s.height
               });
             }
-            output.push({ slideIndex: idx, slideId: slide.id, shapes: shapes });
+            output.push({ slide: idx + 1, slideId: slide.id, shapes: shapes });
           }
           return { slideWidth: ps.slideWidth, slideHeight: ps.slideHeight, slides: output };
         `
@@ -322,7 +325,7 @@ export function registerInspectTools(
         slideWidth: number
         slideHeight: number
         slides: Array<{
-          slideIndex: number
+          slide: number
           slideId: string
           shapes: Array<{
             id: string
@@ -359,7 +362,7 @@ export function registerInspectTools(
     'screenshot_slide',
     'Slide screenshot (~1000 tokens): captures one slide as PNG image. Use to visually verify layout after changes. Do NOT loop over all slides — use preview_deck instead.',
     {
-      slideIndex: z.number().int().min(0).describe('Zero-based slide index from scan_slide results'),
+      slide: z.number().int().min(1).describe('Slide number, 1-based (slide 1 = first slide), from scan_slide results'),
       width: z
         .number()
         .int()
@@ -381,7 +384,8 @@ export function registerInspectTools(
         .optional()
         .describe('Target presentation ID from list_presentations. Optional when only one presentation is connected.'),
     },
-    withTool(async ({ slideIndex, width, height, presentationId }) => {
+    withTool(async ({ slide, width, height, presentationId }) => {
+      const slideIndex = slide - 1
       const imgWidth = width ?? 720
       const optionsParts: string[] = [`width: ${imgWidth}`]
       if (height !== undefined) {
@@ -394,22 +398,22 @@ export function registerInspectTools(
           slides.load("items");
           await context.sync();
           if (${slideIndex} >= slides.items.length) {
-            throw new Error("Slide index " + ${slideIndex} + " out of range (presentation has " + slides.items.length + " slides)");
+            throw new Error("Slide number " + ${slide} + " out of range (presentation has " + slides.items.length + " slides)");
           }
           var slide = slides.items[${slideIndex}];
           var result = slide.getImageAsBase64(${optionsStr});
           await context.sync();
-          return { base64: result.value, slideIndex: ${slideIndex}, slideId: slide.id };
+          return { base64: result.value, slide: ${slide}, slideId: slide.id };
         `
       try {
         const target = pool.resolveTarget(presentationId)
         const result = (await pool.sendCommand('executeCode', { code }, target.ws)) as {
           base64: string
-          slideIndex: number
+          slide: number
           slideId: string
         }
         const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount())
-        const description = `Slide ${result.slideIndex} (ID: ${result.slideId})${warning ?? ''}`
+        const description = `Slide ${result.slide} (ID: ${result.slideId})${warning ?? ''}`
 
         return {
           content: [
@@ -441,7 +445,7 @@ export function registerInspectTools(
       slideRange: z
         .string()
         .optional()
-        .describe('Slide indices to include, e.g. "0-5", "2,4,7", "0-2,5,8-10". Omit for all slides.'),
+        .describe('Slide numbers, 1-based, e.g. "1-6", "2,4,7", "1-3,5,8-11". Omit for all slides.'),
       imageWidth: z
         .number()
         .int()
@@ -481,7 +485,7 @@ export function registerInspectTools(
           // Validate indices
           for (var i = 0; i < indicesToProcess.length; i++) {
             if (indicesToProcess[i] >= slides.items.length) {
-              throw new Error("Slide index " + indicesToProcess[i] + " out of range (presentation has " + slides.items.length + " slides)");
+              throw new Error("Slide number " + (indicesToProcess[i] + 1) + " out of range (presentation has " + slides.items.length + " slides)");
             }
           }
           // Load shapes for all requested slides
@@ -504,7 +508,7 @@ export function registerInspectTools(
               } catch (e) {}
               shapes.push(info);
             }
-            var slideData = { index: idx, id: slide.id, shapeCount: shapes.length, shapes: shapes };
+            var slideData = { index: idx + 1, id: slide.id, shapeCount: shapes.length, shapes: shapes };
             ${
               withImages
                 ? `var img = slide.getImageAsBase64({ width: ${width} });

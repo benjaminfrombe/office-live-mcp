@@ -56,9 +56,32 @@ export async function reimportSlide(
   }
   const optionsStr = `{ ${optionsParts.join(', ')} }`
 
+  // NOTE: the view-restore must run BEFORE the return — this snippet is the body
+  // of an async function, so anything appended after `return` is unreachable.
+  // The delete+insert makes PowerPoint auto-advance to the neighbouring slide;
+  // the navigation below waits for the transaction to settle (300 ms), then
+  // retries up to 5 times if the navigation is rejected.
+  const restoreViewCode =
+    restoredSlideIndex === undefined
+      ? ''
+      : `
+    await new Promise(function(res) { setTimeout(res, 300); });
+    await new Promise(function(res, rej) {
+      var attempt = 0;
+      function tryGoToRestoredSlide() {
+        Office.context.document.goToByIdAsync(${restoredSlideIndex + 1}, Office.GoToType.Index, function(navResult) {
+          if (navResult.status === Office.AsyncResultStatus.Succeeded) { res(); }
+          else if (++attempt < 5) { setTimeout(tryGoToRestoredSlide, 250); }
+          else { rej(new Error("View restore failed: " + navResult.error.message)); }
+        });
+      }
+      tryGoToRestoredSlide();
+    });
+  `
+
   // The base64 is embedded directly in the code string — it stays server-side
   // and never enters Claude's context.
-  let code = `
+  const code = `
     var slides = context.presentation.slides;
     slides.load("items");
     await context.sync();
@@ -84,20 +107,9 @@ export async function reimportSlide(
     if (slides.items.length !== countBefore) {
       throw new Error("Reimport verification failed: expected " + countBefore + " slides but found " + slides.items.length);
     }
+    ${restoreViewCode}
     return { success: true };
   `
-  if (restoredSlideIndex !== undefined) {
-    // The delete+insert resets PowerPoint's view to the first slide; navigate
-    // back to the reimported slide (fire-and-forget: the callback completes
-    // after the response is sent).
-    code += `
-    Office.context.document.goToByIdAsync(${restoredSlideIndex + 1}, Office.GoToType.Index, function(navResult) {
-      if (navResult.status !== Office.AsyncResultStatus.Succeeded) {
-        console.error("View restore failed: " + navResult.error.message);
-      }
-    });
-  `
-  }
   await pool.sendCommand('executeCode', { code }, targetWs, timeout)
 }
 

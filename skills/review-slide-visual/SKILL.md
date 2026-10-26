@@ -23,7 +23,7 @@ argument-hint: <slide-index> [presentation-hint]
 
 ## Capture and review
 
-Call screenshot_slide with slideIndex set to $ARGUMENTS[0], width 1440, and the resolved presentationId.
+Call screenshot_slide with slide set to $ARGUMENTS[0], width 1440, and the resolved presentationId.
 
 Visually inspect this slide. Assume there are issues — find them.
 

@@ -22,13 +22,13 @@ export function registerMediaTools(
         .describe(
           'How to interpret source: "file" reads from disk, "url" fetches from network, "base64" uses data directly',
         ),
-      slideIndex: z
+      slide: z
         .number()
         .int()
-        .min(0)
+        .min(1)
         .optional()
         .describe(
-          'Zero-based slide index to navigate to before inserting. If omitted, inserts on the currently active slide.',
+          'Slide number, 1-based (slide 1 = first slide), to navigate to before inserting. If omitted, inserts on the currently active slide.',
         ),
       left: z.number().optional().describe('Horizontal position in points (1 point = 1/72 inch)'),
       top: z.number().optional().describe('Vertical position in points'),
@@ -45,7 +45,8 @@ export function registerMediaTools(
         .optional()
         .describe('Target presentation ID from list_presentations. Optional when only one presentation is connected.'),
     },
-    withTool(async ({ source, sourceType, slideIndex, left, top, width, height, color, presentationId }) => {
+    withTool(async ({ source, sourceType, slide, left, top, width, height, color, presentationId }) => {
+      const slideIndex = slide !== undefined ? slide - 1 : undefined
       // Step 1: Resolve image to base64
       let base64Data: string
       if (sourceType === 'file') {
@@ -120,7 +121,7 @@ allSlides.load("items/id");
 await context.sync();
 var targetId = allSlides.items[${slideIndex}] ? allSlides.items[${slideIndex}].id : null;
 if (targetId === null) {
-  throw new Error("Slide index " + ${slideIndex} + " out of range (presentation has " + allSlides.items.length + " slides)");
+  throw new Error("Slide number " + ${slide} + " out of range (presentation has " + allSlides.items.length + " slides)");
 }
 var alreadyThere = originalId !== null && originalId === targetId;
 return new Promise(function(resolve, reject) {

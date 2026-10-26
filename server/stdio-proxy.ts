@@ -25,6 +25,7 @@ import { join } from 'node:path'
 const HEALTH_TIMEOUT_MS = 1_000
 const DAEMON_START_TIMEOUT_MS = 15_000
 const DAEMON_POLL_INTERVAL_MS = 200
+const DAEMON_SHUTDOWN_WAIT_MS = 3_000
 
 /** Base URL of the daemon's HTTP MCP server (read per call so tests can point it elsewhere). */
 function mcpHttpBase(): string {
@@ -147,6 +148,10 @@ export interface EnsureDaemonResult {
 export interface EnsureDaemonDeps {
   spawnDaemon?: () => number
   startTimeoutMs?: number
+  /** Overrides stopDaemon() for tests. */
+  stopDaemonFn?: () => Promise<boolean>
+  /** How long to wait for the stale daemon's endpoint to disappear after a shutdown. */
+  shutdownWaitMs?: number
 }
 
 async function waitForDaemonHealth(timeoutMs: number): Promise<{ health: DaemonHealth; base: string } | undefined> {
@@ -222,14 +227,27 @@ function spawnDaemon(): number {
 export async function ensureDaemon(localVersion: string, deps: EnsureDaemonDeps = {}): Promise<EnsureDaemonResult> {
   const spawnFn = deps.spawnDaemon ?? spawnDaemon
   const startTimeoutMs = deps.startTimeoutMs ?? DAEMON_START_TIMEOUT_MS
+  const shutdownWaitMs = deps.shutdownWaitMs ?? DAEMON_SHUTDOWN_WAIT_MS
+  const stopFn = deps.stopDaemonFn ?? stopDaemon
 
   // A bridge that serves /mcp counts as "already running" too: it owns the
   // add-in, so no daemon should be spawned (it would die on EADDRINUSE).
   const existingBase = await discoverMcpEndpoint()
   if (existingBase) {
     const existingHealth = await fetchDaemonHealth()
-    if (existingHealth) warnOnVersionSkew(existingHealth, localVersion, false)
-    return { alreadyRunning: true, health: existingHealth ?? { status: 'ok' }, base: existingBase }
+    if (existingHealth && versionsMatch(existingHealth.version, localVersion)) {
+      return { alreadyRunning: true, health: existingHealth, base: existingBase }
+    }
+    // Version skew: the running daemon predates this build, and the daemon
+    // holds all tool logic — a rebuilt dist on disk changes nothing until the
+    // process restarts. Restart it instead of warning: shutdown, wait for the
+    // endpoint to disappear, then fall through to a fresh spawn below.
+    console.error(
+      `[stdio-proxy] Daemon is v${existingHealth?.version ?? 'unknown'} but this wrapper is v${localVersion}. ` +
+        'Restarting the daemon to pick up the new version.',
+    )
+    await stopFn()
+    await waitForEndpointToDisappear(shutdownWaitMs)
   }
 
   const lock = readDaemonLock()
@@ -256,6 +274,24 @@ function warnOnVersionSkew(health: DaemonHealth, localVersion: string, started: 
       `[stdio-proxy] Warning: daemon ${verb} is v${health.version} but this wrapper is v${localVersion}. ` +
         'Restart the daemon (office-live-mcp --stop-daemon, then reconnect) to pick up the new version.',
     )
+  }
+}
+
+/**
+ * A daemon without a version field is treated as matching: very old daemons
+ * and foreign bridges do not report one, and restarting those from the proxy
+ * would do more harm than good.
+ */
+function versionsMatch(daemonVersion: string | undefined, localVersion: string): boolean {
+  return !daemonVersion || daemonVersion === localVersion
+}
+
+/** Poll until the MCP endpoint stops answering (best-effort, bounded). */
+async function waitForEndpointToDisappear(timeoutMs: number): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    if (!(await discoverMcpEndpoint())) return
+    await new Promise((r) => setTimeout(r, DAEMON_POLL_INTERVAL_MS))
   }
 }
 

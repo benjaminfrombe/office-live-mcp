@@ -18,18 +18,18 @@
 ### Preferred: Code mode (1 call)
 
 1. `inspect_slide(slideRange: "N")` → find shape IDs
-2. `edit_slide_xml(slideIndex, code: "...")` → DOM manipulation server-side (read + modify in one call)
-3. `screenshot_slide(slideIndex)` → visual verification
+2. `edit_slide_xml(slide, code: "...")` → DOM manipulation server-side (read + modify in one call)
+3. `screenshot_slide(slide)` → visual verification
 
 Code mode receives a pre-parsed DOM with helpers. See SKILL.md "OOXML Editing Workflow" for the full sandbox context and examples.
 
 ### Legacy: XML string mode (2+ calls)
 
 1. `inspect_slide(slideRange: "N")` → find shape IDs
-2. `read_shape_paragraphs(slideIndex, shapeId)` or `read_slide_xml(slideIndex, shapeId?)`
+2. `read_shape_paragraphs(slide, shapeId)` or `read_slide_xml(slide, shapeId?)`
 3. Modify the XML using `/pptx` skill knowledge
-4. `edit_shape_paragraphs(slideIndex, shapeId, xml)` or `edit_slide_xml(slideIndex, xml, shapeId?)`
-5. `screenshot_slide(slideIndex)` → visual verification
+4. `edit_shape_paragraphs(slide, shapeId, xml)` or `edit_slide_xml(slide, xml, shapeId?)`
+5. `screenshot_slide(slide)` → visual verification
 
 Always inspect before modifying. Always verify after.
 
@@ -50,11 +50,11 @@ Paragraph-level editing for a single shape:
 
 ```
 // Read current paragraphs
-read_shape_paragraphs(slideIndex: 0, shapeId: "2")
+read_shape_paragraphs(slide: 1, shapeId: "2")
 // Returns: <a:p><a:r><a:rPr lang="en-US" b="1"/><a:t>Hello</a:t></a:r></a:p>
 
 // Write modified paragraphs back
-edit_shape_paragraphs(slideIndex: 0, shapeId: "2", xml: '<a:p>..modified..</a:p>')
+edit_shape_paragraphs(slide: 1, shapeId: "2", xml: '<a:p>..modified..</a:p>')
 ```
 
 ## read_slide_xml / edit_slide_xml
@@ -66,12 +66,12 @@ Full slide or shape-level XML editing:
 
 ```
 // Full slide XML
-read_slide_xml(slideIndex: 0)
-edit_slide_xml(slideIndex: 0, xml: '<p:sld>...</p:sld>')
+read_slide_xml(slide: 1)
+edit_slide_xml(slide: 1, xml: '<p:sld>...</p:sld>')
 
 // Single shape XML
-read_slide_xml(slideIndex: 0, shapeId: "5")
-edit_slide_xml(slideIndex: 0, shapeId: "5", xml: '<p:sp>...</p:sp>')
+read_slide_xml(slide: 1, shapeId: "5")
+edit_slide_xml(slide: 1, shapeId: "5", xml: '<p:sp>...</p:sp>')
 ```
 
 Use full-slide mode for batch editing multiple shapes in a single reimport.
@@ -85,14 +85,14 @@ Each edit tool call triggers a full export → modify → delete → reimport cy
 
 ```
 // Bad: 3 reimports, visible flashing
-edit_shape_paragraphs(slideIndex: 0, shapeId: "2", xml: '...')
-edit_shape_paragraphs(slideIndex: 0, shapeId: "5", xml: '...')
-edit_shape_paragraphs(slideIndex: 0, shapeId: "7", xml: '...')
+edit_shape_paragraphs(slide: 1, shapeId: "2", xml: '...')
+edit_shape_paragraphs(slide: 1, shapeId: "5", xml: '...')
+edit_shape_paragraphs(slide: 1, shapeId: "7", xml: '...')
 
 // Good: 1 reimport, no flashing
-xml = read_slide_xml(slideIndex: 0)          // full slide
+xml = read_slide_xml(slide: 1)          // full slide
 // modify shapes 2, 5, 7 in the XML
-edit_slide_xml(slideIndex: 0, xml: modified)  // single reimport
+edit_slide_xml(slide: 1, xml: modified)  // single reimport
 ```
 
 ## Units: Points vs EMU
@@ -118,7 +118,7 @@ When moving positions from `inspect_slide` output into OOXML, multiply by 12,700
 The bridge handles the export/reimport cycle transparently — you just send/receive XML. Under the hood:
 
 1. **Export**: `slide.exportAsBase64()` → single-slide .pptx as Base64
-2. **Unzip**: Server extracts `ppt/slides/slide1.xml` (always this path, regardless of slideIndex)
+2. **Unzip**: Server extracts `ppt/slides/slide1.xml` (always this path, regardless of slide)
 3. **Modify**: Server applies your XML changes to the extracted slide
 4. **Repack**: Server creates a new Base64 .pptx with the modified XML
 5. **Delete**: Original slide is deleted from the presentation
@@ -132,14 +132,14 @@ The data stays server-side — XML content never enters Claude's context.
 
 ```
 // Discover all files in the exported zip
-read_slide_zip(slideIndex: 0)
+read_slide_zip(slide: 1)
 // Returns: { zipContents: { path: content, ... }, allPaths: [...] }
 
 // Read specific files
-read_slide_zip(slideIndex: 0, paths: ["ppt/charts/chart1.xml", "ppt/slides/_rels/slide1.xml.rels"])
+read_slide_zip(slide: 1, paths: ["ppt/charts/chart1.xml", "ppt/slides/_rels/slide1.xml.rels"])
 
 // Update multiple files in one reimport (can add new files)
-edit_slide_zip(slideIndex: 0, files: {
+edit_slide_zip(slide: 1, files: {
   "ppt/slides/slide1.xml": modifiedSlideXml,
   "ppt/charts/chart1.xml": chartXml,
   "ppt/slides/_rels/slide1.xml.rels": updatedRels
@@ -333,7 +333,7 @@ markDirty();
 **Using `edit_slide_zip` (MCP tool approach):** The workflow above runs inside `edit_slide_zip`'s code environment. Alternatively, prepare all files externally and pass them to `edit_slide_zip`:
 
 ```
-edit_slide_zip(slideIndex: 0, files: {
+edit_slide_zip(slide: 1, files: {
   "ppt/slides/slide1.xml": modifiedSlideXml,
   "ppt/charts/chart1.xml": chartXml,
   "ppt/slides/_rels/slide1.xml.rels": updatedRelsXml
@@ -536,7 +536,7 @@ zip.file("ppt/slides/slide1.xml", new XMLSerializer().serializeToString(doc));
 markDirty();
 ```
 
-Always find shapes by ID (not name — names are locale-dependent). Shape IDs come from `inspect_slide` output. The exported slide is always `ppt/slides/slide1.xml` in the zip regardless of `slideIndex`.
+Always find shapes by ID (not name — names are locale-dependent). Shape IDs come from `inspect_slide` output. The exported slide is always `ppt/slides/slide1.xml` in the zip regardless of `slide`.
 
 ## Diagrams and Infographics via OOXML
 

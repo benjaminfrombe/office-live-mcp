@@ -27,7 +27,7 @@ export function registerTextTools(
     'edit_shape_paragraphs',
     "Replace paragraph content of a shape with raw OOXML <a:p> XML. Preserves <a:bodyPr> and <a:lstStyle>. Use read_shape_paragraphs first to get the current XML, modify it (using /pptx skill knowledge), then write it back. The slide is exported, modified server-side, and reimported — data never enters Claude's context. NOTE: the reimport deletes and reinserts the slide, which makes PowerPoint's view jump to the first slide. For text-only changes, prefer execute_officejs (in place via shape.textFrame.textRange — view position is preserved).",
     {
-      slideIndex: z.number().int().min(0).describe('Zero-based slide index'),
+      slide: z.number().int().min(1).describe('Slide number, 1-based (slide 1 = first slide)'),
       shapeId: z.string().describe('Shape ID from inspect_slide results'),
       xml: z.string().describe('The <a:p> paragraph XML to replace the current text body content with'),
       presentationId: z
@@ -35,14 +35,15 @@ export function registerTextTools(
         .optional()
         .describe('Target presentation ID from list_presentations. Optional when only one presentation is connected.'),
     },
-    withTool(async ({ slideIndex, shapeId, xml, presentationId }) => {
+    withTool(async ({ slide, shapeId, xml, presentationId }) => {
+      const slideIndex = slide - 1
       const target = pool.resolveTarget(presentationId)
       const exported = await exportSlide(pool, slideIndex, target.ws)
       const { zip, xmlString } = await extractSlideXmlFromZip(exported.base64)
       const doc = parseSlideXml(xmlString)
       const shape = findShapeById(doc, shapeId)
       if (!shape) {
-        throw new Error(`Shape with ID "${shapeId}" not found on slide ${slideIndex}`)
+        throw new Error(`Shape with ID "${shapeId}" not found on slide ${slide}`)
       }
       replaceParagraphs(doc, shape, xml)
       const modifiedBase64 = await updateSlideXmlInZip(zip, serializeXml(doc))
@@ -65,21 +66,22 @@ export function registerTextTools(
     'read_shape_paragraphs',
     "Read raw OOXML <a:p> paragraphs from a shape's text body. Returns the paragraph XML as a string — preserves all formatting (bold, colors, bullets, etc.) that textRange.text strips. Use with the /pptx skill's OOXML knowledge to understand and modify the XML.",
     {
-      slideIndex: z.number().int().min(0).describe('Zero-based slide index from scan_slide results'),
+      slide: z.number().int().min(1).describe('Slide number, 1-based (slide 1 = first slide), from scan_slide results'),
       shapeId: z.string().describe('Shape ID from inspect_slide results (e.g. "5")'),
       presentationId: z
         .string()
         .optional()
         .describe('Target presentation ID from list_presentations. Optional when only one presentation is connected.'),
     },
-    withTool(async ({ slideIndex, shapeId, presentationId }) => {
+    withTool(async ({ slide, shapeId, presentationId }) => {
+      const slideIndex = slide - 1
       const target = pool.resolveTarget(presentationId)
       const exported = await exportSlide(pool, slideIndex, target.ws)
       const { xmlString } = await extractSlideXmlFromZip(exported.base64)
       const doc = parseSlideXml(xmlString)
       const shape = findShapeById(doc, shapeId)
       if (!shape) {
-        throw new Error(`Shape with ID "${shapeId}" not found on slide ${slideIndex}`)
+        throw new Error(`Shape with ID "${shapeId}" not found on slide ${slide}`)
       }
       const paragraphXml = extractParagraphs(shape)
       return { content: [{ type: 'text' as const, text: paragraphXml }] }
@@ -90,7 +92,10 @@ export function registerTextTools(
     'read_deck_text',
     'Lightweight text extractor: returns slide titles and body text as plain strings (~20x smaller than inspect_slide). Use for content review, narrative analysis, or any read-only text task. Supports slideRange and optional speaker notes.',
     {
-      slideRange: z.string().optional().describe('Slide range, e.g. "0-5", "2,4,7". Zero-based. Omit for all slides.'),
+      slideRange: z
+        .string()
+        .optional()
+        .describe('Slide numbers, 1-based, e.g. "1", "1-5", "2,4,7". Omit for all slides.'),
       includeNotes: z.boolean().optional().describe('Include speaker notes. Default: false.'),
       presentationId: z
         .string()
@@ -102,7 +107,9 @@ export function registerTextTools(
       const localPath = await getLocalCopyPath(pool, target)
       const zipBuffer = readFileSync(localPath)
       const indices = slideRange ? parseSlideRange(slideRange) : null
-      const result = await extractDeckText(zipBuffer, indices, includeNotes === true)
+      const deckText = await extractDeckText(zipBuffer, indices, includeNotes === true)
+      // Convert internal 0-based slide indices to 1-based slide numbers at the tool boundary
+      const result = deckText.map((s) => ({ ...s, slide: s.slide + 1 }))
       const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount())
       const text = JSON.stringify(result) + (warning ?? '')
       return { content: [{ type: 'text' as const, text }] }
@@ -117,7 +124,9 @@ export function registerTextTools(
       slideRange: z
         .string()
         .optional()
-        .describe('Optional slide range to search, e.g. "0-4" or "2-7". Zero-based. Omit to search all slides.'),
+        .describe(
+          'Optional slide range to search, e.g. "1-5" or "2-8". Slide numbers are 1-based. Omit to search all slides.',
+        ),
       caseSensitive: z.boolean().optional().describe('Case-sensitive search. Default: false.'),
       regex: z.boolean().optional().describe('Treat query as a regular expression. Default: false (plain substring).'),
       context: z
@@ -187,8 +196,8 @@ export function registerTextTools(
           var endIdx = total - 1;
           if (slideRangeStr) {
             var parts = slideRangeStr.split("-");
-            startIdx = parseInt(parts[0], 10);
-            if (parts.length > 1) endIdx = parseInt(parts[1], 10);
+            startIdx = parseInt(parts[0], 10) - 1;
+            if (parts.length > 1) endIdx = parseInt(parts[1], 10) - 1;
             else endIdx = startIdx;
             if (startIdx < 0) startIdx = 0;
             if (endIdx >= total) endIdx = total - 1;
@@ -278,9 +287,9 @@ export function registerTextTools(
 
             if (slideHasMatch) {
               if (ctxLevel === "none") {
-                slideResults.push(si);
+                slideResults.push(si + 1);
               } else if (ctxLevel === "slide") {
-                var entry = { slideIndex: si, shapes: [] };
+                var entry = { slide: si + 1, shapes: [] };
                 for (var k = 0; k < shapeEntries.length; k++) {
                   var se = shapeEntries[k];
                   var shapeInfo = {
@@ -307,13 +316,13 @@ export function registerTextTools(
                   for (var ti3 = 0; ti3 < se2.texts.length; ti3++) {
                     var tx2 = se2.texts[ti3];
                     if (!testMatch(tx2.text)) continue;
-                    var m = { slideIndex: si, shapeId: se2.shapeId, shapeName: se2.shapeName, source: tx2.source, text: tx2.text };
+                    var m = { slide: si + 1, shapeId: se2.shapeId, shapeName: se2.shapeName, source: tx2.source, text: tx2.text };
                     if (tx2.source === "tableCell") { m.row = tx2.row; m.col = tx2.col; }
                     slideResults.push(m);
                   }
                 }
                 if (noteMatched) {
-                  slideResults.push({ slideIndex: si, source: "note", text: noteText });
+                  slideResults.push({ slide: si + 1, source: "note", text: noteText });
                 }
               }
             }
@@ -340,7 +349,7 @@ export function registerTextTools(
     'format_shapes',
     'Apply formatting to multiple shapes on a slide in one call. Generates Office.js code internally. Use for fill color, font bold/italic/size/color/name. Cannot set corner radius or borders (use edit_slide_xml code mode for those). Runs in place (no slide reimport), so PowerPoint view position is preserved.',
     {
-      slideIndex: z.number().int().min(0).describe('Zero-based slide index'),
+      slide: z.number().int().min(1).describe('Slide number, 1-based (slide 1 = first slide)'),
       shapes: z
         .array(
           z.object({
@@ -364,11 +373,12 @@ export function registerTextTools(
         .optional()
         .describe('Target presentation ID from list_presentations. Optional when only one presentation is connected.'),
     },
-    withTool(async ({ slideIndex, shapes, presentationId }) => {
+    withTool(async ({ slide, shapes, presentationId }) => {
+      const slideIndex = slide - 1
       const target = pool.resolveTarget(presentationId)
 
       // Build Office.js code that applies formatting to each shape
-      const shapeOps = buildFormatShapeOps(shapes, slideIndex)
+      const shapeOps = buildFormatShapeOps(shapes, slide)
 
       const code = `
 var slides = context.presentation.slides;
