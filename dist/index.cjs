@@ -78181,6 +78181,34 @@ var CommandOutcomeError = class extends Error {
   }
 };
 var LATE_COMPLETION_LOG_LIMIT = 50;
+var WS_CLOSING = 2;
+var WS_CLOSED = 3;
+var HEARTBEAT_INTERVAL_MS = 5e3;
+var HEARTBEAT_MAX_MISSED = 3;
+function startHeartbeat(server, intervalMs = HEARTBEAT_INTERVAL_MS, maxMissed = HEARTBEAT_MAX_MISSED) {
+  const missed = /* @__PURE__ */ new WeakMap();
+  const listening = /* @__PURE__ */ new WeakSet();
+  const timer = setInterval(() => {
+    for (const ws of server.clients) {
+      if (!listening.has(ws)) {
+        listening.add(ws);
+        ws.on("pong", () => missed.set(ws, 0));
+      }
+      const count = missed.get(ws) ?? 0;
+      if (count >= maxMissed) {
+        ws.terminate();
+        continue;
+      }
+      missed.set(ws, count + 1);
+      try {
+        ws.ping();
+      } catch {
+      }
+    }
+  }, intervalMs);
+  timer.unref();
+  return () => clearInterval(timer);
+}
 var ConnectionPool = class {
   connections = /* @__PURE__ */ new Map();
   queues = /* @__PURE__ */ new Map();
@@ -78333,6 +78361,9 @@ var ConnectionPool = class {
    * the socket's current command has settled.
    */
   sendCommand(action, params, targetWs, timeoutMs) {
+    if (targetWs.readyState === WS_CLOSING || targetWs.readyState === WS_CLOSED) {
+      return Promise.reject(new CommandOutcomeError("never-started", `Add-in connection is closed; ${action} not sent`));
+    }
     const id = (0, import_node_crypto.randomUUID)();
     const timeout = timeoutMs ?? this.commandTimeout;
     const { promise: promise2, resolve: resolve4, reject } = Promise.withResolvers();
@@ -78358,7 +78389,27 @@ var ConnectionPool = class {
     };
     queue.current = dispatched;
     this.pendingRequests.set(queued.id, dispatched);
-    queued.ws.send(JSON.stringify({ type: "command", id: queued.id, action: queued.action, params: queued.params }));
+    try {
+      queued.ws.send(
+        JSON.stringify({
+          type: "command",
+          id: queued.id,
+          action: queued.action,
+          params: queued.params,
+          timeoutMs: queued.timeoutMs
+        })
+      );
+    } catch (err) {
+      clearTimeout(dispatched.timer);
+      this.pendingRequests.delete(queued.id);
+      queued.reject(
+        new CommandOutcomeError(
+          "never-started",
+          `Failed to send ${queued.action}: ${err instanceof Error ? err.message : String(err)}`
+        )
+      );
+      this.advanceQueue(queued.ws);
+    }
   }
   onExecutionTimeout(id) {
     const dispatched = this.pendingRequests.get(id);
@@ -79137,17 +79188,38 @@ async function runStdioProxy(options) {
   }
   let sessionId;
   let queue = Promise.resolve();
-  function enqueueMessage(raw) {
-    queue = queue.then(() => handleMessage(raw)).catch((err) => {
+  const inflight = /* @__PURE__ */ new Set();
+  function sendMessage(raw) {
+    return handleMessage(raw).catch((err) => {
+      let id;
+      try {
+        id = JSON.parse(raw).id;
+      } catch {
+      }
+      if (id === void 0) {
+        console.error(`[stdio-proxy] notification failed: ${String(err)}`);
+        return;
+      }
       stdout.write(
         `${JSON.stringify({
           jsonrpc: "2.0",
           error: { code: -32603, message: `office-live-mcp proxy error: ${String(err)}` },
-          id: null
+          id
         })}
 `
       );
     });
+  }
+  function enqueueMessage(raw) {
+    let task;
+    if (sessionId === void 0) {
+      queue = queue.then(() => sendMessage(raw));
+      task = queue;
+    } else {
+      task = sendMessage(raw);
+    }
+    inflight.add(task);
+    void task.finally(() => inflight.delete(task));
   }
   async function handleMessage(raw) {
     try {
@@ -79197,7 +79269,7 @@ async function runStdioProxy(options) {
       }
     });
     stdin.on("end", () => {
-      queue.then(() => {
+      Promise.all([queue, ...inflight]).then(() => {
         if (sessionId) {
           fetch(`${base}/mcp`, {
             method: "DELETE",
@@ -84579,6 +84651,7 @@ function startBridgeServer(onListening) {
       callback(false, 403, "Forbidden");
     }
   });
+  startHeartbeat(wss);
   wss.on("connection", (ws) => {
     console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] Add-in WebSocket connected`);
     ws.on("close", () => {

@@ -178,3 +178,54 @@ describe('add-in WebSocket ownership', () => {
     expect(h.sockets).toHaveLength(2)
   })
 })
+
+describe('add-in command queue', () => {
+  function commandHarness() {
+    const h = harness()
+    h.runTimer() // fallback timer opens the socket (plain-browser path)
+    const socket = h.sockets[0]
+    socket.open()
+    let runs = 0
+    ;(h.context.window as Record<string, unknown>).PowerPoint = {
+      run: () => {
+        runs++
+        return runs === 1 ? new Promise(() => undefined) : Promise.resolve('ok')
+      },
+    }
+    const send = (id: string, timeoutMs?: number) =>
+      socket.onmessage?.({
+        data: JSON.stringify({ type: 'command', id, action: 'executeCode', params: { code: 'return 1' }, timeoutMs }),
+      })
+    return { h, socket, send, runs: () => runs }
+  }
+
+  it('releases a hung command after its timeout plus slack so later commands still run', () => {
+    const { h, send, runs } = commandHarness()
+    send('hung', 1000)
+    send('next', 1000)
+    expect(runs()).toBe(1) // the second command waits behind the hung one
+    expect(h.delays).toContain(1000 + 2000)
+
+    h.runTimer() // watchdog fires
+    expect(runs()).toBe(2) // queue moved on instead of stalling forever
+  })
+
+  it('clears the watchdog when a command settles in time', async () => {
+    const h = harness()
+    h.runTimer()
+    h.sockets[0].open()
+    ;(h.context.window as Record<string, unknown>).PowerPoint = { run: () => Promise.resolve('ok') }
+    h.sockets[0].onmessage?.({
+      data: JSON.stringify({
+        type: 'command',
+        id: 'fast',
+        action: 'executeCode',
+        params: { code: 'return 1' },
+        timeoutMs: 1000,
+      }),
+    })
+    await new Promise((r) => setImmediate(r))
+    expect(h.timers.size).toBe(0)
+    expect(h.sockets[0].sent.some((m) => m.includes('"id":"fast"') && m.includes('"type":"response"'))).toBe(true)
+  })
+})

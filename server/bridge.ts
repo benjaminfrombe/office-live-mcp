@@ -75,6 +75,51 @@ interface GraceTombstone {
 
 const LATE_COMPLETION_LOG_LIMIT = 50
 
+// ws readyState values (the numeric constants avoid importing the runtime class).
+const WS_CLOSING = 2
+const WS_CLOSED = 3
+
+/** Ping cadence for add-in sockets; a half-open socket is detected in about interval x max-missed. */
+export const HEARTBEAT_INTERVAL_MS = 5_000
+export const HEARTBEAT_MAX_MISSED = 3
+
+/**
+ * Ping every client on an interval and terminate any that stops answering.
+ * A half-open socket (PowerPoint suspended, laptop slept, webview gone) never
+ * emits `close`, so without this commands sent to it wait out their full
+ * timeout. Terminating fires `close`, which fails pending commands at once.
+ * Returns a stop function.
+ */
+export function startHeartbeat(
+  server: { clients: Set<WebSocket> },
+  intervalMs = HEARTBEAT_INTERVAL_MS,
+  maxMissed = HEARTBEAT_MAX_MISSED,
+): () => void {
+  const missed = new WeakMap<WebSocket, number>()
+  const listening = new WeakSet<WebSocket>()
+  const timer = setInterval(() => {
+    for (const ws of server.clients) {
+      if (!listening.has(ws)) {
+        listening.add(ws)
+        ws.on('pong', () => missed.set(ws, 0))
+      }
+      const count = missed.get(ws) ?? 0
+      if (count >= maxMissed) {
+        ws.terminate()
+        continue
+      }
+      missed.set(ws, count + 1)
+      try {
+        ws.ping()
+      } catch {
+        // socket already going away; the close handler cleans up
+      }
+    }
+  }, intervalMs)
+  timer.unref()
+  return () => clearInterval(timer)
+}
+
 // ---------------------------------------------------------------------------
 // ConnectionPool — manages add-in WebSocket connections
 // ---------------------------------------------------------------------------
@@ -255,6 +300,11 @@ export class ConnectionPool {
     targetWs: WebSocket,
     timeoutMs?: number,
   ): Promise<unknown> {
+    // A socket that is already closing/closed silently drops `send`, which would
+    // otherwise cost the full execution timeout (30s, 120s for exports).
+    if (targetWs.readyState === WS_CLOSING || targetWs.readyState === WS_CLOSED) {
+      return Promise.reject(new CommandOutcomeError('never-started', `Add-in connection is closed; ${action} not sent`))
+    }
     const id = randomUUID()
     const timeout = timeoutMs ?? this.commandTimeout
     const { promise, resolve, reject } = Promise.withResolvers<unknown>()
@@ -282,7 +332,28 @@ export class ConnectionPool {
     }
     queue.current = dispatched
     this.pendingRequests.set(queued.id, dispatched)
-    queued.ws.send(JSON.stringify({ type: 'command', id: queued.id, action: queued.action, params: queued.params }))
+    try {
+      queued.ws.send(
+        JSON.stringify({
+          type: 'command',
+          id: queued.id,
+          action: queued.action,
+          params: queued.params,
+          timeoutMs: queued.timeoutMs,
+        }),
+      )
+    } catch (err) {
+      // Never sent, so safe to retry; free the slot instead of letting the queue wait out the timer.
+      clearTimeout(dispatched.timer)
+      this.pendingRequests.delete(queued.id)
+      queued.reject(
+        new CommandOutcomeError(
+          'never-started',
+          `Failed to send ${queued.action}: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      )
+      this.advanceQueue(queued.ws)
+    }
   }
 
   private onExecutionTimeout(id: string): void {

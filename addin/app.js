@@ -132,18 +132,31 @@ function updateStatus(state) {
 }
 
 /* Command queue — Office.js PowerPoint.run() calls must execute sequentially.
-   Concurrent calls compete for the same COM context and can deadlock. */
+   Concurrent calls compete for the same COM context and can deadlock.
+   A run that never settles (modal dialog, host hang) would otherwise block the
+   queue for good, so every command carries a watchdog: after the server's own
+   timeout plus slack the queue moves on. The hung run is not cancelled; if it
+   ever completes, its response is still sent and the server logs it as late. */
 var commandQueue = []
 var commandRunning = false
+var WATCHDOG_SLACK_MS = 2000
+var DEFAULT_COMMAND_TIMEOUT_MS = 125000
 
 function processQueue() {
   if (commandRunning || commandQueue.length === 0) return
   commandRunning = true
   var next = commandQueue.shift()
-  next().finally(() => {
+  var released = false
+  var watchdog = null
+  var release = () => {
+    if (released) return
+    released = true
+    if (watchdog !== null) clearTimeout(watchdog)
     commandRunning = false
     processQueue()
-  })
+  }
+  watchdog = setTimeout(release, next.timeoutMs + WATCHDOG_SLACK_MS)
+  next.run().finally(release)
 }
 
 /* Command handler — dispatches actions to execution functions */
@@ -151,7 +164,11 @@ function handleCommand(message) {
   if (message.type !== 'command' || !message.id) return
 
   if (message.action === 'executeCode') {
-    commandQueue.push(() => executeCode(message.params.code, message.id))
+    commandQueue.push({
+      run: () => executeCode(message.params.code, message.id),
+      timeoutMs:
+        typeof message.timeoutMs === 'number' && message.timeoutMs > 0 ? message.timeoutMs : DEFAULT_COMMAND_TIMEOUT_MS,
+    })
     processQueue()
   } else {
     sendError(message.id, { message: `Unknown action: ${message.action}` })

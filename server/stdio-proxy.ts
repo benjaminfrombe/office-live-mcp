@@ -354,26 +354,49 @@ export async function runStdioProxy(options: ProxyOptions): Promise<void> {
   }
 
   let sessionId: string | undefined
-  // In-order queue: stdin often delivers several JSON-RPC lines in one chunk,
-  // and follow-up requests must not overtake the initialize round-trip that
-  // carries the session id. Mirrors the sequential behavior of a plain stdio
-  // server.
+  // Until the daemon has issued a session id, requests run strictly in order:
+  // stdin often delivers several JSON-RPC lines in one chunk, and follow-ups
+  // must not overtake the initialize round-trip that carries the session id.
+  // Once the session exists, requests run concurrently so one slow tool call
+  // cannot hold up every later call (head-of-line blocking) or a cancellation.
   let queue: Promise<void> = Promise.resolve()
+  const inflight = new Set<Promise<void>>()
+
+  function sendMessage(raw: string): Promise<void> {
+    return handleMessage(raw).catch((err: unknown) => {
+      // Transport-level failure: answer the failed request under its own id so
+      // the client sees an error instead of waiting for its own timeout.
+      // Notifications carry no id and get no response.
+      let id: unknown
+      try {
+        id = (JSON.parse(raw) as { id?: unknown }).id
+      } catch {
+        // unparsable input was already dropped in handleMessage
+      }
+      if (id === undefined) {
+        console.error(`[stdio-proxy] notification failed: ${String(err)}`)
+        return
+      }
+      stdout.write(
+        `${JSON.stringify({
+          jsonrpc: '2.0',
+          error: { code: -32603, message: `office-live-mcp proxy error: ${String(err)}` },
+          id,
+        })}\n`,
+      )
+    })
+  }
 
   function enqueueMessage(raw: string): void {
-    queue = queue
-      .then(() => handleMessage(raw))
-      .catch((err: unknown) => {
-        // Transport-level failure: report as a JSON-RPC internal error so the
-        // client sees something instead of hanging forever.
-        stdout.write(
-          `${JSON.stringify({
-            jsonrpc: '2.0',
-            error: { code: -32603, message: `office-live-mcp proxy error: ${String(err)}` },
-            id: null,
-          })}\n`,
-        )
-      })
+    let task: Promise<void>
+    if (sessionId === undefined) {
+      queue = queue.then(() => sendMessage(raw))
+      task = queue
+    } else {
+      task = sendMessage(raw)
+    }
+    inflight.add(task)
+    void task.finally(() => inflight.delete(task))
   }
 
   async function handleMessage(raw: string): Promise<void> {
@@ -427,7 +450,7 @@ export async function runStdioProxy(options: ProxyOptions): Promise<void> {
       }
     })
     stdin.on('end', () => {
-      queue.then(() => {
+      Promise.all([queue, ...inflight]).then(() => {
         // Best-effort session cleanup so the daemon drops this session.
         if (sessionId) {
           fetch(`${base}/mcp`, {

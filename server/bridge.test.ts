@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WebSocket } from 'ws'
 import type { AddinConnection } from './bridge.ts'
-import { ConnectionPool } from './bridge.ts'
+import { ConnectionPool, startHeartbeat } from './bridge.ts'
 
 function mockWs(overrides: Partial<WebSocket> = {}): WebSocket {
   return {
@@ -290,6 +290,78 @@ describe('ConnectionPool', () => {
         // The next command dispatches right away — no grace-period wait for a definitive outcome.
         expect(ws.send).toHaveBeenCalledTimes(2)
         void second
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+  })
+
+  describe('dead sockets', () => {
+    it('rejects immediately as never-started when the socket is already closing or closed, and holds no slot', async () => {
+      for (const readyState of [2, 3] as const) {
+        const ws = mockWs({ readyState })
+        await expect(pool.sendCommand('executeCode', { code: 'x' }, ws)).rejects.toMatchObject({
+          outcome: 'never-started',
+        })
+        expect(ws.send).not.toHaveBeenCalled()
+      }
+    })
+
+    it('does not leave a stuck slot behind when ws.send throws', async () => {
+      const ws = mockWs({
+        send: vi.fn(() => {
+          throw new Error('boom')
+        }),
+      })
+      await expect(pool.sendCommand('executeCode', { code: 'x' }, ws)).rejects.toMatchObject({
+        outcome: 'never-started',
+      })
+      // The queue must be free again: the next command dispatches right away.
+      vi.mocked(ws.send).mockImplementation(() => {})
+      const next = pool.sendCommand('executeCode', { code: 'y' }, ws)
+      expect(ws.send).toHaveBeenCalledTimes(2)
+      pool.handleResponse(sentCommand(ws, 1).id, 'response', 'ok')
+      await expect(next).resolves.toBe('ok')
+    })
+  })
+
+  describe('startHeartbeat', () => {
+    function heartbeatWs() {
+      const handlers: Record<string, () => void> = {}
+      return {
+        ws: {
+          readyState: 1,
+          ping: vi.fn(),
+          terminate: vi.fn(),
+          on: vi.fn((event: string, fn: () => void) => {
+            handlers[event] = fn
+          }),
+        } as unknown as WebSocket,
+        pong: () => handlers.pong?.(),
+      }
+    }
+
+    it('pings every client and terminates one that misses the allowed number of pongs', () => {
+      vi.useFakeTimers()
+      try {
+        const alive = heartbeatWs()
+        const dead = heartbeatWs()
+        const clients = new Set([alive.ws, dead.ws])
+        const stop = startHeartbeat({ clients }, 1000, 2)
+
+        vi.advanceTimersByTime(1000)
+        expect(vi.mocked(alive.ws.ping)).toHaveBeenCalledTimes(1)
+        alive.pong()
+        vi.advanceTimersByTime(1000)
+        alive.pong()
+        // dead has now missed 1 pong; still tolerated.
+        expect(vi.mocked(dead.ws.terminate)).not.toHaveBeenCalled()
+        vi.advanceTimersByTime(1000)
+        expect(vi.mocked(dead.ws.terminate)).toHaveBeenCalledTimes(1)
+        expect(vi.mocked(alive.ws.terminate)).not.toHaveBeenCalled()
+        stop()
+        vi.advanceTimersByTime(5000)
+        expect(vi.mocked(alive.ws.ping)).toHaveBeenCalledTimes(3)
       } finally {
         vi.useRealTimers()
       }

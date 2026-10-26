@@ -12,7 +12,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import type { WebSocket } from 'ws'
 import { WebSocketServer } from 'ws'
-import { ConnectionPool } from './bridge.ts'
+import { ConnectionPool, startHeartbeat } from './bridge.ts'
 import { substituteManifestPort } from './manifest.ts'
 import { runSetup } from './setup.ts'
 import { handleSharePointCatalog, setManifestDir } from './sharepoint-catalog.ts'
@@ -531,6 +531,9 @@ function startBridgeServer(onListening?: () => void): void {
       callback(false, 403, 'Forbidden')
     },
   })
+
+  // Detect half-open add-in sockets so commands fail fast instead of waiting out their timeout.
+  startHeartbeat(wss)
 
   wss.on('connection', (ws: WebSocket) => {
     console.error(`[${new Date().toISOString()}] Add-in WebSocket connected`)

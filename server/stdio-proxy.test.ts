@@ -346,6 +346,87 @@ describe('runStdioProxy', () => {
     expect(lines).toHaveLength(1)
     expect((lines[0] as { error: { code: number } }).error.code).toBe(-32603)
   })
+  it('does not let a slow request block later requests once the session is initialized', async () => {
+    const server = await new Promise<Server>((resolve) => {
+      const srv = createServer((req, res) => {
+        let body = ''
+        req.on('data', (c: Buffer) => {
+          body += c.toString()
+        })
+        req.on('end', () => {
+          const parsed = JSON.parse(body) as { method?: string; id?: number }
+          const reply = (delayMs: number, headers: Record<string, string> = {}) =>
+            setTimeout(() => {
+              res.writeHead(200, { 'Content-Type': 'application/json', ...headers })
+              res.end(JSON.stringify({ jsonrpc: '2.0', id: parsed.id, result: {} }))
+            }, delayMs)
+          if (parsed.method === 'initialize') reply(0, { 'Mcp-Session-Id': 's1' })
+          else if (parsed.method === 'tools/call') reply(600)
+          else reply(0)
+        })
+      })
+      srv.listen(0, '127.0.0.1', () => {
+        process.env.MCP_PORT = String((srv.address() as { port: number }).port)
+        resolve(srv)
+      })
+    })
+    const stdin = new PassThrough()
+    const stdout = new PassThrough()
+    const arrival: number[] = []
+    stdout.on('data', (c: Buffer) => {
+      for (const l of c.toString().trim().split('\n')) arrival.push((JSON.parse(l) as { id: number }).id)
+    })
+    const done = runStdioProxy({
+      stdin,
+      stdout,
+      localVersion: '0.6.0',
+      ensure: () =>
+        Promise.resolve({
+          alreadyRunning: true,
+          health: { status: 'ok' },
+          base: `http://127.0.0.1:${process.env.MCP_PORT}`,
+        }),
+    })
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} })}\n`)
+    await new Promise((r) => setTimeout(r, 100))
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: {} })}\n`)
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} })}\n`)
+    await new Promise((r) => setTimeout(r, 200))
+    // The fast request answers while the slow one is still pending.
+    expect(arrival).toEqual([1, 3])
+    stdin.end()
+    await done
+    // end waits for in-flight requests: the slow one is answered too.
+    expect(arrival).toEqual([1, 3, 2])
+    await closeServer(server)
+  })
+
+  it('answers a failed request with that request id so the client does not wait for a timeout', async () => {
+    process.env.MCP_PORT = '1'
+    const stdin = new PassThrough()
+    const stdout = new PassThrough()
+    const chunks: string[] = []
+    stdout.on('data', (c: Buffer) => chunks.push(c.toString()))
+    const done = runStdioProxy({
+      stdin,
+      stdout,
+      localVersion: '0.6.0',
+      ensure: () => Promise.resolve({ alreadyRunning: true, health: { status: 'ok' }, base: 'http://127.0.0.1:1' }),
+    })
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 7, method: 'tools/call', params: {} })}\n`)
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`)
+    await new Promise((r) => setTimeout(r, 150))
+    stdin.end()
+    await done
+    const lines = chunks
+      .join('')
+      .trim()
+      .split('\n')
+      .map((l) => JSON.parse(l) as { id: unknown })
+    // One error for the request (carrying its id); none for the notification.
+    expect(lines).toHaveLength(1)
+    expect(lines[0].id).toBe(7)
+  })
 })
 
 describe('stopDaemon', () => {
