@@ -2949,12 +2949,17 @@ describe('MCP Tools', () => {
       expect(exportJson.params.code).toContain('exportAsBase64')
       pool.handleResponse(exportJson.id, 'response', { base64, slideId: 'slide-0', prevSlideId: null })
 
-      // Second call: reimportSlide — must inject view-restore navigation to the
-      // edited slide (slide 3, 1-based) so the view does not jump to a neighbor.
+      // Second call: reimportSlide — must navigate to the edited slide BEFORE
+      // deleting the original (deleting the watched slide is what makes the
+      // view jump), plus a post-delete safety net.
       const reimportJson = await waitForSend(ws, 1)
       expect(reimportJson.params.code).toContain('insertSlidesFromBase64')
       expect(reimportJson.params.code).toContain('goToByIdAsync(3,')
       expect(reimportJson.params.code).toContain('GoToType.Index')
+      const navPos = (reimportJson.params.code as string).indexOf('goToByIdAsync(3,')
+      const deletePos = (reimportJson.params.code as string).indexOf('.delete()')
+      expect(deletePos).toBeGreaterThan(-1)
+      expect(navPos).toBeLessThan(deletePos)
       pool.handleResponse(reimportJson.id, 'response', { success: true })
 
       const result = await toolPromise

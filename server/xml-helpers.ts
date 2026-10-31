@@ -58,25 +58,39 @@ export async function reimportSlide(
 
   // NOTE: the view-restore must run BEFORE the return — this snippet is the body
   // of an async function, so anything appended after `return` is unreachable.
-  // The delete+insert makes PowerPoint auto-advance to the neighbouring slide;
-  // the navigation below waits for the transaction to settle (300 ms), then
-  // retries up to 5 times if the navigation is rejected.
+  // The delete+insert makes PowerPoint auto-advance away from the deleted slide;
+  // the view must be moved onto the inserted copy BEFORE deleting the original
+  // (deleting the slide the user is watching is what causes the jump), and a
+  // post-delete safety net re-navigates in case the pre-delete navigation was
+  // ignored or the delete still nudged the view.
+  // Builds a goToByIdAsync retry snippet (up to 5 attempts, 250 ms apart).
+  // 'resolve' swallows final failure (pre-delete: deck integrity first),
+  // 'reject' surfaces it (post-delete safety net: a lost view must be visible).
+  const navPromiseCode = (slideIndex: number, failMode: 'reject' | 'resolve') => `
+    await new Promise(function(res, rej) {
+      var attempt = 0;
+      function tryGoToRestoredSlide() {
+        Office.context.document.goToByIdAsync(${slideIndex + 1}, Office.GoToType.Index, function(navResult) {
+          if (navResult.status === Office.AsyncResultStatus.Succeeded) { res(); }
+          else if (++attempt < 5) { setTimeout(tryGoToRestoredSlide, 250); }
+          else { ${failMode === 'reject' ? 'rej(new Error("View restore failed: " + navResult.error.message));' : 'res();'} }
+        });
+      }
+      tryGoToRestoredSlide();
+    });
+  `
+  // Pre-delete: move the view onto the inserted copy. Navigation failure must
+  // not block the reimport (deck integrity first), so it resolves on give-up.
+  const preDeleteNavCode = restoredSlideIndex === undefined ? '' : navPromiseCode(restoredSlideIndex, 'resolve')
+  // Post-delete safety net: waits for the transaction to settle (300 ms), then
+  // retries up to 5 times if the navigation is rejected. Failure here surfaces
+  // as a tool error so a genuinely lost view is not silently accepted.
   const restoreViewCode =
     restoredSlideIndex === undefined
       ? ''
       : `
     await new Promise(function(res) { setTimeout(res, 300); });
-    await new Promise(function(res, rej) {
-      var attempt = 0;
-      function tryGoToRestoredSlide() {
-        Office.context.document.goToByIdAsync(${restoredSlideIndex + 1}, Office.GoToType.Index, function(navResult) {
-          if (navResult.status === Office.AsyncResultStatus.Succeeded) { res(); }
-          else if (++attempt < 5) { setTimeout(tryGoToRestoredSlide, 250); }
-          else { rej(new Error("View restore failed: " + navResult.error.message)); }
-        });
-      }
-      tryGoToRestoredSlide();
-    });
+    ${navPromiseCode(restoredSlideIndex, 'reject')}
   `
 
   // The base64 is embedded directly in the code string — it stays server-side
@@ -103,6 +117,7 @@ export async function reimportSlide(
     // losing the original slide.
     context.presentation.insertSlidesFromBase64("${modifiedBase64}", ${optionsStr});
     await context.sync();
+    ${preDeleteNavCode}
     // Delete the original slide by ID (the insert added a copy; the original still exists)
     slides.load("items");
     await context.sync();
