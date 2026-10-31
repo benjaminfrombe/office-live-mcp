@@ -276,7 +276,6 @@ for (var i = 0; i < shapes.items.length; i++) {
 Note the `String(...)` — shape IDs come back as strings like `"5"`, and the OOXML
 `<p:cNvPr id="...">` attribute matches that string form.
 
-
 ### Stale Value Pitfall
 
 All loaded properties are **snapshots** from the last `context.sync()`. They do NOT update after a write.
