@@ -72,17 +72,28 @@ function initChat() {
 
   document.getElementById('oc-use-selection').addEventListener('click', () => {
     runLocalOffice(
-      'const out = { text: "", slide: null, shape: null };\n' +
+      'const out = { text: "", slide: null, shapes: [] };\n' +
         'const raw = await new Promise((resolve) => ' +
         'Office.context.document.getSelectedDataAsync(Office.CoercionType.Text, (r) => resolve(r.value)));\n' +
         'out.text = String(raw || "");\n' +
         'const pres = context.presentation;\n' +
         'try {\n' +
         '  const shapes = pres.getSelectedShapes();\n' +
-        '  shapes.load("items/name,items/id,items/left,items/top,items/width,items/height");\n' +
+        '  shapes.load("items");\n' +
         '  await context.sync();\n' +
-        '  const s = shapes.items[0];\n' +
-        '  if (s) out.shape = { name: s.name, id: s.id, left: s.left, top: s.top, width: s.width, height: s.height };\n' +
+        '  for (const s of shapes.items) {\n' +
+        '    let text = "";\n' +
+        '    try {\n' +
+        '      s.load("name,id,left,top,width,height,textFrame/hasText");\n' +
+        '      await context.sync();\n' +
+        '      if (s.textFrame.hasText) {\n' +
+        '        s.textFrame.textRange.load("text");\n' +
+        '        await context.sync();\n' +
+        '        text = s.textFrame.textRange.text;\n' +
+        '      }\n' +
+        '    } catch (e) { continue; }\n' +
+        '    out.shapes.push({ name: s.name, id: s.id, left: s.left, top: s.top, width: s.width, height: s.height, text: String(text || "") });\n' +
+        '  }\n' +
         '} catch (e) {}\n' +
         'try {\n' +
         '  const slides = pres.getSelectedSlides();\n' +
@@ -92,19 +103,31 @@ function initChat() {
         '} catch (e) {}\n' +
         'return out;',
     ).then((out) => {
-      const cleaned = String(out && out.text ? out.text : '')
+      // Prefer the exact text-range text; fall back to per-shape text so
+      // shape-only selections (no text) still carry their metadata.
+      let text = String(out && out.text ? out.text : '')
         .replace(/\r/g, '')
         .replace(/\n{3,}/g, '\n\n')
         .trim()
-      if (cleaned) {
+      const shapes = (out && out.shapes) || []
+      if (!text && shapes.length) {
+        text = shapes
+          .map((s) => s.text.trim())
+          .filter(Boolean)
+          .join('\n\n')
+      }
+      if (!text && shapes.length) text = '(shape without text)'
+      if (text && shapes.length) {
         // Office can return far more than the visible selection (whole shapes,
         // surrounding paragraphs). Cap it so prompts stay focused.
         const MAX_SELECTION_CHARS = 1200
-        const text =
-          cleaned.length > MAX_SELECTION_CHARS
-            ? `${cleaned.slice(0, MAX_SELECTION_CHARS)}\n[selection truncated, ${cleaned.length} chars total]`
-            : cleaned
-        chatState.pendingSelections.push({ text, slide: out.slide, shape: out.shape })
+        if (text.length > MAX_SELECTION_CHARS) {
+          text = `${text.slice(0, MAX_SELECTION_CHARS)}\n[selection truncated, ${text.length} chars total]`
+        }
+        const entry = { text, slide: out.slide, shapes }
+        const key = (e) => `${e.shapes.map((s) => s.id).join(',')}|${e.text}`
+        const dupe = chatState.pendingSelections.some((s) => key(s) === key(entry))
+        if (!dupe) chatState.pendingSelections.push(entry)
         renderSelectionChips()
       }
       focusInput()
@@ -300,9 +323,11 @@ function renderSelectionChips() {
     const label = document.createElement('span')
     const text = pending.text
     const preview = text.slice(0, 40).replace(/\s+/g, ' ')
-    const where = pending.slide
-      ? ` · slide ${pending.slide}${pending.shape ? ` · ${pending.shape.name || 'shape'}` : ''}`
-      : ''
+    const shapeNames = (pending.shapes || []).map((s) => s.name || 'shape')
+    const shapeLabel = shapeNames.length
+      ? shapeNames[0] + (shapeNames.length > 1 ? ` +${shapeNames.length - 1}` : '')
+      : 'shape'
+    const where = pending.slide ? ` · slide ${pending.slide} · ${shapeLabel}` : ''
     label.textContent = `Selection${where} · ${text.length} chars · ${preview}${text.length > 40 ? '…' : ''}`
     const clear = document.createElement('button')
     clear.type = 'button'
@@ -325,9 +350,12 @@ function selectionContextBlocks() {
     .map((pending, i) => {
       let header = `--- selection ${i + 1} (context from the open document) ---\n`
       if (pending.slide) header += `Slide: ${Array.isArray(pending.slide) ? pending.slide.join(', ') : pending.slide}\n`
-      if (pending.shape) {
-        const s = pending.shape
-        header += `Shape: ${s.name || 'unnamed'} (id ${s.id}, left ${Math.round(s.left)}pt, top ${Math.round(s.top)}pt, ${Math.round(s.width)}x${Math.round(s.height)}pt)\n`
+      const shapes = pending.shapes || (pending.shape ? [pending.shape] : [])
+      if (shapes.length) {
+        header += 'Shapes:\n'
+        shapes.forEach((s) => {
+          header += `  - ${s.name || 'unnamed'} (id ${s.id}, left ${Math.round(s.left)}pt, top ${Math.round(s.top)}pt, ${Math.round(s.width)}x${Math.round(s.height)}pt)\n`
+        })
       }
       return `${header}${pending.text}\n--- end of selection ---`
     })
