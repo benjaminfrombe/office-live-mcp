@@ -236,6 +236,46 @@ var textShapes = textFrames.filter(function(e) { return !e.tf.isNullObject; });
 
 Never use `.textFrame` directly — use `getTextFrameOrNullObject()` and check `.isNullObject`.
 
+### Host Limitation: loading textFrame paths can fail the whole sync (live-tested)
+
+On PowerPoint for Mac, even the load path can fail: loading `textFrame/hasText` or
+`textFrame/textRange/text` on shapes **without** text frames (Graphic/image shapes)
+makes the entire `context.sync()` fail with a bare `InvalidArgument` — no shape info,
+no hint about which shape caused it. Safe pattern: load `"id"` on the collection
+first, then load textFrame paths only on shapes already known to be text shapes:
+
+```javascript
+shapes.load("items/id");
+await context.sync();
+
+// Only load textFrame paths on shapes you know are text shapes
+// (e.g. from scan_slide / inspect_slide, or a prior shapes.load("items/type") sync).
+textShapes.forEach(function(sh) { sh.textFrame.load("textRange/text"); });
+await context.sync();
+```
+
+Alternatively, wrap per-shape loads in separate syncs with try/catch and skip the
+shapes that throw.
+
+### Host Limitation: no getItemById / getItemByName (live-tested)
+
+`slide.shapes.getItemById` and `slide.shapes.getItemByName` do **not** exist in this
+host's Office.js API. To find a shape by ID or name, load `"id"` (and/or `"name"`)
+on the collection, sync, then iterate and match:
+
+```javascript
+shapes.load("items/id,items/name");
+await context.sync();
+
+var match = null;
+for (var i = 0; i < shapes.items.length; i++) {
+  if (String(shapes.items[i].id) === "5") { match = shapes.items[i]; break; }
+}
+```
+
+Note the `String(...)` — shape IDs come back as strings like `"5"`, and the OOXML
+`<p:cNvPr id="...">` attribute matches that string form.
+
 ### Stale Value Pitfall
 
 All loaded properties are **snapshots** from the last `context.sync()`. They do NOT update after a write.

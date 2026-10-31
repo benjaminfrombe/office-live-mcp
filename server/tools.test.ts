@@ -2928,6 +2928,41 @@ describe('MCP Tools', () => {
     })
   })
 
+  describe('edit_speaker_notes', () => {
+    it('restores the view to the edited slide after reimport', async () => {
+      const ws = mockWs()
+      pool.add('test.pptx', { ws, ready: true, presentationId: 'test.pptx', filePath: null })
+      const { client } = await setupMcpClient(pool)
+
+      const zip = new JSZip()
+      zip.file('ppt/slides/slide1.xml', SAMPLE_SLIDE_XML)
+      zip.file('[Content_Types].xml', '<Types></Types>')
+      const base64 = await zip.generateAsync({ type: 'base64' })
+
+      const toolPromise = client.callTool({
+        name: 'edit_speaker_notes',
+        arguments: { notes: [{ slide: 3, text: 'New notes' }] },
+      })
+
+      // First call: exportSlide
+      const exportJson = await waitForSend(ws, 0)
+      expect(exportJson.params.code).toContain('exportAsBase64')
+      pool.handleResponse(exportJson.id, 'response', { base64, slideId: 'slide-0', prevSlideId: null })
+
+      // Second call: reimportSlide — must inject view-restore navigation to the
+      // edited slide (slide 3, 1-based) so the view does not jump to a neighbor.
+      const reimportJson = await waitForSend(ws, 1)
+      expect(reimportJson.params.code).toContain('insertSlidesFromBase64')
+      expect(reimportJson.params.code).toContain('goToByIdAsync(3,')
+      expect(reimportJson.params.code).toContain('GoToType.Index')
+      pool.handleResponse(reimportJson.id, 'response', { success: true })
+
+      const result = await toolPromise
+      const parsed = JSON.parse((result.content as Array<{ text: string }>)[0].text)
+      expect(parsed.results).toEqual([{ slide: 3, success: true }])
+    })
+  })
+
   describe('search_text', () => {
     it('searches all slides and returns shape-level matches by default', async () => {
       const ws = mockWs()
