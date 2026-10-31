@@ -130,6 +130,18 @@ function initChat() {
 
   refreshSessions()
   autoGrowInput()
+
+  // Auto-open the chat tab when OpenCode is reachable; stay on Bridge otherwise
+  OpenCodeChat.request(chatState.config, '/api/info', { signal: AbortSignal.timeout(3000) }).then(
+    () => {
+      showMode('chat')
+      focusInput()
+      scrollMessages()
+    },
+    () => {
+      /* OpenCode not reachable — keep the Bridge tab */
+    },
+  )
 }
 
 function setChatStatus(text) {
