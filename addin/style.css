@@ -20,6 +20,11 @@
   padding: 0;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   display: flex;
@@ -161,6 +166,10 @@ h1 {
 
 .mode-panel {
   width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .mode-panel.hidden {
@@ -298,10 +307,9 @@ select:hover {
 }
 
 .chat-messages {
-  flex: 1;
+  flex: 1 1 auto;
   width: 100%;
-  min-height: 200px;
-  max-height: 42vh;
+  min-height: 140px;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -385,8 +393,9 @@ select:hover {
   line-height: 1.4;
   padding: 8px 10px;
   border-radius: var(--radius);
-  resize: vertical;
+  resize: none;
   min-height: 38px;
+  overflow-y: hidden;
 }
 
 .chat-actions {

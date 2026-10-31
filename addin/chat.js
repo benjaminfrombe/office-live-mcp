@@ -59,12 +59,14 @@ function initChat() {
   })
 
   document.getElementById('oc-send').addEventListener('click', sendChatMessage)
-  document.getElementById('oc-input').addEventListener('keydown', (event) => {
+  const input = document.getElementById('oc-input')
+  input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       sendChatMessage()
     }
   })
+  input.addEventListener('input', autoGrowInput)
 
   document.getElementById('oc-use-selection').addEventListener('click', () => {
     runLocalOffice(
@@ -72,11 +74,14 @@ function initChat() {
         'Office.context.document.getSelectedDataAsync(Office.CoercionType.Text, (r) => resolve(r.value))); ' +
         'return String(selection || "")',
     ).then((text) => {
+      const input = document.getElementById('oc-input')
       if (text) {
-        const input = document.getElementById('oc-input')
         input.value = `${input.value ? `${input.value}\n` : ''}--- selected text ---\n${text}\n--- end ---`
       }
       focusInput()
+      // caret at the very end, past the pasted selection
+      input.setSelectionRange(input.value.length, input.value.length)
+      autoGrowInput()
     }, chatError)
   })
 
@@ -98,6 +103,7 @@ function initChat() {
   })
 
   refreshSessions()
+  autoGrowInput()
 }
 
 function setChatStatus(text) {
@@ -191,6 +197,7 @@ function sendChatMessage() {
   input.value = ''
   setChatStatus('Sending...')
   appendMessage('user', text)
+  autoGrowInput()
   focusInput()
   OpenCodeChat.sendPrompt(chatState.config, chatState.sessionID, text).then(
     () => {
@@ -211,6 +218,18 @@ function focusInput() {
   if (input && !document.getElementById('mode-chat').classList.contains('hidden')) {
     input.focus()
   }
+}
+
+/* Auto-grow the textarea with its content, capped so the pane keeps its
+   proportions; shrink again after sending. */
+var INPUT_MAX_HEIGHT = 140
+
+function autoGrowInput() {
+  const input = document.getElementById('oc-input')
+  if (!input) return
+  input.style.height = 'auto'
+  input.style.height = `${Math.min(input.scrollHeight, INPUT_MAX_HEIGHT)}px`
+  input.style.overflowY = input.scrollHeight > INPUT_MAX_HEIGHT ? 'auto' : 'hidden'
 }
 
 /* Local Office.js execution — same AsyncFunction pattern as the bridge's
@@ -266,8 +285,12 @@ function renderStreaming() {
 }
 
 function scrollMessages() {
-  var messages = document.getElementById('oc-messages')
-  messages.scrollTop = messages.scrollHeight
+  const messages = document.getElementById('oc-messages')
+  if (!messages) return
+  // rAF: the browser needs a laid-out frame before scrollTop sticks
+  requestAnimationFrame(() => {
+    messages.scrollTop = messages.scrollHeight
+  })
 }
 
 function lastAssistantText() {
@@ -289,5 +312,6 @@ document.getElementById('tab-bridge').addEventListener('click', () => {
 document.getElementById('tab-chat').addEventListener('click', () => {
   showMode('chat')
   focusInput()
+  scrollMessages()
 })
 initChat()
