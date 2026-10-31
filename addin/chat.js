@@ -88,7 +88,7 @@ function initChat() {
         '  const slides = pres.getSelectedSlides();\n' +
         '  slides.load("items");\n' +
         '  await context.sync();\n' +
-        '  if (slides.items.length) out.slide = slides.items.map((x) => x.index);\n' +
+        '  if (slides.items.length) out.slide = slides.items.map((x) => x.index + 1);\n' +
         '} catch (e) {}\n' +
         'return out;',
     ).then((out) => {
