@@ -134,6 +134,55 @@ describe('opencode.js requests', () => {
     expect(h.fetchCalls[0].url).toBe('http://x/api/session/ses_9/prompt')
     expect(JSON.parse(String(h.fetchCalls[0].init?.body))).toEqual({ text: 'hello' })
   })
+
+  it('maps attachments to inline files on sendPrompt', async () => {
+    const h = harness()
+    const client = h.context.OpenCodeChat as {
+      sendPrompt: (c: unknown, sid: string, text: string, files?: unknown[]) => Promise<unknown>
+    }
+    const pending = client.sendPrompt({ url: 'http://x', password: '' }, 'ses_9', 'look', [
+      { dataUrl: 'data:image/png;base64,AAA', name: 'shot.png', size: 3 },
+      { dataUrl: 'data:image/jpeg;base64,BBB', name: 'photo.jpg', size: 3 },
+    ])
+    h.respond(200, { data: { id: 'msg_2' } })
+    await pending
+    expect(JSON.parse(String(h.fetchCalls[0].init?.body))).toEqual({
+      text: 'look',
+      files: [
+        { uri: 'data:image/png;base64,AAA', source: { type: 'inline' }, name: 'shot.png' },
+        { uri: 'data:image/jpeg;base64,BBB', source: { type: 'inline' }, name: 'photo.jpg' },
+      ],
+    })
+  })
+
+  it('omits the files array when there are no attachments', async () => {
+    const h = harness()
+    const client = h.context.OpenCodeChat as {
+      sendPrompt: (c: unknown, sid: string, text: string, files?: unknown[]) => Promise<unknown>
+    }
+    const pending = client.sendPrompt({ url: 'http://x', password: '' }, 'ses_9', 'hello', [])
+    h.respond(200, { data: { id: 'msg_3' } })
+    await pending
+    expect(JSON.parse(String(h.fetchCalls[0].init?.body))).toEqual({ text: 'hello' })
+  })
+})
+
+describe('opencode.js promptFiles', () => {
+  const client = () =>
+    harness().context.OpenCodeChat as {
+      promptFiles: (files: (Record<string, unknown> | null)[] | null) => Record<string, unknown>[]
+    }
+
+  it('maps data URLs to inline file parts', () => {
+    expect(client().promptFiles([{ dataUrl: 'data:image/png;base64,AA', name: 'a.png', size: 2 }])).toEqual([
+      { uri: 'data:image/png;base64,AA', source: { type: 'inline' }, name: 'a.png' },
+    ])
+  })
+
+  it('drops entries without a data URL and tolerates a missing list', () => {
+    expect(client().promptFiles([{ name: 'broken.png' }, null])).toEqual([])
+    expect(client().promptFiles(null)).toEqual([])
+  })
 })
 
 describe('opencode.js message helpers', () => {

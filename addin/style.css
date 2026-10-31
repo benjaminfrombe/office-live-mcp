@@ -284,6 +284,99 @@ select:hover {
   border-radius: 6px;
 }
 
+/* Pasted image attachment chips — same chip language, thumbnail instead of text */
+.attachment-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.attachment-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: var(--accent-soft);
+  border: 1px solid #c3dfc3;
+  border-radius: 8px;
+  max-width: 100%;
+}
+
+.attachment-chip img {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.attachment-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-chip button {
+  padding: 1px 6px;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  border-radius: 6px;
+}
+
+/* Reasoning strip — live reasoning ticker pinned above the messages */
+.reasoning-strip {
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 4px 8px;
+  background: rgb(20 40 20 / 4%);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.reasoning-strip[hidden] {
+  display: none;
+}
+
+.reasoning-label {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.reasoning-strip.live .reasoning-label {
+  color: var(--accent);
+}
+
+.reasoning-text {
+  font-family: "SF Mono", Menlo, monospace;
+  font-size: 0.65rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 64px;
+  overflow-y: auto;
+  margin-top: 2px;
+}
+
+/* Collapsed after the step: one line only */
+.reasoning-strip:not(.live) .reasoning-text {
+  max-height: 0.9em;
+  overflow-y: hidden;
+}
+
+.reasoning-strip:not(.live) .reasoning-text.expanded {
+  max-height: 160px;
+  overflow-y: auto;
+}
 
 .chat-input {
   display: flex;

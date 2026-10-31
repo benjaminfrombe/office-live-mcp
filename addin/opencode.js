@@ -74,10 +74,21 @@ var OpenCodeChat = (() => {
     return request(config, `/api/session/${sessionID}/message`).then((res) => res.data || [])
   }
 
-  function sendPrompt(config, sessionID, text) {
+  /* Map pending attachments to the prompt API's `files` array. Images travel
+     inline as data URIs — the taskpane has no server-side storage to link to. */
+  function promptFiles(files) {
+    return (files || [])
+      .filter((f) => f && f.dataUrl)
+      .map((f) => ({ uri: f.dataUrl, source: { type: 'inline' }, name: f.name }))
+  }
+
+  function sendPrompt(config, sessionID, text, files) {
+    var body = { text: text }
+    var mapped = promptFiles(files)
+    if (mapped.length) body.files = mapped
     return request(config, `/api/session/${sessionID}/prompt`, {
       method: 'POST',
-      body: JSON.stringify({ text: text }),
+      body: JSON.stringify(body),
     }).then((res) => res.data)
   }
 
@@ -189,6 +200,7 @@ var OpenCodeChat = (() => {
     listSessions: listSessions,
     getMessages: getMessages,
     sendPrompt: sendPrompt,
+    promptFiles: promptFiles,
     messageText: messageText,
     isTerminalRow: isTerminalRow,
     friendlyError: friendlyError,
