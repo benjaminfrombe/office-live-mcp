@@ -64,7 +64,15 @@ function pipe(req: IncomingMessage, res: ServerResponse, target: URL, password: 
       },
     },
     (upstreamRes) => {
-      res.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers)
+      const headers = { ...upstreamRes.headers }
+      // OpenCode only reflects CORS for http origins, never https — but the
+      // taskpane is served over https. The proxy owns CORS instead: echo the
+      // caller's origin so the browser accepts the response.
+      if (req.headers.origin) {
+        headers['access-control-allow-origin'] = req.headers.origin
+        headers['access-control-allow-credentials'] = 'true'
+      }
+      res.writeHead(upstreamRes.statusCode || 502, headers)
       // Stream the body — SSE event streams must flow chunk by chunk.
       upstreamRes.pipe(res)
     },
@@ -79,6 +87,17 @@ function pipe(req: IncomingMessage, res: ServerResponse, target: URL, password: 
 }
 
 const handler = (req: IncomingMessage, res: ServerResponse) => {
+  // CORS preflight — answer here, never forwarded upstream.
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, {
+      'access-control-allow-origin': req.headers.origin || '*',
+      'access-control-allow-methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+      'access-control-allow-headers': 'authorization, content-type',
+      'access-control-max-age': '86400',
+    })
+    res.end()
+    return
+  }
   try {
     const { target, password } = service()
     pipe(req, res, target, password)
