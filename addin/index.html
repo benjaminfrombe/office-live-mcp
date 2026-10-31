@@ -23,27 +23,31 @@
   </div>
 
   <div id="mode-chat" class="mode-panel hidden">
-    <div class="chat-config">
-      <input id="oc-server-url" type="text" placeholder="OpenCode server URL (http://127.0.0.1:4096)">
-      <button id="oc-save-config" type="button">Save &amp; connect</button>
-      <div class="chat-advanced">
-        <button id="oc-toggle-advanced" type="button" class="link-button">Direct connection…</button>
-        <input id="oc-password" type="password" placeholder="Service password (direct connection only)" class="hidden">
+    <details class="chat-config">
+      <summary>Connection</summary>
+      <div class="chat-config-body">
+        <input id="oc-server-url" type="text" placeholder="OpenCode server URL (https://127.0.0.1:4096)">
+        <button id="oc-save-config" type="button">Save &amp; connect</button>
+        <div class="chat-advanced">
+          <button id="oc-toggle-advanced" type="button" class="link-button">Direct connection…</button>
+          <input id="oc-password" type="password" placeholder="Service password (direct connection only)" class="hidden">
+        </div>
       </div>
-    </div>
+    </details>
     <div class="chat-toolbar">
       <select id="oc-session"></select>
       <button id="oc-new-session" type="button">New session</button>
     </div>
     <div id="oc-status" class="chat-status"></div>
     <div id="oc-messages" class="chat-messages"></div>
-    <div class="chat-input-row">
-      <button id="oc-use-selection" type="button" title="Paste the current document selection into the input">+ Selection</button>
-      <textarea id="oc-input" rows="2" placeholder="Ask OpenCode..."></textarea>
-      <button id="oc-send" type="button" class="primary">Send</button>
-    </div>
-    <div class="chat-actions">
-      <button id="oc-insert-reply" type="button">Insert last reply at selection</button>
+    <div class="chat-input">
+      <textarea id="oc-input" rows="4" placeholder="Ask OpenCode..."></textarea>
+      <div class="chat-input-actions">
+        <button id="oc-use-selection" type="button" title="Paste the current document selection into the input">+ Selection</button>
+        <button id="oc-insert-reply" type="button">Insert last reply</button>
+        <span class="chat-input-spacer"></span>
+        <button id="oc-send" type="button" class="primary">Send</button>
+      </div>
     </div>
   </div>
 

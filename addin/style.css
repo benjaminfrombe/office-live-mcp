@@ -242,20 +242,83 @@ select:hover {
 
 .chat-config,
 .chat-toolbar,
-.chat-input-row,
-.chat-actions {
+.chat-input-actions {
   display: flex;
   gap: 6px;
   width: 100%;
 }
 
-.chat-config {
+.chat-input {
+  display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 10px;
+  width: 100%;
+  margin-bottom: 8px;
 }
 
-.chat-config input {
+.chat-input textarea {
+  width: 100%;
+  font-size: 0.79rem;
+  line-height: 1.4;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  resize: none;
+  min-height: 72px;
+  overflow-y: hidden;
+}
+
+.chat-input-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.chat-input-spacer {
+  flex: 1;
+}
+
+.chat-config {
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.chat-config summary {
+  padding: 7px 10px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-config summary::before {
+  content: "▸";
+  font-size: 0.7rem;
+  transition: transform 0.15s ease;
+}
+
+.chat-config[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.chat-config summary::-webkit-details-marker {
+  display: none;
+}
+
+.chat-config-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 10px 10px;
+}
+
+.chat-config-body input {
   padding: 7px 10px;
   font-size: 0.76rem;
   width: 100%;
@@ -379,25 +442,4 @@ select:hover {
   50% {
     opacity: 0;
   }
-}
-
-.chat-input-row {
-  margin-bottom: 8px;
-  align-items: flex-end;
-}
-
-.chat-input-row textarea {
-  flex: 1;
-  min-width: 0;
-  font-size: 0.79rem;
-  line-height: 1.4;
-  padding: 8px 10px;
-  border-radius: var(--radius);
-  resize: none;
-  min-height: 38px;
-  overflow-y: hidden;
-}
-
-.chat-actions {
-  justify-content: flex-end;
 }

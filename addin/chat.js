@@ -222,7 +222,7 @@ function focusInput() {
 
 /* Auto-grow the textarea with its content, capped so the pane keeps its
    proportions; shrink again after sending. */
-var INPUT_MAX_HEIGHT = 140
+var INPUT_MAX_HEIGHT = 200
 
 function autoGrowInput() {
   const input = document.getElementById('oc-input')
@@ -247,7 +247,7 @@ function runLocalOffice(code) {
 /* Rendering */
 
 function renderFromRows(rows) {
-  var messages = document.getElementById('oc-messages')
+  const messages = document.getElementById('oc-messages')
   messages.innerHTML = ''
   rows
     .filter((row) => !OpenCodeChat.isTerminalRow(row))
@@ -257,6 +257,7 @@ function renderFromRows(rows) {
       var text = OpenCodeChat.messageText(row)
       if (text) appendMessage(role, text)
     })
+  if (!chatState.streamingText) setChatStatus('')
   scrollMessages()
 }
 
