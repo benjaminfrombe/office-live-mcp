@@ -10,15 +10,28 @@ The taskpane has two modes, switchable with the tabs at the top:
 
 ## Setup
 
-1. The OpenCode background service listens on a random port with basic auth. Get both:
-   ```sh
-   cat ~/.local/state/opencode/service.json
-   # {"url": "http://127.0.0.1:49374", "password": "...", ...}
-   ```
-2. In the taskpane, open the **OpenCode Chat** tab, fill in the URL and password,
-   press **Save & connect**. Both are stored in `localStorage`
-   (`opencode-chat-config`).
-3. Pick a session or press **New session**, then chat.
+The OpenCode API always requires basic auth with a per-service password (there
+is no flag to disable it), and the service picks a random port and password on
+every start. To keep the add-in passwordless and stable, run the local proxy
+(`scripts/opencode-proxy.ts`):
+
+```sh
+npm run opencode-proxy
+# or: node --experimental-strip-types ./scripts/opencode-proxy.ts
+```
+
+It listens on `http://127.0.0.1:4096` (override with `OPENCODE_PROXY_PORT`),
+reads the real URL + password from `~/.local/state/opencode/service.json`,
+injects the `Authorization` header, and re-reads the file every 2s so service
+restarts are picked up automatically. Streaming (SSE) passes through chunk by
+chunk.
+
+Then in the taskpane: open the **OpenCode Chat** tab — the default URL is
+already the proxy, leave the password empty, press **Save & connect**.
+
+Manual (without proxy) configuration is still possible: `cat
+~/.local/state/opencode/service.json` gives the direct URL and password, both
+stored in `localStorage` (`opencode-chat-config`).
 
 Buttons:
 
