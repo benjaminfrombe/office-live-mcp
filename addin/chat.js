@@ -8,7 +8,7 @@ var chatState = {
   events: null, // active SSE subscription
   streamingText: '', // partial assistant text while streaming
   busy: false,
-  pendingSelection: null, // document selection kept as context for the next message
+  pendingSelections: [], // document selections kept as context for the next message
   renderedIds: [], // message ids already on screen (incremental rendering)
 }
 
@@ -104,17 +104,11 @@ function initChat() {
           cleaned.length > MAX_SELECTION_CHARS
             ? `${cleaned.slice(0, MAX_SELECTION_CHARS)}\n[selection truncated, ${cleaned.length} chars total]`
             : cleaned
-        chatState.pendingSelection = { text, slide: out.slide, shape: out.shape }
-        renderSelectionChip()
+        chatState.pendingSelections.push({ text, slide: out.slide, shape: out.shape })
+        renderSelectionChips()
       }
       focusInput()
     }, chatError)
-  })
-
-  document.getElementById('oc-selection-clear').addEventListener('click', () => {
-    chatState.pendingSelection = null
-    renderSelectionChip()
-    focusInput()
   })
 
   document.getElementById('oc-insert-reply').addEventListener('click', () => {
@@ -246,17 +240,16 @@ function stopEventStream() {
 function sendChatMessage() {
   const input = document.getElementById('oc-input')
   const typed = input.value.trim()
-  if ((!typed && !chatState.pendingSelection) || !chatState.sessionID || chatState.busy) {
+  if ((!typed && !chatState.pendingSelections.length) || !chatState.sessionID || chatState.busy) {
     focusInput()
     return
   }
-  const text = chatState.pendingSelection
-    ? `${selectionContextHeader(chatState.pendingSelection)}${chatState.pendingSelection.text || chatState.pendingSelection}\n--- end of selection ---\n\n${typed}`
-    : typed
+  const context = chatState.pendingSelections.length ? `${selectionContextBlocks()}\n\n` : ''
+  const text = `${context}${typed}`
   chatState.busy = true
   input.value = ''
-  chatState.pendingSelection = null
-  renderSelectionChip()
+  chatState.pendingSelections = []
+  renderSelectionChips()
   autoGrowInput()
   setChatStatus('Sending...')
   appendMessage('user', typed || '(document selection)', true)
@@ -283,39 +276,50 @@ function focusInput() {
   }
 }
 
-/* Build the context header for a pending selection. Points are 1/72 inch. */
-function selectionContextHeader(pending) {
-  let header = '--- selected text (context from the open document) ---\n'
-  if (typeof pending === 'object') {
-    if (pending.slide) header += `Slide: ${Array.isArray(pending.slide) ? pending.slide.join(', ') : pending.slide}\n`
-    if (pending.shape) {
-      const s = pending.shape
-      header += `Shape: ${s.name || 'unnamed'} (id ${s.id}, left ${Math.round(s.left)}pt, top ${Math.round(s.top)}pt, ${Math.round(s.width)}x${Math.round(s.height)}pt)\n`
-    }
-  }
-  return header
+/* Selection context chips — each captured selection is one removable chip;
+   they are prepended to the prompt only when the message is sent. */
+function renderSelectionChips() {
+  const container = document.getElementById('oc-selection-chips')
+  if (!container) return
+  container.innerHTML = ''
+  chatState.pendingSelections.forEach((pending, index) => {
+    const chip = document.createElement('div')
+    chip.className = 'selection-chip'
+    const label = document.createElement('span')
+    const text = pending.text
+    const preview = text.slice(0, 40).replace(/\s+/g, ' ')
+    const where = pending.slide
+      ? ` · slide ${pending.slide}${pending.shape ? ` · ${pending.shape.name || 'shape'}` : ''}`
+      : ''
+    label.textContent = `Selection${where} · ${text.length} chars · ${preview}${text.length > 40 ? '…' : ''}`
+    const clear = document.createElement('button')
+    clear.type = 'button'
+    clear.title = 'Remove this selection'
+    clear.textContent = '✕'
+    clear.addEventListener('click', () => {
+      chatState.pendingSelections.splice(index, 1)
+      renderSelectionChips()
+      focusInput()
+    })
+    chip.appendChild(label)
+    chip.appendChild(clear)
+    container.appendChild(chip)
+  })
 }
 
-/* Selection context chip — the pasted selection is kept out of the input;
-   it is prepended to the prompt only when the message is sent. */
-function renderSelectionChip() {
-  const chip = document.getElementById('oc-selection-chip')
-  const label = document.getElementById('oc-selection-label')
-  if (!chip || !label) return
-  const pending = chatState.pendingSelection
-  if (pending) {
-    const text = typeof pending === 'string' ? pending : pending.text
-    const length = text.length
-    const preview = text.slice(0, 40).replace(/\s+/g, ' ')
-    const where =
-      typeof pending === 'object' && pending.slide
-        ? ` · slide ${pending.slide}${pending.shape ? ` · ${pending.shape.name || 'shape'}` : ''}`
-        : ''
-    label.textContent = `Selection${where} · ${length} chars · ${preview}${length > 40 ? '…' : ''}`
-    chip.classList.remove('hidden')
-  } else {
-    chip.classList.add('hidden')
-  }
+/* Build the context blocks for all pending selections. Points are 1/72 inch. */
+function selectionContextBlocks() {
+  return chatState.pendingSelections
+    .map((pending, i) => {
+      let header = `--- selection ${i + 1} (context from the open document) ---\n`
+      if (pending.slide) header += `Slide: ${Array.isArray(pending.slide) ? pending.slide.join(', ') : pending.slide}\n`
+      if (pending.shape) {
+        const s = pending.shape
+        header += `Shape: ${s.name || 'unnamed'} (id ${s.id}, left ${Math.round(s.left)}pt, top ${Math.round(s.top)}pt, ${Math.round(s.width)}x${Math.round(s.height)}pt)\n`
+      }
+      return `${header}${pending.text}\n--- end of selection ---`
+    })
+    .join('\n')
 }
 
 /* Auto-grow the textarea with its content, capped so the pane keeps its

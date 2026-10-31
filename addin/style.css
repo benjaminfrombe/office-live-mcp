@@ -248,13 +248,20 @@ select:hover {
 }
 
 /* Selection context chip */
+.selection-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  margin-bottom: 6px;
+}
+
 .selection-chip {
   display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
   padding: 5px 10px;
-  margin-bottom: 6px;
   font-size: 0.72rem;
   color: var(--text-muted);
   background: var(--accent-soft);
@@ -277,9 +284,6 @@ select:hover {
   border-radius: 6px;
 }
 
-.selection-chip.hidden {
-  display: none;
-}
 
 .chat-input {
   display: flex;
