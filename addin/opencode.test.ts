@@ -79,6 +79,16 @@ describe('opencode.js config', () => {
     expect(client.loadConfig()).toEqual({ url: 'http://127.0.0.1:49374', password: 'secret' })
   })
 
+  it('migrates the retired standalone proxy URL to the bridge route', () => {
+    const h = harness()
+    const store = (h.context.localStorage as { store: Map<string, string> }).store
+    store.set('opencode-chat-config', JSON.stringify({ url: 'http://127.0.0.1:4096', password: '' }))
+    const client = h.context.OpenCodeChat as { loadConfig(): { url: string; password: string } }
+    expect(client.loadConfig().url).toBe('/opencode')
+    store.set('opencode-chat-config', JSON.stringify({ url: 'https://127.0.0.1:4096', password: '' }))
+    expect(client.loadConfig().url).toBe('/opencode')
+  })
+
   it('falls back to defaults on corrupt stored config', () => {
     const h = harness()
     const store = (h.context.localStorage as { store: Map<string, string> }).store

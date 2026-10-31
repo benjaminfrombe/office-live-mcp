@@ -18,7 +18,11 @@ var OpenCodeChat = (() => {
       raw = localStorage.getItem(CONFIG_KEY)
       if (raw) {
         parsed = JSON.parse(raw)
-        return { url: parsed.url || DEFAULT_URL, password: parsed.password || '' }
+        const url = parsed.url || DEFAULT_URL
+        // Migrate configs from the retired standalone proxy (port 4096) to the
+        // bridge's built-in same-origin route.
+        const migrated = /^https?:\/\/127\.0\.0\.1:4096\/?$/i.test(url) ? DEFAULT_URL : url
+        return { url: migrated, password: parsed.password || '' }
       }
     } catch (_e) {
       // Corrupt config — fall through to defaults
