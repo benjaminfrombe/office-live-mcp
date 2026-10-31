@@ -9,6 +9,7 @@ var chatState = {
   streamingText: '', // partial assistant text while streaming
   busy: false,
   pendingSelection: null, // document selection kept as context for the next message
+  renderedIds: [], // message ids already on screen (incremental rendering)
 }
 
 var EVENT_TYPES = [
@@ -149,6 +150,7 @@ function selectSession(sessionID) {
   stopEventStream()
   chatState.sessionID = sessionID
   chatState.streamingText = ''
+  chatState.renderedIds = []
   document.getElementById('oc-session').value = sessionID
   renderFromRows([])
   setChatStatus('Loading messages...')
@@ -158,6 +160,22 @@ function selectSession(sessionID) {
 
 /* Event stream — deltas append to streamingText; terminal events trigger a
    full message refetch so the rendered history always matches the server. */
+/* Event stream — deltas append to streamingText; terminal events trigger a
+   full message refetch so the rendered history always matches the server. */
+var REFETCH_DEBOUNCE_MS = 150
+var refetchTimer = null
+
+function scheduleRefetch(sessionID) {
+  // step.ended and execution.succeeded often fire together — one refetch is enough
+  if (refetchTimer) clearTimeout(refetchTimer)
+  refetchTimer = setTimeout(() => {
+    refetchTimer = null
+    if (chatState.sessionID === sessionID) {
+      OpenCodeChat.getMessages(chatState.config, sessionID).then(renderFromRows, chatError)
+    }
+  }, REFETCH_DEBOUNCE_MS)
+}
+
 function startEventStream() {
   var sessionID = chatState.sessionID
   if (!sessionID) return
@@ -194,8 +212,9 @@ function startEventStream() {
       event.type === 'session.execution.interrupted'
     ) {
       chatState.streamingText = ''
+      renderStreaming()
       setChatStatus('')
-      OpenCodeChat.getMessages(chatState.config, sessionID).then(renderFromRows, chatError)
+      scheduleRefetch(sessionID)
     }
   })
 }
@@ -223,7 +242,7 @@ function sendChatMessage() {
   renderSelectionChip()
   autoGrowInput()
   setChatStatus('Sending...')
-  appendMessage('user', typed || '(document selection)')
+  appendMessage('user', typed || '(document selection)', true)
   autoGrowInput()
   focusInput()
   OpenCodeChat.sendPrompt(chatState.config, chatState.sessionID, text).then(
@@ -289,26 +308,66 @@ function runLocalOffice(code) {
 
 /* Rendering */
 
+/* Incremental rendering — only append messages that are not on screen yet.
+   A full wipe-and-rebuild replays every bubble's entry animation, which reads
+   as flicker on every refetch. */
 function renderFromRows(rows) {
+  const visible = rows.filter((row) => !OpenCodeChat.isTerminalRow(row)).reverse() // server returns newest-first; render chronologically
+  const ids = visible.map((row) => row.id)
+  const rendered = chatState.renderedIds || []
+
+  // Prefix match → history is append-only; only render the new tail.
+  // Otherwise (session switch, reverted messages) rebuild from scratch.
+  const isAppend = ids.length >= rendered.length && rendered.every((id, i) => ids[i] === id)
   const messages = document.getElementById('oc-messages')
-  messages.innerHTML = ''
-  rows
-    .filter((row) => !OpenCodeChat.isTerminalRow(row))
-    .reverse() // server returns newest-first; render chronologically
-    .forEach((row) => {
-      var role = row.type === 'user' ? 'user' : 'assistant'
-      var text = OpenCodeChat.messageText(row)
-      if (text) appendMessage(role, text)
-    })
+  if (!isAppend) {
+    messages.innerHTML = ''
+    chatState.renderedIds = []
+  }
+
+  const streamingEl = messages.querySelector('.chat-message.streaming')
+  let streamingReused = false
+  for (let i = chatState.renderedIds.length; i < visible.length; i++) {
+    const row = visible[i]
+    const text = OpenCodeChat.messageText(row)
+    if (!text) {
+      chatState.renderedIds.push(row.id)
+      continue
+    }
+    const role = row.type === 'user' ? 'user' : 'assistant'
+    // The optimistic user bubble (added at send time, before its server id is
+    // known) is adopted instead of appended again.
+    if (role === 'user') {
+      const userBubbles = messages.querySelectorAll('.chat-message.user')
+      const last = userBubbles[userBubbles.length - 1]
+      if (last && last.dataset.pending === '1' && last.textContent === text) {
+        delete last.dataset.pending
+        chatState.renderedIds.push(row.id)
+        continue
+      }
+    }
+    // A finished assistant message replaces the streaming bubble in place —
+    // same content, so reusing the element avoids a visible swap.
+    if (streamingEl && !streamingReused && role === 'assistant') {
+      streamingEl.className = 'chat-message assistant'
+      streamingEl.textContent = text
+      streamingReused = true
+      chatState.renderedIds.push(row.id)
+      continue
+    }
+    appendMessage(role, text)
+    chatState.renderedIds.push(row.id)
+  }
   if (!chatState.streamingText) setChatStatus('')
   scrollMessages()
 }
 
-function appendMessage(role, text) {
+function appendMessage(role, text, pending) {
   var messages = document.getElementById('oc-messages')
   var div = document.createElement('div')
   div.className = `chat-message ${role}`
   div.textContent = text
+  if (pending) div.dataset.pending = '1'
   messages.appendChild(div)
   scrollMessages()
 }
