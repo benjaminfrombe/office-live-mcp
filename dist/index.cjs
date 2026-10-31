@@ -37353,7 +37353,7 @@ var require_BufferList = __commonJS({
         this.head = this.tail = null;
         this.length = 0;
       };
-      BufferList.prototype.join = function join6(s) {
+      BufferList.prototype.join = function join7(s) {
         if (this.length === 0) return "";
         var p = this.head;
         var ret = "" + p.data;
@@ -46806,11 +46806,11 @@ var require_lib4 = __commonJS({
 
 // server/index.ts
 var import_node_crypto2 = require("node:crypto");
-var import_node_fs11 = require("node:fs");
-var import_node_http = require("node:http");
+var import_node_fs12 = require("node:fs");
+var import_node_http3 = require("node:http");
 var import_node_https = require("node:https");
-var import_node_os4 = require("node:os");
-var import_node_path6 = require("node:path");
+var import_node_os5 = require("node:os");
+var import_node_path7 = require("node:path");
 var import_node_url4 = require("node:url");
 
 // node_modules/zod/v3/helpers/util.js
@@ -55513,9 +55513,9 @@ var NONE = 0;
 var ASSUMED = 1;
 var PROVEN = 2;
 function isRecursive(inst, stack, resolve4) {
-  const cached2 = recursive.get(inst);
-  if (cached2 !== void 0)
-    return cached2 ? PROVEN : NONE;
+  const cached3 = recursive.get(inst);
+  if (cached3 !== void 0)
+    return cached3 ? PROVEN : NONE;
   if (stack.has(inst))
     return PROVEN;
   stack.add(inst);
@@ -67490,15 +67490,15 @@ function visit(schema, fnOrHandlers) {
   };
   const cache = /* @__PURE__ */ new Map();
   function run(s) {
-    const cached2 = cache.get(s);
-    if (cached2 === RESOLVING) {
+    const cached3 = cache.get(s);
+    if (cached3 === RESOLVING) {
       return new $ZodLazy({
         type: "lazy",
         getter: () => cache.get(s)
       });
     }
-    if (cached2 !== void 0)
-      return cached2;
+    if (cached3 !== void 0)
+      return cached3;
     cache.set(s, RESOLVING);
     const inner = mapInner(s);
     const mapped = fn(inner, inner !== s);
@@ -78448,20 +78448,100 @@ function substituteManifestPort(content, defaultPort, targetPort) {
   return content.replaceAll(`localhost:${defaultPort}`, `localhost:${targetPort}`);
 }
 
-// server/setup.ts
-var import_node_child_process = require("node:child_process");
+// server/opencode-proxy.ts
 var import_node_fs = require("node:fs");
+var import_node_http = require("node:http");
 var import_node_os = require("node:os");
 var import_node_path = require("node:path");
+var MOUNT_PATH = "/opencode";
+var cached2 = null;
+var lastRead = 0;
+function serviceFilePath() {
+  return process.env.OPENCODE_SERVICE_FILE || (0, import_node_path.join)((0, import_node_os.homedir)(), ".local/state/opencode/service.json");
+}
+function service() {
+  if (cached2 && Date.now() - lastRead < 2e3) return cached2;
+  const info = JSON.parse((0, import_node_fs.readFileSync)(serviceFilePath(), "utf8"));
+  cached2 = { target: new URL(info.url), password: info.password };
+  lastRead = Date.now();
+  return cached2;
+}
+function corsHeaders(req) {
+  const origin = req.headers.origin;
+  if (!origin) return {};
+  return {
+    "access-control-allow-origin": origin,
+    "access-control-allow-credentials": "true"
+  };
+}
+function pipe2(req, res, target, password, forwardPath) {
+  const upstream = (0, import_node_http.request)(
+    {
+      protocol: target.protocol,
+      hostname: target.hostname,
+      port: target.port,
+      path: forwardPath,
+      method: req.method,
+      headers: {
+        ...req.headers,
+        host: `${target.hostname}:${target.port}`,
+        authorization: `Basic ${Buffer.from(`opencode:${password}`).toString("base64")}`
+      }
+    },
+    (upstreamRes) => {
+      const headers = { ...upstreamRes.headers, ...corsHeaders(req) };
+      res.writeHead(upstreamRes.statusCode || 502, headers);
+      upstreamRes.pipe(res);
+    }
+  );
+  upstream.on("error", (err) => {
+    if (!res.headersSent) {
+      res.writeHead(502, { "Content-Type": "application/json", ...corsHeaders(req) });
+    }
+    res.end(JSON.stringify({ proxyError: String(err.message) }));
+  });
+  req.pipe(upstream);
+}
+function handleOpenCodeProxy(req, res, rawUrl) {
+  const [pathOnly] = rawUrl.split("?");
+  if (pathOnly !== MOUNT_PATH && !pathOnly.startsWith(`${MOUNT_PATH}/`)) {
+    return false;
+  }
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, {
+      "access-control-allow-origin": req.headers.origin || "*",
+      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "access-control-allow-headers": "authorization, content-type",
+      "access-control-max-age": "86400"
+    });
+    res.end();
+    return true;
+  }
+  const forwardPath = rawUrl.slice(MOUNT_PATH.length) || "/";
+  try {
+    const { target, password } = service();
+    pipe2(req, res, target, password, forwardPath);
+  } catch (err) {
+    res.writeHead(503, { "Content-Type": "application/json", ...corsHeaders(req) });
+    res.end(JSON.stringify({ proxyError: `OpenCode service file unreadable: ${String(err)}` }));
+  }
+  return true;
+}
+
+// server/setup.ts
+var import_node_child_process = require("node:child_process");
+var import_node_fs2 = require("node:fs");
+var import_node_os2 = require("node:os");
+var import_node_path2 = require("node:path");
 var import_node_url = require("node:url");
 var import_selfsigned = __toESM(require_selfsigned(), 1);
 var import_meta = {};
-var SCRIPT_DIR = typeof __dirname !== "undefined" ? __dirname : (0, import_node_path.dirname)((0, import_node_url.fileURLToPath)(import_meta.url));
-var PROJECT_ROOT = (0, import_node_path.resolve)(SCRIPT_DIR, "..");
+var SCRIPT_DIR = typeof __dirname !== "undefined" ? __dirname : (0, import_node_path2.dirname)((0, import_node_url.fileURLToPath)(import_meta.url));
+var PROJECT_ROOT = (0, import_node_path2.resolve)(SCRIPT_DIR, "..");
 var CATALOG_GUID = "{7E3F2A11-93C4-4B5D-8E6F-1A2B3C4D5E6F}";
 var REG_KEY = `HKCU\\Software\\Microsoft\\Office\\16.0\\Wef\\TrustedCatalogs\\${CATALOG_GUID}`;
-var CERT_PATH = () => process.env.BRIDGE_CERT_PATH || (0, import_node_path.resolve)(PROJECT_ROOT, "certs", "localhost.pem");
-var CERT_KEY_PATH = () => process.env.BRIDGE_KEY_PATH || (0, import_node_path.resolve)(PROJECT_ROOT, "certs", "localhost-key.pem");
+var CERT_PATH = () => process.env.BRIDGE_CERT_PATH || (0, import_node_path2.resolve)(PROJECT_ROOT, "certs", "localhost.pem");
+var CERT_KEY_PATH = () => process.env.BRIDGE_KEY_PATH || (0, import_node_path2.resolve)(PROJECT_ROOT, "certs", "localhost-key.pem");
 var HTTPS_CATALOG_URL = "https://localhost:8791";
 var MAC_APPS = {
   powerpoint: { manifest: "manifest.xml", container: "com.microsoft.Powerpoint", label: "PowerPoint" },
@@ -78475,7 +78555,7 @@ function catalogUncCandidates(installDir, packageRoot) {
   const candidates = [];
   if (process.env.OLM_CATALOG_UNC) candidates.push(process.env.OLM_CATALOG_UNC);
   if (packageRoot.startsWith("\\\\Mac\\Home\\")) candidates.push(`${packageRoot}\\addin`);
-  candidates.push(`\\\\${(0, import_node_os.hostname)()}\\OfficeLiveMCP`);
+  candidates.push(`\\\\${(0, import_node_os2.hostname)()}\\OfficeLiveMCP`);
   const drive = installDir.charAt(0);
   if (installDir.startsWith("C:\\Users\\")) {
     candidates.push(`\\\\localhost\\${drive}$\\${installDir.slice(3)}\\addin`);
@@ -78515,8 +78595,8 @@ function harnessInstructions(entryCommand, platform, nodePath) {
 }
 function daemonTlsEnabled() {
   try {
-    const envFile = (0, import_node_path.resolve)((0, import_node_os.homedir)(), ".office-live-mcp", "daemon.env");
-    return /^BRIDGE_TLS=1\b/m.test((0, import_node_fs.readFileSync)(envFile, "utf8"));
+    const envFile = (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), ".office-live-mcp", "daemon.env");
+    return /^BRIDGE_TLS=1\b/m.test((0, import_node_fs2.readFileSync)(envFile, "utf8"));
   } catch {
     return false;
   }
@@ -78528,23 +78608,23 @@ function setupMac() {
   let installed = 0;
   let found = 0;
   for (const [key, app] of Object.entries(MAC_APPS)) {
-    const containerDir = (0, import_node_path.resolve)((0, import_node_os.homedir)(), `Library/Containers/${app.container}`);
-    if (!(0, import_node_fs.existsSync)(containerDir)) {
+    const containerDir = (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), `Library/Containers/${app.container}`);
+    if (!(0, import_node_fs2.existsSync)(containerDir)) {
       console.log(`[setup] ${app.label}: not installed, skipped`);
       continue;
     }
     found++;
     const manifest = manifestNameFor(app.manifest, tls);
-    const src = (0, import_node_path.resolve)(PROJECT_ROOT, "addin", manifest);
-    if (!(0, import_node_fs.existsSync)(src)) {
+    const src = (0, import_node_path2.resolve)(PROJECT_ROOT, "addin", manifest);
+    if (!(0, import_node_fs2.existsSync)(src)) {
       console.log(`[setup] ${app.label}: manifest ${manifest} missing in package, skipped`);
       continue;
     }
-    const wefDir = (0, import_node_path.resolve)(containerDir, "Data/Documents/wef");
-    const template = (0, import_node_fs.readFileSync)(src, "utf8");
+    const wefDir = (0, import_node_path2.resolve)(containerDir, "Data/Documents/wef");
+    const template = (0, import_node_fs2.readFileSync)(src, "utf8");
     try {
-      (0, import_node_fs.mkdirSync)(wefDir, { recursive: true });
-      (0, import_node_fs.writeFileSync)((0, import_node_path.resolve)(wefDir, "manifest.xml"), substituteManifestPort(template, defaultPort, port));
+      (0, import_node_fs2.mkdirSync)(wefDir, { recursive: true });
+      (0, import_node_fs2.writeFileSync)((0, import_node_path2.resolve)(wefDir, "manifest.xml"), substituteManifestPort(template, defaultPort, port));
     } catch (err) {
       const code = err.code;
       if (code === "EPERM" || code === "EACCES") {
@@ -78567,7 +78647,7 @@ function setupMac() {
   }
 }
 async function ensureLocalhostCert() {
-  if ((0, import_node_fs.existsSync)(CERT_PATH()) && (0, import_node_fs.existsSync)(CERT_KEY_PATH())) {
+  if ((0, import_node_fs2.existsSync)(CERT_PATH()) && (0, import_node_fs2.existsSync)(CERT_KEY_PATH())) {
     return true;
   }
   try {
@@ -78581,7 +78661,7 @@ async function ensureLocalhostCert() {
           altNames: [
             { type: 2, value: "localhost" },
             // DNS
-            { type: 2, value: (0, import_node_os.hostname)().toLowerCase() },
+            { type: 2, value: (0, import_node_os2.hostname)().toLowerCase() },
             // machine name — Office may
             // refuse loopback as a SharePoint-style catalog site
             { type: 7, ip: "127.0.0.1" },
@@ -78591,9 +78671,9 @@ async function ensureLocalhostCert() {
         }
       ]
     });
-    (0, import_node_fs.mkdirSync)((0, import_node_path.dirname)(CERT_PATH()), { recursive: true });
-    (0, import_node_fs.writeFileSync)(CERT_PATH(), pems.cert);
-    (0, import_node_fs.writeFileSync)(CERT_KEY_PATH(), pems.private);
+    (0, import_node_fs2.mkdirSync)((0, import_node_path2.dirname)(CERT_PATH()), { recursive: true });
+    (0, import_node_fs2.writeFileSync)(CERT_PATH(), pems.cert);
+    (0, import_node_fs2.writeFileSync)(CERT_KEY_PATH(), pems.private);
     console.log(`[setup] Generated localhost TLS certificate: ${CERT_PATH()}`);
     return true;
   } catch (err) {
@@ -78609,16 +78689,16 @@ function mergeDaemonTls(content) {
 `;
 }
 function writeDaemonTlsEnv() {
-  const envFile = (0, import_node_path.resolve)((0, import_node_os.homedir)(), ".office-live-mcp", "daemon.env");
+  const envFile = (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), ".office-live-mcp", "daemon.env");
   let content = "";
   try {
-    content = (0, import_node_fs.readFileSync)(envFile, "utf8");
+    content = (0, import_node_fs2.readFileSync)(envFile, "utf8");
   } catch {
   }
   const merged = mergeDaemonTls(content);
   if (merged !== content) {
-    (0, import_node_fs.mkdirSync)((0, import_node_path.dirname)(envFile), { recursive: true });
-    (0, import_node_fs.writeFileSync)(envFile, merged);
+    (0, import_node_fs2.mkdirSync)((0, import_node_path2.dirname)(envFile), { recursive: true });
+    (0, import_node_fs2.writeFileSync)(envFile, merged);
   }
   console.log(`[setup] Daemon env: ${envFile} (BRIDGE_TLS=1 \u2014 bridge serves https://localhost:8791)`);
 }
@@ -78650,22 +78730,22 @@ async function setupWindowsHttpsCatalog() {
   return true;
 }
 function setupWindowsUncCatalog() {
-  const installDir = process.env.OLM_INSTALL_DIR || (0, import_node_path.resolve)((0, import_node_os.homedir)(), "AppData", "Local", "office-live-mcp");
+  const installDir = process.env.OLM_INSTALL_DIR || (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), "AppData", "Local", "office-live-mcp");
   for (const folder of ["dist", "addin"]) {
-    const src = (0, import_node_path.resolve)(PROJECT_ROOT, folder);
-    if (!(0, import_node_fs.existsSync)(src)) {
+    const src = (0, import_node_path2.resolve)(PROJECT_ROOT, folder);
+    if (!(0, import_node_fs2.existsSync)(src)) {
       console.error(`[setup] Package incomplete: ${src} is missing.`);
       process.exit(1);
     }
-    (0, import_node_fs.cpSync)(src, (0, import_node_path.resolve)(installDir, folder), { recursive: true });
+    (0, import_node_fs2.cpSync)(src, (0, import_node_path2.resolve)(installDir, folder), { recursive: true });
   }
   const tls = daemonTlsEnabled();
-  for (const file2 of (0, import_node_fs.readdirSync)((0, import_node_path.resolve)(installDir, "addin"))) {
+  for (const file2 of (0, import_node_fs2.readdirSync)((0, import_node_path2.resolve)(installDir, "addin"))) {
     if (!file2.endsWith(".xml")) continue;
     const isHttpsVariant = file2.includes("-https");
     const isVmExperiment = file2.includes(".vm-");
     if (isVmExperiment || tls && !isHttpsVariant || !tls && isHttpsVariant) {
-      (0, import_node_fs.rmSync)((0, import_node_path.resolve)(installDir, "addin", file2));
+      (0, import_node_fs2.rmSync)((0, import_node_path2.resolve)(installDir, "addin", file2));
     }
   }
   console.log(`[setup] Installed files to ${installDir} (manifests: ${tls ? "HTTPS" : "HTTP"})`);
@@ -78676,23 +78756,23 @@ function setupWindowsUncCatalog() {
       console.error(`[setup] Ignoring candidate "${candidate}" \u2014 not a valid UNC path (expected \\\\host\\share).`);
       continue;
     }
-    if ((0, import_node_fs.existsSync)(candidate)) {
+    if ((0, import_node_fs2.existsSync)(candidate)) {
       unc = candidate;
       break;
     }
   }
   if (!unc) {
-    const addinDir = (0, import_node_path.resolve)(installDir, "addin");
+    const addinDir = (0, import_node_path2.resolve)(installDir, "addin");
     const result = (0, import_node_child_process.spawnSync)("net", ["share", `OfficeLiveMCP=${addinDir}`, "/GRANT:Everyone:READ"], {
       stdio: "pipe"
     });
-    if (result.status === 0 && (0, import_node_fs.existsSync)(`\\\\${(0, import_node_os.hostname)()}\\OfficeLiveMCP`)) {
-      unc = `\\\\${(0, import_node_os.hostname)()}\\OfficeLiveMCP`;
+    if (result.status === 0 && (0, import_node_fs2.existsSync)(`\\\\${(0, import_node_os2.hostname)()}\\OfficeLiveMCP`)) {
+      unc = `\\\\${(0, import_node_os2.hostname)()}\\OfficeLiveMCP`;
     }
   }
   if (!unc) {
     const adminShare = candidates.find((c) => c.startsWith("\\\\localhost\\"));
-    if (adminShare && (0, import_node_fs.existsSync)(adminShare)) {
+    if (adminShare && (0, import_node_fs2.existsSync)(adminShare)) {
       unc = adminShare;
     }
   }
@@ -78748,8 +78828,8 @@ async function runSetup() {
 }
 
 // server/sharepoint-catalog.ts
-var import_node_fs2 = require("node:fs");
-var import_node_path2 = require("node:path");
+var import_node_fs3 = require("node:fs");
+var import_node_path3 = require("node:path");
 var manifestDir = "";
 function setManifestDir(dir) {
   manifestDir = dir;
@@ -78758,7 +78838,7 @@ function readManifest(req, serverRelativeUrl) {
   const name = serverRelativeUrl.split("/").pop() ?? "";
   if (!manifestDir) return null;
   try {
-    const raw = (0, import_node_fs2.readFileSync)((0, import_node_path2.join)((0, import_node_path2.resolve)(manifestDir), name), "utf-8");
+    const raw = (0, import_node_fs3.readFileSync)((0, import_node_path3.join)((0, import_node_path3.resolve)(manifestDir), name), "utf-8");
     const host = String(req.headers.host ?? "");
     const portMatch = /:(\d+)$/.exec(host);
     const targetPort = portMatch ? Number.parseInt(portMatch[1], 10) : 8791;
@@ -78997,9 +79077,9 @@ function handleSharePointCatalog(req, res, rawUrl) {
 
 // server/stdio-proxy.ts
 var import_node_child_process2 = require("node:child_process");
-var import_node_fs3 = require("node:fs");
-var import_node_os2 = require("node:os");
-var import_node_path3 = require("node:path");
+var import_node_fs4 = require("node:fs");
+var import_node_os3 = require("node:os");
+var import_node_path4 = require("node:path");
 var HEALTH_TIMEOUT_MS = 1e3;
 var DAEMON_START_TIMEOUT_MS = 15e3;
 var DAEMON_POLL_INTERVAL_MS = 200;
@@ -79010,9 +79090,9 @@ function mcpHttpBase() {
 function bridgeHttpBase() {
   return `http://127.0.0.1:${Number(process.env.BRIDGE_PORT) || 8790}`;
 }
-var DAEMON_DIR = process.env.OLM_DAEMON_DIR || (0, import_node_path3.join)((0, import_node_os2.homedir)(), ".office-live-mcp");
-var DAEMON_LOCK_FILE = (0, import_node_path3.join)(DAEMON_DIR, "daemon.lock");
-var DAEMON_LOG_FILE = process.env.OLM_DAEMON_LOG || (0, import_node_path3.join)(DAEMON_DIR, "daemon.log");
+var DAEMON_DIR = process.env.OLM_DAEMON_DIR || (0, import_node_path4.join)((0, import_node_os3.homedir)(), ".office-live-mcp");
+var DAEMON_LOCK_FILE = (0, import_node_path4.join)(DAEMON_DIR, "daemon.lock");
+var DAEMON_LOG_FILE = process.env.OLM_DAEMON_LOG || (0, import_node_path4.join)(DAEMON_DIR, "daemon.log");
 async function fetchDaemonHealth(timeoutMs = HEALTH_TIMEOUT_MS) {
   try {
     const res = await fetch(`${mcpHttpBase()}/health`, { signal: AbortSignal.timeout(timeoutMs) });
@@ -79049,7 +79129,7 @@ function isPidAlive(pid) {
 }
 function readDaemonLock() {
   try {
-    const parsed = JSON.parse((0, import_node_fs3.readFileSync)(DAEMON_LOCK_FILE, "utf8"));
+    const parsed = JSON.parse((0, import_node_fs4.readFileSync)(DAEMON_LOCK_FILE, "utf8"));
     if (typeof parsed.pid === "number" && Number.isInteger(parsed.pid) && parsed.pid > 0) {
       return { pid: parsed.pid };
     }
@@ -79058,8 +79138,8 @@ function readDaemonLock() {
   return void 0;
 }
 function writeDaemonLock(pid) {
-  (0, import_node_fs3.mkdirSync)(DAEMON_DIR, { recursive: true });
-  (0, import_node_fs3.writeFileSync)(DAEMON_LOCK_FILE, JSON.stringify({ pid, startedAt: (/* @__PURE__ */ new Date()).toISOString() }));
+  (0, import_node_fs4.mkdirSync)(DAEMON_DIR, { recursive: true });
+  (0, import_node_fs4.writeFileSync)(DAEMON_LOCK_FILE, JSON.stringify({ pid, startedAt: (/* @__PURE__ */ new Date()).toISOString() }));
 }
 async function waitForDaemonHealth(timeoutMs) {
   const deadline = Date.now() + timeoutMs;
@@ -79075,7 +79155,7 @@ async function waitForDaemonHealth(timeoutMs) {
 function readDaemonEnvFile() {
   const env = {};
   try {
-    const lines = (0, import_node_fs3.readFileSync)((0, import_node_path3.join)(DAEMON_DIR, "daemon.env"), "utf8").split("\n");
+    const lines = (0, import_node_fs4.readFileSync)((0, import_node_path4.join)(DAEMON_DIR, "daemon.env"), "utf8").split("\n");
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith("#")) continue;
@@ -79088,8 +79168,8 @@ function readDaemonEnvFile() {
   return env;
 }
 function spawnDaemon() {
-  (0, import_node_fs3.mkdirSync)(DAEMON_DIR, { recursive: true });
-  const logFd = (0, import_node_fs3.openSync)(DAEMON_LOG_FILE, "a");
+  (0, import_node_fs4.mkdirSync)(DAEMON_DIR, { recursive: true });
+  const logFd = (0, import_node_fs4.openSync)(DAEMON_LOG_FILE, "a");
   const entry = process.argv[1];
   if (!entry) throw new Error("Cannot determine server entry point (process.argv[1] is empty)");
   const isTs = entry.endsWith(".ts");
@@ -79103,7 +79183,7 @@ function spawnDaemon() {
     windowsHide: true
   });
   child.unref();
-  (0, import_node_fs3.closeSync)(logFd);
+  (0, import_node_fs4.closeSync)(logFd);
   return child.pid ?? -1;
 }
 async function ensureDaemon(localVersion, deps = {}) {
@@ -80052,9 +80132,9 @@ async function extractDeckText(zipBuffer, slideIndices, includeNotes) {
 }
 
 // server/tools/shared.ts
-var import_node_fs4 = require("node:fs");
-var import_node_os3 = require("node:os");
-var import_node_path4 = require("node:path");
+var import_node_fs5 = require("node:fs");
+var import_node_os4 = require("node:os");
+var import_node_path5 = require("node:path");
 var import_node_url2 = require("node:url");
 var localCopyCache = /* @__PURE__ */ new Map();
 var themeCache = /* @__PURE__ */ new Map();
@@ -80137,7 +80217,7 @@ async function getLocalCopyPath(connPool, target) {
   const filePath = target.filePath;
   if (filePath && !filePath.startsWith("http")) {
     const localPath = toLocalFilePath(filePath);
-    if (!(0, import_node_fs4.existsSync)(localPath)) throw new Error(`Local file not found: ${localPath}`);
+    if (!(0, import_node_fs5.existsSync)(localPath)) throw new Error(`Local file not found: ${localPath}`);
     return localPath;
   }
   const revCode = `
@@ -80147,9 +80227,9 @@ async function getLocalCopyPath(connPool, target) {
     return p.revisionNumber;
   `;
   const currentRevision = await connPool.sendCommand("executeCode", { code: revCode }, target.ws);
-  const cached2 = localCopyCache.get(target.presentationId);
-  if (cached2 && cached2.revision === currentRevision && (0, import_node_fs4.existsSync)(cached2.localPath)) {
-    return cached2.localPath;
+  const cached3 = localCopyCache.get(target.presentationId);
+  if (cached3 && cached3.revision === currentRevision && (0, import_node_fs5.existsSync)(cached3.localPath)) {
+    return cached3.localPath;
   }
   const exportCode = `
     return new Promise(function(resolve, reject) {
@@ -80197,8 +80277,8 @@ async function getLocalCopyPath(connPool, target) {
   `;
   const base643 = await connPool.sendCommand("executeCode", { code: exportCode }, target.ws, 12e4);
   const filename = filePath ? decodeURIComponent(filePath.split("/").pop() || "presentation.pptx") : "presentation.pptx";
-  const dest = (0, import_node_path4.join)((0, import_node_os3.tmpdir)(), `pptbridge-${Date.now()}-${filename}`);
-  (0, import_node_fs4.writeFileSync)(dest, Buffer.from(base643, "base64"));
+  const dest = (0, import_node_path5.join)((0, import_node_os4.tmpdir)(), `pptbridge-${Date.now()}-${filename}`);
+  (0, import_node_fs5.writeFileSync)(dest, Buffer.from(base643, "base64"));
   localCopyCache.set(target.presentationId, { localPath: dest, revision: currentRevision });
   return dest;
 }
@@ -82010,7 +82090,7 @@ function registerGeometryTools(server, pool2, getSessionId, getActiveSessionCoun
 }
 
 // server/tools/inspect.ts
-var import_node_fs5 = require("node:fs");
+var import_node_fs6 = require("node:fs");
 var import_jszip2 = __toESM(require_lib4(), 1);
 function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
@@ -82128,7 +82208,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
       let layouts;
       try {
         const localPath = await getLocalCopyPath(pool2, target);
-        const fileData = (0, import_node_fs5.readFileSync)(localPath);
+        const fileData = (0, import_node_fs6.readFileSync)(localPath);
         const zip = await import_jszip2.default.loadAsync(fileData);
         layouts = await extractLayoutsFromZip(zip);
       } catch {
@@ -82442,11 +82522,11 @@ ${textParts.join("\n")}` : "\n(no text content)";
 }
 
 // server/tools/media.ts
-var import_node_fs7 = require("node:fs");
+var import_node_fs8 = require("node:fs");
 
 // server/icons.ts
-var import_node_fs6 = require("node:fs");
-var import_node_path5 = require("node:path");
+var import_node_fs7 = require("node:fs");
+var import_node_path6 = require("node:path");
 var import_node_url3 = require("node:url");
 var import_meta2 = {};
 var MANIFEST_URL = "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/fonts/FluentSystemIcons-Regular.json";
@@ -82483,8 +82563,8 @@ function buildIndexFromManifest(manifest) {
 }
 function loadStaticIndex() {
   try {
-    const dir = (0, import_node_path5.dirname)((0, import_node_url3.fileURLToPath)(import_meta2.url));
-    const raw = (0, import_node_fs6.readFileSync)((0, import_node_path5.join)(dir, "icon-index.json"), "utf-8");
+    const dir = (0, import_node_path6.dirname)((0, import_node_url3.fileURLToPath)(import_meta2.url));
+    const raw = (0, import_node_fs7.readFileSync)((0, import_node_path6.join)(dir, "icon-index.json"), "utf-8");
     const data = JSON.parse(raw);
     return data.map((e) => ({
       name: e.n,
@@ -82629,7 +82709,7 @@ function registerMediaTools(server, pool2, getSessionId, getActiveSessionCount) 
       const slideIndex = slide !== void 0 ? slide - 1 : void 0;
       let base64Data;
       if (sourceType === "file") {
-        base64Data = (0, import_node_fs7.readFileSync)(source).toString("base64");
+        base64Data = (0, import_node_fs8.readFileSync)(source).toString("base64");
       } else if (sourceType === "url") {
         const resp = await fetch(source);
         if (!resp.ok) {
@@ -82722,10 +82802,10 @@ return new Promise(function(resolve, reject) {
       const cachedBefore = localCopyCache.get(target.presentationId)?.localPath;
       const localPath = await getLocalCopyPath(pool2, target);
       const isLocal = target.filePath && !target.filePath.startsWith("http");
-      const cached2 = localCopyCache.get(target.presentationId);
+      const cached3 = localCopyCache.get(target.presentationId);
       const source = isLocal ? "local" : cachedBefore === localPath ? "cached" : "exported";
       const result = { localPath, source };
-      if (cached2) result.revision = cached2.revision;
+      if (cached3) result.revision = cached3.revision;
       return { content: [{ type: "text", text: JSON.stringify(result) }] };
     })
   );
@@ -82772,7 +82852,7 @@ return new Promise(function(resolve, reject) {
 }
 
 // server/tools/notes.ts
-var import_node_fs8 = require("node:fs");
+var import_node_fs9 = require("node:fs");
 var import_jszip3 = __toESM(require_lib4(), 1);
 
 // server/notes-helpers.ts
@@ -82992,7 +83072,7 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
     withTool(async ({ slideRange, presentationId }) => {
       const target = pool2.resolveTarget(presentationId);
       const localPath = await getLocalCopyPath(pool2, target);
-      const data = (0, import_node_fs8.readFileSync)(localPath);
+      const data = (0, import_node_fs9.readFileSync)(localPath);
       const zip = await import_jszip3.default.loadAsync(data);
       const indices = parseSlideRange(slideRange);
       const notesMap = await readNotesFromDeck(zip, indices);
@@ -83005,7 +83085,7 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
 }
 
 // server/tools/slides.ts
-var import_node_fs9 = require("node:fs");
+var import_node_fs10 = require("node:fs");
 var import_jszip4 = __toESM(require_lib4(), 1);
 function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
@@ -83066,7 +83146,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
       let preChecked = false;
       try {
         const localPath = await getLocalCopyPath(pool2, target);
-        const fileData = (0, import_node_fs9.readFileSync)(localPath);
+        const fileData = (0, import_node_fs10.readFileSync)(localPath);
         const zip = await import_jszip4.default.loadAsync(fileData);
         layouts = await extractLayoutsFromZip(zip);
         preChecked = true;
@@ -83341,7 +83421,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
 }
 
 // server/tools/text.ts
-var import_node_fs10 = require("node:fs");
+var import_node_fs11 = require("node:fs");
 function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
     "edit_shape_paragraphs",
@@ -83411,7 +83491,7 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
     withTool(async ({ slideRange, includeNotes, presentationId }) => {
       const target = pool2.resolveTarget(presentationId);
       const localPath = await getLocalCopyPath(pool2, target);
-      const zipBuffer = (0, import_node_fs10.readFileSync)(localPath);
+      const zipBuffer = (0, import_node_fs11.readFileSync)(localPath);
       const indices = slideRange ? parseSlideRange(slideRange) : null;
       const deckText = await extractDeckText(zipBuffer, indices, includeNotes === true);
       const result = deckText.map((s) => ({ ...s, slide: s.slide + 1 }));
@@ -84727,15 +84807,15 @@ var BRIDGE_DEFAULT_HTTP_PORT = 8790;
 var BRIDGE_DEFAULT_HTTPS_PORT = 8791;
 var MCP_HTTP_PORT = Number(process.env.MCP_PORT) || 8792;
 var MAX_HTTP_BODY_BYTES = 16 * 1024 * 1024;
-var SCRIPT_DIR2 = typeof __dirname !== "undefined" ? __dirname : (0, import_node_path6.dirname)((0, import_node_url4.fileURLToPath)(import_meta3.url));
-var PROJECT_ROOT2 = (0, import_node_path6.resolve)(SCRIPT_DIR2, "..");
-var BRIDGE_CERT_PATH = process.env.BRIDGE_CERT_PATH || (0, import_node_path6.resolve)(PROJECT_ROOT2, "certs", "localhost.pem");
-var BRIDGE_KEY_PATH = process.env.BRIDGE_KEY_PATH || (0, import_node_path6.resolve)(PROJECT_ROOT2, "certs", "localhost-key.pem");
-var ADDIN_STATIC_DIR = (0, import_node_path6.resolve)(PROJECT_ROOT2, "addin");
+var SCRIPT_DIR2 = typeof __dirname !== "undefined" ? __dirname : (0, import_node_path7.dirname)((0, import_node_url4.fileURLToPath)(import_meta3.url));
+var PROJECT_ROOT2 = (0, import_node_path7.resolve)(SCRIPT_DIR2, "..");
+var BRIDGE_CERT_PATH = process.env.BRIDGE_CERT_PATH || (0, import_node_path7.resolve)(PROJECT_ROOT2, "certs", "localhost.pem");
+var BRIDGE_KEY_PATH = process.env.BRIDGE_KEY_PATH || (0, import_node_path7.resolve)(PROJECT_ROOT2, "certs", "localhost-key.pem");
+var ADDIN_STATIC_DIR = (0, import_node_path7.resolve)(PROJECT_ROOT2, "addin");
 setManifestDir(ADDIN_STATIC_DIR);
 var PKG_VERSION = (() => {
   try {
-    return JSON.parse((0, import_node_fs11.readFileSync)((0, import_node_path6.resolve)(PROJECT_ROOT2, "package.json"), "utf8")).version;
+    return JSON.parse((0, import_node_fs12.readFileSync)((0, import_node_path7.resolve)(PROJECT_ROOT2, "package.json"), "utf8")).version;
   } catch {
     return "0.0.0";
   }
@@ -84782,7 +84862,7 @@ if (setupRequested) {
   });
 }
 var bridgeTls = process.env.BRIDGE_TLS === "1";
-if (bridgeActive && bridgeTls && (!(0, import_node_fs11.existsSync)(BRIDGE_CERT_PATH) || !(0, import_node_fs11.existsSync)(BRIDGE_KEY_PATH))) {
+if (bridgeActive && bridgeTls && (!(0, import_node_fs12.existsSync)(BRIDGE_CERT_PATH) || !(0, import_node_fs12.existsSync)(BRIDGE_KEY_PATH))) {
   console.error(
     `Error: BRIDGE_TLS=1 but TLS certificate files not found.
   Expected: ${BRIDGE_CERT_PATH} and ${BRIDGE_KEY_PATH}
@@ -84792,17 +84872,17 @@ if (bridgeActive && bridgeTls && (!(0, import_node_fs11.existsSync)(BRIDGE_CERT_
 }
 var BRIDGE_PORT = Number(process.env.BRIDGE_PORT) || (bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT);
 function autoSideloadManifest(tls, port) {
-  const markerFile = (0, import_node_path6.resolve)(PROJECT_ROOT2, ".sideloaded");
-  const pkgPath = (0, import_node_path6.resolve)(PROJECT_ROOT2, "package.json");
+  const markerFile = (0, import_node_path7.resolve)(PROJECT_ROOT2, ".sideloaded");
+  const pkgPath = (0, import_node_path7.resolve)(PROJECT_ROOT2, "package.json");
   let currentVersion = "unknown";
   try {
-    const pkg = JSON.parse((0, import_node_fs11.readFileSync)(pkgPath, "utf8"));
+    const pkg = JSON.parse((0, import_node_fs12.readFileSync)(pkgPath, "utf8"));
     currentVersion = pkg.version;
   } catch {
   }
   const markerValue = `${currentVersion}:${port}`;
   try {
-    const existing = (0, import_node_fs11.readFileSync)(markerFile, "utf8").trim();
+    const existing = (0, import_node_fs12.readFileSync)(markerFile, "utf8").trim();
     if (existing === markerValue) {
       console.error("[sideload] Add-in already installed (use `npm run sideload` to update)");
       return;
@@ -84811,17 +84891,17 @@ function autoSideloadManifest(tls, port) {
   } catch {
   }
   const defaultPort = tls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT;
-  const wefDir = (0, import_node_path6.join)((0, import_node_os4.homedir)(), "Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef");
+  const wefDir = (0, import_node_path7.join)((0, import_node_os5.homedir)(), "Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef");
   const manifestName = tls ? "manifest-https.xml" : "manifest.xml";
-  const src = (0, import_node_path6.resolve)(ADDIN_STATIC_DIR, manifestName);
-  const dest = (0, import_node_path6.join)(wefDir, "manifest.xml");
+  const src = (0, import_node_path7.resolve)(ADDIN_STATIC_DIR, manifestName);
+  const dest = (0, import_node_path7.join)(wefDir, "manifest.xml");
   try {
-    if (!(0, import_node_fs11.existsSync)(src)) return;
-    const template = (0, import_node_fs11.readFileSync)(src, "utf8");
+    if (!(0, import_node_fs12.existsSync)(src)) return;
+    const template = (0, import_node_fs12.readFileSync)(src, "utf8");
     const content = substituteManifestPort(template, defaultPort, port);
-    (0, import_node_fs11.mkdirSync)(wefDir, { recursive: true });
-    (0, import_node_fs11.writeFileSync)(dest, content);
-    (0, import_node_fs11.writeFileSync)(markerFile, markerValue);
+    (0, import_node_fs12.mkdirSync)(wefDir, { recursive: true });
+    (0, import_node_fs12.writeFileSync)(dest, content);
+    (0, import_node_fs12.writeFileSync)(markerFile, markerValue);
     console.error("[sideload] Add-in manifest installed for PowerPoint");
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -84859,7 +84939,7 @@ var MIME_TYPES = {
   ".xml": "application/xml; charset=UTF-8"
 };
 function getMimeType(filePath) {
-  const ext = (0, import_node_path6.extname)(filePath);
+  const ext = (0, import_node_path7.extname)(filePath);
   return MIME_TYPES[ext] ?? "application/octet-stream";
 }
 var RequestBodyTooLargeError = class extends Error {
@@ -84985,6 +85065,9 @@ async function handleMcpDelete(req, res) {
 }
 function serveStatic(req, res) {
   const rawUrl = (req.url ?? "/").split("?")[0];
+  if (handleOpenCodeProxy(req, res, req.url ?? "/")) {
+    return;
+  }
   if (handleSharePointCatalog(req, res, rawUrl)) {
     return;
   }
@@ -85018,21 +85101,21 @@ function serveStatic(req, res) {
   }
   const urlPath = rawUrl === "/" ? "/index.html" : rawUrl;
   console.error(`[bridge] GET ${rawUrl}`);
-  const filePath = (0, import_node_path6.resolve)((0, import_node_path6.join)(ADDIN_STATIC_DIR, urlPath));
-  const relToStaticDir = (0, import_node_path6.relative)(ADDIN_STATIC_DIR, filePath);
-  if (relToStaticDir.startsWith("..") || (0, import_node_path6.resolve)(ADDIN_STATIC_DIR, relToStaticDir) !== filePath) {
+  const filePath = (0, import_node_path7.resolve)((0, import_node_path7.join)(ADDIN_STATIC_DIR, urlPath));
+  const relToStaticDir = (0, import_node_path7.relative)(ADDIN_STATIC_DIR, filePath);
+  if (relToStaticDir.startsWith("..") || (0, import_node_path7.resolve)(ADDIN_STATIC_DIR, relToStaticDir) !== filePath) {
     res.writeHead(403, { "Content-Type": "text/plain" });
     res.end("403 Forbidden");
     return;
   }
-  if (!(0, import_node_fs11.existsSync)(filePath)) {
+  if (!(0, import_node_fs12.existsSync)(filePath)) {
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("404 Not Found");
     return;
   }
-  const raw = (0, import_node_fs11.readFileSync)(filePath);
+  const raw = (0, import_node_fs12.readFileSync)(filePath);
   const mimeType = getMimeType(filePath);
-  const content = (0, import_node_path6.extname)(filePath) === ".xml" ? substituteManifestPort(
+  const content = (0, import_node_path7.extname)(filePath) === ".xml" ? substituteManifestPort(
     raw.toString(),
     bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT,
     BRIDGE_PORT
@@ -85040,19 +85123,22 @@ function serveStatic(req, res) {
   res.writeHead(200, {
     "Content-Type": mimeType,
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Private-Network": "true"
+    "Access-Control-Allow-Private-Network": "true",
+    // Taskpane assets change between dev restarts; WKWebView caches
+    // aggressively, so stale HTML/JS would silently run old chat code.
+    "Cache-Control": "no-store"
   });
   res.end(content);
 }
 function startBridgeServer(onListening) {
   autoSideloadManifest(bridgeTls, BRIDGE_PORT);
-  const useTls = bridgeTls && (0, import_node_fs11.existsSync)(BRIDGE_CERT_PATH) && (0, import_node_fs11.existsSync)(BRIDGE_KEY_PATH);
-  const bridgeServer = useTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs11.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs11.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http.createServer)(serveStatic);
+  const useTls = bridgeTls && (0, import_node_fs12.existsSync)(BRIDGE_CERT_PATH) && (0, import_node_fs12.existsSync)(BRIDGE_KEY_PATH);
+  const bridgeServer = useTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs12.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs12.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http3.createServer)(serveStatic);
   const allowedOrigins = /* @__PURE__ */ new Set();
   for (const host of ["localhost", "127.0.0.1"]) {
     allowedOrigins.add(`${useTls ? "https" : "http"}://${host}:${BRIDGE_PORT}`);
   }
-  for (const ifaces of Object.values((0, import_node_os4.networkInterfaces)())) {
+  for (const ifaces of Object.values((0, import_node_os5.networkInterfaces)())) {
     for (const iface of ifaces ?? []) {
       if (iface.family === "IPv4" && !iface.internal) {
         allowedOrigins.add(`${useTls ? "https" : "http"}://${iface.address}:${BRIDGE_PORT}`);
@@ -85186,7 +85272,7 @@ function startMcpHttpServer() {
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("MCP endpoint is at /mcp");
   }
-  const mcpHttpServer = (0, import_node_http.createServer)(handleMcpHttpRequest);
+  const mcpHttpServer = (0, import_node_http3.createServer)(handleMcpHttpRequest);
   mcpHttpServer.on("error", (err) => {
     if (err.code === "EADDRINUSE") {
       console.error(`Error: Port ${MCP_HTTP_PORT} is already in use. Another instance may be running.`);
