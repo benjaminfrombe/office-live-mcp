@@ -9,6 +9,9 @@ var chatState = {
   streamingText: '', // partial assistant text while streaming
   busy: false,
   pendingSelections: [], // document selections kept as context for the next message
+  pendingAttachments: [], // pasted images kept as data URIs for the next message
+  reasoningText: '', // live assistant reasoning buffer for the strip
+  reasoningActive: false, // true while the current step is still streaming reasoning
   renderedIds: [], // message ids already on screen (incremental rendering)
 }
 
@@ -16,6 +19,9 @@ var EVENT_TYPES = [
   'session.step.started',
   'session.text.delta',
   'session.text.ended',
+  'session.reasoning.started',
+  'session.reasoning.delta',
+  'session.reasoning.ended',
   'session.step.ended',
   'session.step.failed',
   'session.execution.started',
@@ -69,6 +75,13 @@ function initChat() {
     }
   })
   input.addEventListener('input', autoGrowInput)
+  input.addEventListener('paste', onInputPaste)
+
+  document.getElementById('oc-reasoning-strip').addEventListener('click', () => {
+    var strip = document.getElementById('oc-reasoning-strip')
+    strip.dataset.expanded = strip.dataset.expanded === '1' ? '' : '1'
+    updateReasoningStrip()
+  })
 
   document.getElementById('oc-use-selection').addEventListener('click', () => {
     runLocalOffice(
@@ -197,6 +210,9 @@ function selectSession(sessionID) {
   chatState.sessionID = sessionID
   chatState.streamingText = ''
   chatState.renderedIds = []
+  chatState.reasoningText = ''
+  chatState.reasoningActive = false
+  updateReasoningStrip()
   document.getElementById('oc-session').value = sessionID
   renderFromRows([])
   setChatStatus('Loading messages...')
@@ -248,7 +264,18 @@ function startEventStream() {
     } else if (event.type === 'session.text.ended') {
       chatState.streamingText = ''
       renderStreaming()
+    } else if (event.type === 'session.reasoning.delta') {
+      chatState.reasoningText += data.delta || ''
+      updateReasoningStrip()
+    } else if (event.type === 'session.reasoning.ended') {
+      chatState.reasoningActive = false
+      updateReasoningStrip()
     } else if (event.type === 'session.step.started') {
+      // A new step starts a fresh reasoning turn; keep the previous one only
+      // until this point so the strip never mixes two steps.
+      chatState.reasoningText = ''
+      chatState.reasoningActive = true
+      updateReasoningStrip()
       setChatStatus('Assistant is working...')
     } else if (
       event.type === 'session.step.ended' ||
@@ -259,6 +286,8 @@ function startEventStream() {
     ) {
       chatState.streamingText = ''
       renderStreaming()
+      chatState.reasoningActive = false
+      updateReasoningStrip()
       setChatStatus('')
       scheduleRefetch(sessionID)
     }
@@ -275,7 +304,12 @@ function stopEventStream() {
 function sendChatMessage() {
   const input = document.getElementById('oc-input')
   const typed = input.value.trim()
-  if ((!typed && !chatState.pendingSelections.length) || !chatState.sessionID || chatState.busy) {
+  const attachments = chatState.pendingAttachments
+  if (
+    (!typed && !chatState.pendingSelections.length && !attachments.length) ||
+    !chatState.sessionID ||
+    chatState.busy
+  ) {
     focusInput()
     return
   }
@@ -287,12 +321,22 @@ function sendChatMessage() {
   renderSelectionChips()
   autoGrowInput()
   setChatStatus('Sending...')
-  appendMessage('user', typed || '(document selection)', true)
+  appendMessage(
+    'user',
+    typed ||
+      (attachments.length
+        ? `(${attachments.length} image${attachments.length > 1 ? 's' : ''})`
+        : '(document selection)'),
+    true,
+  )
   autoGrowInput()
   focusInput()
-  OpenCodeChat.sendPrompt(chatState.config, chatState.sessionID, text).then(
+  OpenCodeChat.sendPrompt(chatState.config, chatState.sessionID, text, attachments).then(
     () => {
       chatState.busy = false
+      // Attachments are cleared only on success so a failed send can be retried.
+      chatState.pendingAttachments = []
+      renderAttachmentChips()
       setChatStatus('')
     },
     (err) => {
@@ -342,6 +386,100 @@ function renderSelectionChips() {
     chip.appendChild(clear)
     container.appendChild(chip)
   })
+}
+
+/* Pasted image attachments — image items from the clipboard become pending
+   attachments rendered as thumbnail chips; WKWebView may not deliver image
+   paste items at all, in which case this silently does nothing. */
+var ATTACHMENT_MAX_BASE64_BYTES = 8 * 1024 * 1024 // base64 payload cap
+
+function onInputPaste(event) {
+  var items = event.clipboardData ? event.clipboardData.items : null
+  if (!items) return
+  var found = false
+  for (let i = 0; i < items.length; i++) {
+    const type = items[i].type || ''
+    if (type.indexOf('image/') !== 0) continue
+    const file = items[i].getAsFile ? items[i].getAsFile() : null
+    if (!file) continue
+    found = true
+    readAttachment(file)
+  }
+  if (found) event.preventDefault()
+}
+
+function readAttachment(file) {
+  var reader = new FileReader()
+  reader.onload = () => {
+    var dataUrl = String(reader.result || '')
+    if (dataUrl.length > ATTACHMENT_MAX_BASE64_BYTES) {
+      setChatStatus(`Image too large — over 8 MB base64 (${file.name || 'pasted image'})`)
+      return
+    }
+    chatState.pendingAttachments.push({ dataUrl: dataUrl, name: file.name || 'pasted image', size: file.size || 0 })
+    renderAttachmentChips()
+    setChatStatus('')
+    focusInput()
+  }
+  reader.onerror = () => setChatStatus('Could not read the pasted image')
+  reader.readAsDataURL(file)
+}
+
+function renderAttachmentChips() {
+  const container = document.getElementById('oc-attachment-chips')
+  if (!container) return
+  container.innerHTML = ''
+  chatState.pendingAttachments.forEach((attachment, index) => {
+    const chip = document.createElement('div')
+    chip.className = 'attachment-chip'
+    const thumb = document.createElement('img')
+    thumb.src = attachment.dataUrl
+    thumb.alt = attachment.name
+    const label = document.createElement('span')
+    label.textContent = `${attachment.name} · ${Math.round(attachment.size / 1024)} kB`
+    const clear = document.createElement('button')
+    clear.type = 'button'
+    clear.title = 'Remove this image'
+    clear.textContent = '✕'
+    clear.addEventListener('click', () => {
+      chatState.pendingAttachments.splice(index, 1)
+      renderAttachmentChips()
+      focusInput()
+    })
+    chip.appendChild(thumb)
+    chip.appendChild(label)
+    chip.appendChild(clear)
+    container.appendChild(chip)
+  })
+}
+
+/* Reasoning strip — a thin ticker above the messages showing the assistant's
+   live reasoning; after the step it stays as a one-line collapsed summary. */
+function updateReasoningStrip() {
+  var strip = document.getElementById('oc-reasoning-strip')
+  if (!strip) return
+  var text = chatState.reasoningText
+  if (!text) {
+    strip.hidden = true
+    strip.dataset.expanded = ''
+    return
+  }
+  strip.hidden = false
+  var label = document.getElementById('oc-reasoning-label')
+  var body = document.getElementById('oc-reasoning-text')
+  body.textContent = text
+  var expanded = false
+  if (chatState.reasoningActive) {
+    strip.classList.add('live')
+    label.textContent = 'Reasoning…'
+    body.scrollTop = body.scrollHeight
+  } else {
+    strip.classList.remove('live')
+    expanded = strip.dataset.expanded === '1'
+    label.textContent = `Reasoning · ${text.length} chars · click to ${expanded ? 'collapse' : 'expand'}`
+    body.classList.toggle('expanded', expanded)
+    if (expanded) body.scrollTop = body.scrollHeight
+  }
 }
 
 /* Build the context blocks for all pending selections. Points are 1/72 inch. */

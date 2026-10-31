@@ -6,7 +6,7 @@
   <title>Office Live MCP</title>
   <!-- Office.js MUST be in head, before any other scripts -->
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js" type="text/javascript"></script>
-  <link rel="stylesheet" href="style.css?v=9">
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
   <h1>Office Live MCP</h1>
@@ -39,8 +39,13 @@
       <button id="oc-new-session" type="button">New session</button>
     </div>
     <div id="oc-status" class="chat-status"></div>
+    <div id="oc-reasoning-strip" class="reasoning-strip" hidden>
+      <span id="oc-reasoning-label" class="reasoning-label">Reasoning…</span>
+      <pre id="oc-reasoning-text" class="reasoning-text"></pre>
+    </div>
     <div id="oc-messages" class="chat-messages"></div>
     <div id="oc-selection-chips" class="selection-chips"></div>
+    <div id="oc-attachment-chips" class="attachment-chips"></div>
     <div class="chat-input">
       <textarea id="oc-input" rows="4" placeholder="Ask OpenCode..."></textarea>
       <div class="chat-input-actions">
@@ -52,8 +57,8 @@
     </div>
   </div>
 
-  <script src="opencode.js?v=9"></script>
-  <script src="chat.js?v=9"></script>
-  <script src="app.js?v=9"></script>
+  <script src="opencode.js?v=10"></script>
+  <script src="chat.js?v=10"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
