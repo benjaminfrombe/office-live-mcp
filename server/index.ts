@@ -479,6 +479,9 @@ function serveStatic(req: IncomingMessage, res: ServerResponse): void {
     'Content-Type': mimeType,
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Private-Network': 'true',
+    // Taskpane assets change between dev restarts; WKWebView caches
+    // aggressively, so stale HTML/JS would silently run old chat code.
+    'Cache-Control': 'no-store',
   })
   res.end(content)
 }
