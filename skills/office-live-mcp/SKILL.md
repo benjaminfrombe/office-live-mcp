@@ -432,3 +432,19 @@ For features Office.js cannot access (comments, chart data, embedded objects, ma
 - **"Add-in disconnected"** — auto-reconnects; wait and retry
 - **"Command timed out"** — simplify code or check PowerPoint responsiveness
 - **Screenshot via execute_officejs overflows tokens** — always use `screenshot_slide` instead (returns MCP image block, not text)
+
+## Font Fidelity and Layout Symmetry
+
+**Bridge screenshots are not font-faithful.** `screenshot_slide` and `preview_deck` render inside the webview with whatever font the system substitutes when the deck font is not installed system-wide (e.g. Century Gothic). Substituted fonts have different metrics — usually narrower — so text that appears to fit or appear centered in a screenshot can overflow or sit off-center in the real presentation. Never approve overflow, centering, or spacing from a bridge screenshot alone.
+
+**Font check before any export-based QA:**
+1. List the fonts the deck uses (`inspect_slide` run properties, or the pptx `ppt/theme` + run properties).
+2. Check each is actually installed (`system_profiler SPFontsDataType` or `fc-list`) or embedded in the file.
+3. Prefer exporting **via PowerPoint itself** — AppleScript: `tell application "Microsoft PowerPoint" to save active presentation in POSIX file "/tmp/qa.pdf" as save as PDF`, then `pdftoppm -png -r 100`. This render is font-faithful because PowerPoint owns its fonts.
+4. LibreOffice export is a fallback ONLY after step 2 passes; LibreOffice substitutes missing fonts silently and its metrics differ from PowerPoint's.
+
+**Centering and symmetry: measure, do not eyeball.** For any centering or symmetry-sensitive layout (numbers in badges, text in pills, icon alignment):
+1. Render font-faithfully (rule above) at a known DPI.
+2. Measure with Python + PIL: locate the container shape's colored pixels (disk/pill bounding box → center), locate the glyph pixels (e.g. white pixels within the container), and compute the offset between the two centers.
+3. Correct the shape position by the measured offset in points (`px / dpi * 72`), re-export, re-measure until the offset is within ~1 px.
+4. Example measurement script pattern: crop the badge region, classify non-white pixels as the container and near-white pixels inside the container radius as the glyph, compare bounding-box centers.
