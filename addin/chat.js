@@ -113,7 +113,7 @@ function setChatStatus(text) {
 
 function chatError(err) {
   console.error('OpenCode chat error:', err)
-  setChatStatus(String(err?.message ? err.message : err))
+  setChatStatus(OpenCodeChat.friendlyError(err))
 }
 
 function refreshSessions() {
@@ -150,9 +150,16 @@ function startEventStream() {
   chatState.events = OpenCodeChat.subscribeEvents(chatState.config, EVENT_TYPES, (event) => {
     if (event.type === 'stream.closed' || event.type === 'stream.error') {
       if (chatState.sessionID === sessionID) {
-        setChatStatus(event.type === 'stream.error' ? 'Event stream error' : '')
-        setTimeout(startEventStream, 2000)
+        // Exponential backoff — an absent server must not cause a tight retry loop
+        chatState.streamRetries = (chatState.streamRetries || 0) + 1
+        const delay = Math.min(2000 * 2 ** (chatState.streamRetries - 1), 30000)
+        if (event.type === 'stream.error') setChatStatus(OpenCodeChat.friendlyError(event.error))
+        setTimeout(startEventStream, delay)
       }
+      return
+    }
+    if (event.type === 'server.connected') {
+      chatState.streamRetries = 0
       return
     }
     var data = event.data || {}

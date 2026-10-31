@@ -131,6 +131,7 @@ describe('opencode.js message helpers', () => {
     harness().context.OpenCodeChat as {
       messageText: (m: Record<string, unknown>) => string
       isTerminalRow: (m: Record<string, unknown>) => boolean
+      friendlyError: (e: unknown) => string
     }
 
   it('extracts user text', () => {
@@ -149,6 +150,12 @@ describe('opencode.js message helpers', () => {
   it('flags terminal rows', () => {
     expect(client().isTerminalRow({ type: 'idle' })).toBe(true)
     expect(client().isTerminalRow({ type: 'assistant' })).toBe(false)
+  })
+
+  it('maps network failures to an actionable message', () => {
+    expect(client().friendlyError(new Error('Load failed'))).toMatch(/not reachable/)
+    expect(client().friendlyError(new Error('Failed to fetch'))).toMatch(/not reachable/)
+    expect(client().friendlyError(new Error('OpenCode 401: nope'))).toBe('OpenCode 401: nope')
   })
 })
 

@@ -84,6 +84,16 @@ var OpenCodeChat = (() => {
     return message.type === 'idle' || message.type === 'step-start'
   }
 
+  /* Map raw network errors to something a user can act on. WKWebView reports
+     unreachable servers as "Load failed", Chrome as "Failed to fetch". */
+  function friendlyError(err) {
+    const raw = String(err?.message ? err.message : err)
+    if (/failed to fetch|load failed|networkerror/i.test(raw)) {
+      return 'OpenCode not reachable — is the proxy running? (npm run opencode-proxy:tls) Or check Connection settings.'
+    }
+    return raw
+  }
+
   /* SSE subscription. EventSource cannot send basic-auth headers, so the stream
      is consumed through fetch + a ReadableStream reader instead. Repeated `types`
      query params filter server-side; `server.connected` always arrives as a marker.
@@ -169,6 +179,7 @@ var OpenCodeChat = (() => {
     sendPrompt: sendPrompt,
     messageText: messageText,
     isTerminalRow: isTerminalRow,
+    friendlyError: friendlyError,
     subscribeEvents: subscribeEvents,
     DEFAULT_URL: DEFAULT_URL,
   }
