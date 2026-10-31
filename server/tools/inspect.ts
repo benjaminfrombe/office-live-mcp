@@ -380,7 +380,7 @@ export function registerInspectTools(
 
   server.tool(
     'screenshot_slide',
-    'Slide screenshot (~1000 tokens): captures one slide as PNG image. Use to visually verify layout after changes. Do NOT loop over all slides — use preview_deck instead.',
+    'Slide screenshot (~1000 tokens): captures one slide as PNG image. Use to visually verify layout after changes. Do NOT loop over all slides — use preview_deck instead. WARNING: renders with whatever font the host webview substitutes when the deck font is not system-installed (e.g. Century Gothic) — substituted fonts have different metrics, so text width, overflow and centering judgments from these screenshots are UNRELIABLE. For font-faithful QA export via PowerPoint itself (AppleScript: `save pres in POSIX file "/tmp/x.pdf" as save as PDF`, then pdftoppm) and measure geometry with Python (PIL pixel measurement) rather than judging by eye.',
     {
       slide: z.number().int().min(1).describe('Slide number, 1-based (slide 1 = first slide), from scan_slide results'),
       width: z
