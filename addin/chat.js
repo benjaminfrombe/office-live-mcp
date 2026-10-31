@@ -37,18 +37,24 @@ function initChat() {
     OpenCodeChat.saveConfig(chatState.config)
     setChatStatus('Config saved — reconnecting...')
     refreshSessions()
+    focusInput()
   })
 
   document.getElementById('oc-toggle-advanced').addEventListener('click', () => {
     const password = document.getElementById('oc-password')
     password.classList.toggle('hidden')
-    if (!password.classList.contains('hidden')) password.focus()
+    if (!password.classList.contains('hidden')) {
+      password.focus()
+    } else {
+      focusInput()
+    }
   })
 
   document.getElementById('oc-new-session').addEventListener('click', () => {
     OpenCodeChat.createSession(chatState.config, 'Office add-in chat').then((session) => {
       selectSession(session.id)
       refreshSessions()
+      focusInput()
     }, chatError)
   })
 
@@ -70,6 +76,7 @@ function initChat() {
         const input = document.getElementById('oc-input')
         input.value = `${input.value ? `${input.value}\n` : ''}--- selected text ---\n${text}\n--- end ---`
       }
+      focusInput()
     }, chatError)
   })
 
@@ -77,6 +84,7 @@ function initChat() {
     var text = lastAssistantText()
     if (!text) {
       setChatStatus('No assistant reply to insert yet')
+      focusInput()
       return
     }
     Office.context.document.setSelectedDataAsync(text, { coercionType: Office.CoercionType.Text }, (result) => {
@@ -85,6 +93,7 @@ function initChat() {
       } else {
         setChatStatus('Reply inserted at selection')
       }
+      focusInput()
     })
   })
 
@@ -172,13 +181,17 @@ function stopEventStream() {
 }
 
 function sendChatMessage() {
-  var input = document.getElementById('oc-input')
-  var text = input.value.trim()
-  if (!text || !chatState.sessionID || chatState.busy) return
+  const input = document.getElementById('oc-input')
+  const text = input.value.trim()
+  if (!text || !chatState.sessionID || chatState.busy) {
+    focusInput()
+    return
+  }
   chatState.busy = true
   input.value = ''
   setChatStatus('Sending...')
   appendMessage('user', text)
+  focusInput()
   OpenCodeChat.sendPrompt(chatState.config, chatState.sessionID, text).then(
     () => {
       chatState.busy = false
@@ -189,6 +202,15 @@ function sendChatMessage() {
       chatError(err)
     },
   )
+}
+
+/* Keep the input focused: every action returns focus so the user can keep
+   typing (or press Enter) without clicking back into the field. */
+function focusInput() {
+  const input = document.getElementById('oc-input')
+  if (input && !document.getElementById('mode-chat').classList.contains('hidden')) {
+    input.focus()
+  }
 }
 
 /* Local Office.js execution — same AsyncFunction pattern as the bridge's
@@ -266,5 +288,6 @@ document.getElementById('tab-bridge').addEventListener('click', () => {
 })
 document.getElementById('tab-chat').addEventListener('click', () => {
   showMode('chat')
+  focusInput()
 })
 initChat()
