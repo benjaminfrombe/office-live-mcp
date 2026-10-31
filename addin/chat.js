@@ -72,11 +72,27 @@ function initChat() {
 
   document.getElementById('oc-use-selection').addEventListener('click', () => {
     runLocalOffice(
-      'const selection = await new Promise((resolve) => ' +
-        'Office.context.document.getSelectedDataAsync(Office.CoercionType.Text, (r) => resolve(r.value))); ' +
-        'return String(selection || "")',
-    ).then((text) => {
-      const cleaned = text
+      'const out = { text: "", slide: null, shape: null };\n' +
+        'const raw = await new Promise((resolve) => ' +
+        'Office.context.document.getSelectedDataAsync(Office.CoercionType.Text, (r) => resolve(r.value)));\n' +
+        'out.text = String(raw || "");\n' +
+        'const pres = context.presentation;\n' +
+        'try {\n' +
+        '  const shapes = pres.getSelectedShapes();\n' +
+        '  shapes.load("items/name,items/id,items/left,items/top,items/width,items/height");\n' +
+        '  await context.sync();\n' +
+        '  const s = shapes.items[0];\n' +
+        '  if (s) out.shape = { name: s.name, id: s.id, left: s.left, top: s.top, width: s.width, height: s.height };\n' +
+        '} catch (e) {}\n' +
+        'try {\n' +
+        '  const slides = pres.getSelectedSlides();\n' +
+        '  slides.load("items");\n' +
+        '  await context.sync();\n' +
+        '  if (slides.items.length) out.slide = slides.items.map((x) => x.index);\n' +
+        '} catch (e) {}\n' +
+        'return out;',
+    ).then((out) => {
+      const cleaned = String(out && out.text ? out.text : '')
         .replace(/\r/g, '')
         .replace(/\n{3,}/g, '\n\n')
         .trim()
@@ -84,10 +100,11 @@ function initChat() {
         // Office can return far more than the visible selection (whole shapes,
         // surrounding paragraphs). Cap it so prompts stay focused.
         const MAX_SELECTION_CHARS = 1200
-        chatState.pendingSelection =
+        const text =
           cleaned.length > MAX_SELECTION_CHARS
             ? `${cleaned.slice(0, MAX_SELECTION_CHARS)}\n[selection truncated, ${cleaned.length} chars total]`
             : cleaned
+        chatState.pendingSelection = { text, slide: out.slide, shape: out.shape }
         renderSelectionChip()
       }
       focusInput()
@@ -234,7 +251,7 @@ function sendChatMessage() {
     return
   }
   const text = chatState.pendingSelection
-    ? `--- selected text ---\n${chatState.pendingSelection}\n--- end ---\n\n${typed}`
+    ? `${selectionContextHeader(chatState.pendingSelection)}${chatState.pendingSelection.text || chatState.pendingSelection}\n--- end of selection ---\n\n${typed}`
     : typed
   chatState.busy = true
   input.value = ''
@@ -266,16 +283,35 @@ function focusInput() {
   }
 }
 
+/* Build the context header for a pending selection. Points are 1/72 inch. */
+function selectionContextHeader(pending) {
+  let header = '--- selected text (context from the open document) ---\n'
+  if (typeof pending === 'object') {
+    if (pending.slide) header += `Slide: ${Array.isArray(pending.slide) ? pending.slide.join(', ') : pending.slide}\n`
+    if (pending.shape) {
+      const s = pending.shape
+      header += `Shape: ${s.name || 'unnamed'} (id ${s.id}, left ${Math.round(s.left)}pt, top ${Math.round(s.top)}pt, ${Math.round(s.width)}x${Math.round(s.height)}pt)\n`
+    }
+  }
+  return header
+}
+
 /* Selection context chip — the pasted selection is kept out of the input;
    it is prepended to the prompt only when the message is sent. */
 function renderSelectionChip() {
   const chip = document.getElementById('oc-selection-chip')
   const label = document.getElementById('oc-selection-label')
   if (!chip || !label) return
-  if (chatState.pendingSelection) {
-    const length = chatState.pendingSelection.length
-    const preview = chatState.pendingSelection.slice(0, 40).replace(/\s+/g, ' ')
-    label.textContent = `Selection · ${length} chars · ${preview}${length > 40 ? '…' : ''}`
+  const pending = chatState.pendingSelection
+  if (pending) {
+    const text = typeof pending === 'string' ? pending : pending.text
+    const length = text.length
+    const preview = text.slice(0, 40).replace(/\s+/g, ' ')
+    const where =
+      typeof pending === 'object' && pending.slide
+        ? ` · slide ${pending.slide}${pending.shape ? ` · ${pending.shape.name || 'shape'}` : ''}`
+        : ''
+    label.textContent = `Selection${where} · ${length} chars · ${preview}${length > 40 ? '…' : ''}`
     chip.classList.remove('hidden')
   } else {
     chip.classList.add('hidden')
