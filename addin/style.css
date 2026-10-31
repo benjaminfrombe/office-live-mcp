@@ -101,3 +101,149 @@ h1 {
   border-radius: 6px;
   border: 1px solid #c3dfc3;
 }
+
+/* Mode tabs (Bridge / OpenCode Chat) */
+.mode-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.mode-tab {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+}
+
+.mode-tab.active {
+  background: #107c10;
+  border-color: #107c10;
+  color: #fff;
+}
+
+.mode-panel {
+  width: 100%;
+}
+
+.mode-panel.hidden {
+  display: none;
+}
+
+/* OpenCode chat */
+.chat-config,
+.chat-toolbar,
+.chat-input-row,
+.chat-actions {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.chat-config {
+  flex-direction: column;
+  margin-bottom: 8px;
+}
+
+.chat-config input {
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.chat-toolbar {
+  margin-bottom: 8px;
+}
+
+.chat-toolbar select {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.75rem;
+}
+
+button {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #f0f0f0;
+}
+
+.chat-status {
+  font-size: 0.75rem;
+  color: #797600;
+  min-height: 1em;
+  margin-bottom: 4px;
+}
+
+.chat-messages {
+  flex: 1;
+  width: 100%;
+  min-height: 180px;
+  max-height: 40vh;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.chat-message {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 6px 8px;
+  border-radius: 6px;
+  max-width: 92%;
+}
+
+.chat-message.user {
+  align-self: flex-end;
+  background: #dff6dd;
+  color: #107c10;
+}
+
+.chat-message.assistant {
+  align-self: flex-start;
+  background: #eef2f8;
+  color: #333;
+}
+
+.chat-message.streaming {
+  opacity: 0.7;
+}
+
+.chat-input-row {
+  margin-bottom: 8px;
+}
+
+.chat-input-row textarea {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.78rem;
+  font-family: inherit;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.chat-actions {
+  justify-content: flex-end;
+}

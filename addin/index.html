@@ -10,10 +10,42 @@
 </head>
 <body>
   <h1>Office Live MCP</h1>
-  <div id="status" class="status disconnected">Initializing...</div>
-  <p class="info">MCP bridge for AI assistants to edit this document via Office.js.</p>
-  <p class="detail">Bridge address: <span id="bridge-url">...</span></p>
-  <p class="closeable-hint">You can close this panel — the connection stays active. It auto-opens to reconnect to MCP. Find it in the <b>Add-ins</b> ribbon if needed.</p>
+  <div class="mode-tabs">
+    <button id="tab-bridge" class="mode-tab active" type="button">Bridge</button>
+    <button id="tab-chat" class="mode-tab" type="button">OpenCode Chat</button>
+  </div>
+
+  <div id="mode-bridge" class="mode-panel">
+    <div id="status" class="status disconnected">Initializing...</div>
+    <p class="info">MCP bridge for AI assistants to edit this document via Office.js.</p>
+    <p class="detail">Bridge address: <span id="bridge-url">...</span></p>
+    <p class="closeable-hint">You can close this panel — the connection stays active. It auto-opens to reconnect to MCP. Find it in the <b>Add-ins</b> ribbon if needed.</p>
+  </div>
+
+  <div id="mode-chat" class="mode-panel hidden">
+    <div class="chat-config">
+      <input id="oc-server-url" type="text" placeholder="OpenCode server URL (http://127.0.0.1:4096)">
+      <input id="oc-password" type="password" placeholder="Service password">
+      <button id="oc-save-config" type="button">Save &amp; connect</button>
+    </div>
+    <div class="chat-toolbar">
+      <select id="oc-session"></select>
+      <button id="oc-new-session" type="button">New session</button>
+    </div>
+    <div id="oc-status" class="chat-status"></div>
+    <div id="oc-messages" class="chat-messages"></div>
+    <div class="chat-input-row">
+      <button id="oc-use-selection" type="button" title="Paste the current document selection into the input">+ Selection</button>
+      <textarea id="oc-input" rows="2" placeholder="Ask OpenCode..."></textarea>
+      <button id="oc-send" type="button">Send</button>
+    </div>
+    <div class="chat-actions">
+      <button id="oc-insert-reply" type="button">Insert last reply at selection</button>
+    </div>
+  </div>
+
+  <script src="opencode.js"></script>
+  <script src="chat.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
