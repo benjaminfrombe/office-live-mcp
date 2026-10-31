@@ -62,10 +62,10 @@ afterEach(() => {
 })
 
 describe('opencode.js config', () => {
-  it('defaults to the local OpenCode URL with empty password', () => {
+  it('defaults to the bridge proxy route with empty password', () => {
     const h = harness()
     const config = (h.context.OpenCodeChat as { loadConfig(): { url: string; password: string } }).loadConfig()
-    expect(config.url).toBe('http://127.0.0.1:4096')
+    expect(config.url).toBe('/opencode')
     expect(config.password).toBe('')
   })
 
@@ -84,7 +84,7 @@ describe('opencode.js config', () => {
     const store = (h.context.localStorage as { store: Map<string, string> }).store
     store.set('opencode-chat-config', '{not json')
     const client = h.context.OpenCodeChat as { loadConfig(): { url: string; password: string } }
-    expect(client.loadConfig().url).toBe('http://127.0.0.1:4096')
+    expect(client.loadConfig().url).toBe('/opencode')
   })
 })
 

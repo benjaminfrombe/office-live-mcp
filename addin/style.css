@@ -240,12 +240,45 @@ select:hover {
 
 /* ---------- OpenCode chat ---------- */
 
-.chat-config,
 .chat-toolbar,
 .chat-input-actions {
   display: flex;
   gap: 6px;
   width: 100%;
+}
+
+/* Selection context chip */
+.selection-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 10px;
+  margin-bottom: 6px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: var(--accent-soft);
+  border: 1px solid #c3dfc3;
+  border-radius: 8px;
+}
+
+.selection-chip span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selection-chip button {
+  padding: 1px 6px;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  border-radius: 6px;
+}
+
+.selection-chip.hidden {
+  display: none;
 }
 
 .chat-input {
@@ -278,6 +311,7 @@ select:hover {
 }
 
 .chat-config {
+  display: block;
   margin-bottom: 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius);

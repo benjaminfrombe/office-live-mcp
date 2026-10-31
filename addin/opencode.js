@@ -5,7 +5,9 @@
 
 var OpenCodeChat = (() => {
   var CONFIG_KEY = 'opencode-chat-config'
-  var DEFAULT_URL = 'http://127.0.0.1:4096'
+  // Default: the OpenCode proxy built into the bridge server — same origin as
+  // the taskpane, so no CORS, no certificate and no password are needed.
+  var DEFAULT_URL = '/opencode'
 
   /* Config — server URL and basic-auth password. The OpenCode background service
      picks a random port and password on every restart, so both are user-supplied. */
@@ -30,21 +32,27 @@ var OpenCodeChat = (() => {
 
   /* Authenticated request. OpenCode's local service uses HTTP basic auth
      with a fixed username and a per-service password. */
+  /* Resolve the request base: an absolute URL (direct connection) or a
+     same-origin path like the default '/opencode' (bridge proxy). */
+  function base(config) {
+    var url = (config.url || DEFAULT_URL).trim()
+    if (!url) url = DEFAULT_URL
+    return url.replace(/\/$/, '')
+  }
+
   function request(config, path, options) {
     var headers = { 'Content-Type': 'application/json' }
     if (config.password) {
       headers.Authorization = `Basic ${btoa(`opencode:${config.password}`)}`
     }
-    return fetch(config.url.replace(/\/$/, '') + path, Object.assign({ headers: headers }, options || {})).then(
-      (res) => {
-        if (!res.ok) {
-          return res.text().then((body) => {
-            throw new Error(`OpenCode ${res.status}: ${body.slice(0, 300)}`)
-          })
-        }
-        return res.json()
-      },
-    )
+    return fetch(base(config) + path, Object.assign({ headers: headers }, options || {})).then((res) => {
+      if (!res.ok) {
+        return res.text().then((body) => {
+          throw new Error(`OpenCode ${res.status}: ${body.slice(0, 300)}`)
+        })
+      }
+      return res.json()
+    })
   }
 
   function createSession(config, title) {
@@ -89,7 +97,7 @@ var OpenCodeChat = (() => {
   function friendlyError(err) {
     const raw = String(err?.message ? err.message : err)
     if (/failed to fetch|load failed|networkerror/i.test(raw)) {
-      return 'OpenCode not reachable — is the proxy running? (npm run opencode-proxy:tls) Or check Connection settings.'
+      return 'OpenCode not reachable — is the bridge running with the OpenCode proxy? (URL "/opencode" in Connection settings)'
     }
     return raw
   }
@@ -149,7 +157,7 @@ var OpenCodeChat = (() => {
       return pump()
     }
 
-    fetch(`${config.url.replace(/\/$/, '')}/api/event?${query}`, {
+    fetch(`${base(config)}/api/event?${query}`, {
       headers: headers,
       signal: controller.signal,
     })

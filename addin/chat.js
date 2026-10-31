@@ -8,6 +8,7 @@ var chatState = {
   events: null, // active SSE subscription
   streamingText: '', // partial assistant text while streaming
   busy: false,
+  pendingSelection: null, // document selection kept as context for the next message
 }
 
 var EVENT_TYPES = [
@@ -74,15 +75,28 @@ function initChat() {
         'Office.context.document.getSelectedDataAsync(Office.CoercionType.Text, (r) => resolve(r.value))); ' +
         'return String(selection || "")',
     ).then((text) => {
-      const input = document.getElementById('oc-input')
-      if (text) {
-        input.value = `${input.value ? `${input.value}\n` : ''}--- selected text ---\n${text}\n--- end ---`
+      const cleaned = text
+        .replace(/\r/g, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim()
+      if (cleaned) {
+        // Office can return far more than the visible selection (whole shapes,
+        // surrounding paragraphs). Cap it so prompts stay focused.
+        const MAX_SELECTION_CHARS = 1200
+        chatState.pendingSelection =
+          cleaned.length > MAX_SELECTION_CHARS
+            ? `${cleaned.slice(0, MAX_SELECTION_CHARS)}\n[selection truncated, ${cleaned.length} chars total]`
+            : cleaned
+        renderSelectionChip()
       }
       focusInput()
-      // caret at the very end, past the pasted selection
-      input.setSelectionRange(input.value.length, input.value.length)
-      autoGrowInput()
     }, chatError)
+  })
+
+  document.getElementById('oc-selection-clear').addEventListener('click', () => {
+    chatState.pendingSelection = null
+    renderSelectionChip()
+    focusInput()
   })
 
   document.getElementById('oc-insert-reply').addEventListener('click', () => {
@@ -195,15 +209,21 @@ function stopEventStream() {
 
 function sendChatMessage() {
   const input = document.getElementById('oc-input')
-  const text = input.value.trim()
-  if (!text || !chatState.sessionID || chatState.busy) {
+  const typed = input.value.trim()
+  if ((!typed && !chatState.pendingSelection) || !chatState.sessionID || chatState.busy) {
     focusInput()
     return
   }
+  const text = chatState.pendingSelection
+    ? `--- selected text ---\n${chatState.pendingSelection}\n--- end ---\n\n${typed}`
+    : typed
   chatState.busy = true
   input.value = ''
+  chatState.pendingSelection = null
+  renderSelectionChip()
+  autoGrowInput()
   setChatStatus('Sending...')
-  appendMessage('user', text)
+  appendMessage('user', typed || '(document selection)')
   autoGrowInput()
   focusInput()
   OpenCodeChat.sendPrompt(chatState.config, chatState.sessionID, text).then(
@@ -224,6 +244,22 @@ function focusInput() {
   const input = document.getElementById('oc-input')
   if (input && !document.getElementById('mode-chat').classList.contains('hidden')) {
     input.focus()
+  }
+}
+
+/* Selection context chip — the pasted selection is kept out of the input;
+   it is prepended to the prompt only when the message is sent. */
+function renderSelectionChip() {
+  const chip = document.getElementById('oc-selection-chip')
+  const label = document.getElementById('oc-selection-label')
+  if (!chip || !label) return
+  if (chatState.pendingSelection) {
+    const length = chatState.pendingSelection.length
+    const preview = chatState.pendingSelection.slice(0, 40).replace(/\s+/g, ' ')
+    label.textContent = `Selection · ${length} chars · ${preview}${length > 40 ? '…' : ''}`
+    chip.classList.remove('hidden')
+  } else {
+    chip.classList.add('hidden')
   }
 }
 

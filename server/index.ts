@@ -14,6 +14,7 @@ import type { WebSocket } from 'ws'
 import { WebSocketServer } from 'ws'
 import { ConnectionPool, startHeartbeat } from './bridge.ts'
 import { substituteManifestPort } from './manifest.ts'
+import { handleOpenCodeProxy } from './opencode-proxy.ts'
 import { runSetup } from './setup.ts'
 import { handleSharePointCatalog, setManifestDir } from './sharepoint-catalog.ts'
 import { discoverMcpEndpoint, runStdioProxy, stopDaemon } from './stdio-proxy.ts'
@@ -386,6 +387,11 @@ async function handleMcpDelete(req: IncomingMessage, res: ServerResponse): Promi
 
 function serveStatic(req: IncomingMessage, res: ServerResponse): void {
   const rawUrl = (req.url ?? '/').split('?')[0]
+
+  // OpenCode reverse proxy — same-origin route for the taskpane chat mode.
+  if (handleOpenCodeProxy(req, res, req.url ?? '/')) {
+    return
+  }
 
   // SharePoint app-catalog emulation: recent Office builds query trusted URL
   // catalogs via the SharePoint REST API instead of fetching a plain
