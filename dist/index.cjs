@@ -79520,19 +79520,23 @@ async function reimportSlide(pool2, modifiedBase64, slideId, prevSlideId, target
     optionsParts.push(`targetSlideId: "${prevSlideId}"`);
   }
   const optionsStr = `{ ${optionsParts.join(", ")} }`;
-  const restoreViewCode = restoredSlideIndex === void 0 ? "" : `
-    await new Promise(function(res) { setTimeout(res, 300); });
+  const navPromiseCode = (slideIndex, failMode) => `
     await new Promise(function(res, rej) {
       var attempt = 0;
       function tryGoToRestoredSlide() {
-        Office.context.document.goToByIdAsync(${restoredSlideIndex + 1}, Office.GoToType.Index, function(navResult) {
+        Office.context.document.goToByIdAsync(${slideIndex + 1}, Office.GoToType.Index, function(navResult) {
           if (navResult.status === Office.AsyncResultStatus.Succeeded) { res(); }
           else if (++attempt < 5) { setTimeout(tryGoToRestoredSlide, 250); }
-          else { rej(new Error("View restore failed: " + navResult.error.message)); }
+          else { ${failMode === "reject" ? 'rej(new Error("View restore failed: " + navResult.error.message));' : "res();"} }
         });
       }
       tryGoToRestoredSlide();
     });
+  `;
+  const preDeleteNavCode = restoredSlideIndex === void 0 ? "" : navPromiseCode(restoredSlideIndex, "resolve");
+  const restoreViewCode = restoredSlideIndex === void 0 ? "" : `
+    await new Promise(function(res) { setTimeout(res, 300); });
+    ${navPromiseCode(restoredSlideIndex, "reject")}
   `;
   const code = `
     var slides = context.presentation.slides;
@@ -79556,6 +79560,7 @@ async function reimportSlide(pool2, modifiedBase64, slideId, prevSlideId, target
     // losing the original slide.
     context.presentation.insertSlidesFromBase64("${modifiedBase64}", ${optionsStr});
     await context.sync();
+    ${preDeleteNavCode}
     // Delete the original slide by ID (the insert added a copy; the original still exists)
     slides.load("items");
     await context.sync();
