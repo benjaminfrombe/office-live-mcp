@@ -56,7 +56,7 @@ export function registerNotesTools(
           // Build the notes injection files
           const files = buildNotesInjection(slideRelsXml, entry.text)
 
-          await applyZipEditAndReimport(pool, exported, files, target.ws)
+          await applyZipEditAndReimport(pool, exported, files, target.ws, slideIndex)
 
           results.push({ slide: entry.slide, success: true })
         } catch (err: unknown) {

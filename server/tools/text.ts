@@ -25,7 +25,7 @@ export function registerTextTools(
 ): void {
   server.tool(
     'edit_shape_paragraphs',
-    "Replace paragraph content of a shape with raw OOXML <a:p> XML. Preserves <a:bodyPr> and <a:lstStyle>. Use read_shape_paragraphs first to get the current XML, modify it (using /pptx skill knowledge), then write it back. The slide is exported, modified server-side, and reimported — data never enters Claude's context. NOTE: the reimport deletes and reinserts the slide, which makes PowerPoint's view jump to the first slide. For text-only changes, prefer execute_officejs (in place via shape.textFrame.textRange — view position is preserved).",
+    "Replace paragraph content of a shape with raw OOXML <a:p> XML. Preserves <a:bodyPr> and <a:lstStyle>. Use read_shape_paragraphs first to get the current XML, modify it (using /pptx skill knowledge), then write it back. The slide is exported, modified server-side, and reimported — data never enters Claude's context. NOTE: the reimport deletes and reinserts the slide, but the view is restored to the edited slide afterwards. For text-only changes, execute_officejs still avoids the reimport entirely (in place via shape.textFrame.textRange).",
     {
       slide: z.number().int().min(1).describe('Slide number, 1-based (slide 1 = first slide)'),
       shapeId: z.string().describe('Shape ID from inspect_slide results'),

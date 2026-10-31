@@ -81378,359 +81378,11 @@ return { copied: args.source + " -> " + args.target, valuesOnly: args.valuesOnly
   );
 }
 
-// server/tools/geometry.ts
-var import_xmldom2 = __toESM(require_lib(), 1);
-var PT = 12700;
-function getXfrm(el) {
-  let xfrm = el.getElementsByTagNameNS(NS_A, "xfrm")[0];
-  if (!xfrm) xfrm = el.getElementsByTagNameNS(NS_P, "xfrm")[0];
-  if (!xfrm) return null;
-  const off = xfrm.getElementsByTagNameNS(NS_A, "off")[0];
-  const ext = xfrm.getElementsByTagNameNS(NS_A, "ext")[0];
-  if (!off || !ext) return null;
-  return { xfrm, off, ext };
-}
-function readBox(el) {
-  const g = getXfrm(el);
-  if (!g) return null;
-  return {
-    box: {
-      x: Number.parseInt(g.off.getAttribute("x") ?? "0", 10) / PT,
-      y: Number.parseInt(g.off.getAttribute("y") ?? "0", 10) / PT,
-      w: Number.parseInt(g.ext.getAttribute("cx") ?? "0", 10) / PT,
-      h: Number.parseInt(g.ext.getAttribute("cy") ?? "0", 10) / PT
-    },
-    ...g
-  };
-}
-function isConnectorLike(el) {
-  if (el.localName === "cxnSp") return true;
-  const prst = el.getElementsByTagNameNS(NS_A, "prstGeom")[0]?.getAttribute("prst") ?? "";
-  if (/^(line|straightConnector\d+|bentConnector\d+|curvedConnector\d+|splineConnector\d*)$/.test(prst)) return true;
-  const cust = el.getElementsByTagNameNS(NS_A, "custGeom")[0];
-  if (cust) {
-    const paths = cust.getElementsByTagNameNS(NS_A, "path");
-    for (const p of paths) {
-      const moveTos = p.getElementsByTagNameNS(NS_A, "moveTo");
-      const curves = p.getElementsByTagNameNS(NS_A, "cubicBezTo");
-      const lines = p.getElementsByTagNameNS(NS_A, "lnTo");
-      if (moveTos.length === 1 && curves.length + lines.length === 1) return true;
-    }
-  }
-  return false;
-}
-function edgePoint(box, toward) {
-  const cx = box.x + box.w / 2;
-  const cy = box.y + box.h / 2;
-  const dx = toward.x - cx;
-  const dy = toward.y - cy;
-  if (dx === 0 && dy === 0) return { x: cx, y: cy };
-  const tx = dx !== 0 ? box.w / 2 / Math.abs(dx) : Number.POSITIVE_INFINITY;
-  const ty = dy !== 0 ? box.h / 2 / Math.abs(dy) : Number.POSITIVE_INFINITY;
-  const t = Math.min(tx, ty);
-  return { x: cx + dx * t, y: cy + dy * t };
-}
-function nextShapeId(doc) {
-  let max = 1;
-  for (const c of doc.getElementsByTagNameNS(NS_P, "cNvPr")) {
-    const v = Number.parseInt(c.getAttribute("id") ?? "1", 10);
-    if (Number.isFinite(v) && v > max) max = v;
-  }
-  return max + 1;
-}
-function connectorXml(id, x1, y1, x2, y2, opts) {
-  const X = Math.min(x1, x2);
-  const Y = Math.min(y1, y2);
-  const W = Math.abs(x2 - x1);
-  const H = Math.abs(y2 - y1);
-  const alpha = opts.alphaPct !== void 0 ? `<a:alpha val="${Math.round(opts.alphaPct * 1e3)}"/>` : "";
-  const ln = `<a:ln w="${Math.round(opts.weightPt * PT)}" cap="rnd"><a:solidFill><a:srgbClr val="${opts.color}">${alpha}</a:srgbClr></a:solidFill></a:ln>`;
-  let geom;
-  if (opts.curve === "bezier") {
-    const c1x = x1 + (x2 - x1) * 0.4;
-    const c2x = x2 - (x2 - x1) * 0.4;
-    const pt = (x, y) => `<a:pt x="${Math.round((x - X) * PT)}" y="${Math.round((y - Y) * PT)}"/>`;
-    geom = `<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:rect l="l" t="t" r="r" b="b"/><a:pathLst><a:path w="${Math.round(W * PT)}" h="${Math.round(Math.max(H, 1 / PT) * PT)}" fill="none"><a:moveTo>${pt(x1, y1)}</a:moveTo><a:cubicBezTo>${pt(c1x, y1)}${pt(c2x, y2)}${pt(x2, y2)}</a:cubicBezTo></a:path></a:pathLst></a:custGeom>`;
-  } else {
-    const flipH = x1 > x2 ? ' flipH="1"' : "";
-    const flipV = y1 > y2 ? ' flipV="1"' : "";
-    geom = `<a:prstGeom prst="line"${flipH}${flipV}><a:avLst/></a:prstGeom>`;
-  }
-  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Connector ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${Math.round(X * PT)}" y="${Math.round(Y * PT)}"/><a:ext cx="${Math.round(W * PT)}" cy="${Math.round(H * PT)}"/></a:xfrm>${geom}${ln}</p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="nl-NL"/></a:p></p:txBody></p:sp>`;
-}
-var endpointSchema = external_exports.union([
-  external_exports.object({ shapeId: external_exports.string().describe("Attach to this shape (line meets its bounding-box edge facing the other end).") }),
-  external_exports.object({ x: external_exports.number(), y: external_exports.number() }).describe("Absolute point in points (slide is 960x540 pt).")
-]).describe("Endpoint: {shapeId} or {x, y}");
-function registerGeometryTools(server, pool2, getSessionId, getActiveSessionCount) {
-  server.tool(
-    "add_connector",
-    "Draw a line or curved connector between two shapes or points, with all OOXML bounding-box math (off/ext/flips, bezier path) computed for you. For bezier curves the path leaves and arrives horizontally \u2014 no flip attributes are used, avoiding the custGeom double-mirror pitfall. The shape is appended on top of the slide.",
-    {
-      slide: external_exports.number().int().min(1).describe("Slide number, 1-based"),
-      from: endpointSchema,
-      to: endpointSchema,
-      color: external_exports.string().optional().describe('Line color as RRGGBB hex, e.g. "EF463C". Default EF463C.'),
-      weightPt: external_exports.number().optional().describe("Line width in points. Default 1."),
-      alphaPct: external_exports.number().min(0).max(100).optional().describe("Opacity in percent (0-100). Omit for fully opaque."),
-      curve: external_exports.enum(["straight", "bezier"]).optional().describe("straight (default) or bezier (horizontal tangents at both ends)."),
-      zOrder: external_exports.enum(["top", "bottom"]).optional().describe('"top" (default) appends above all shapes; "bottom" inserts below all shapes.'),
-      beforeShapeId: external_exports.string().optional().describe("Insert the connector directly below this shape ID (z-order). Overrides zOrder."),
-      presentationId: external_exports.string().optional().describe("Target presentation ID. Optional when only one presentation is connected.")
-    },
-    withTool(async ({ slide, from, to, color, weightPt, alphaPct, curve, zOrder, beforeShapeId, presentationId }) => {
-      const slideIndex = slide - 1;
-      const target = pool2.resolveTarget(presentationId);
-      const exported = await exportSlide(pool2, slideIndex, target.ws);
-      const { zip, xmlString } = await extractSlideXmlFromZip(exported.base64);
-      const doc = parseSlideXml(xmlString);
-      const resolveEnd = async (end) => {
-        if (typeof end.x === "number" && typeof end.y === "number") return { x: end.x, y: end.y };
-        const id = end.shapeId;
-        if (!id) throw new Error("Endpoint must have either shapeId or x/y");
-        for (const tag of ["sp", "pic", "graphicFrame", "cxnSp"]) {
-          for (const el of doc.getElementsByTagNameNS(NS_P, tag)) {
-            const cnv = el.getElementsByTagNameNS(NS_P, "cNvPr")[0];
-            if (cnv?.getAttribute("id") === id) {
-              const rb = readBox(el);
-              if (!rb) throw new Error(`Shape "${id}" has no geometry`);
-              return rb.box;
-            }
-          }
-        }
-        throw new Error(`Shape with ID "${id}" not found on slide ${slide}`);
-      };
-      const fromBox = await resolveEnd(from);
-      const toBox = await resolveEnd(to);
-      const fromIsBox = !("x" in from) && !("y" in from);
-      const toIsBox = !("x" in to) && !("y" in to);
-      const toCenter = "w" in toBox ? { x: toBox.x + toBox.w / 2, y: toBox.y + toBox.h / 2 } : toBox;
-      const fromCenter = "w" in fromBox ? { x: fromBox.x + fromBox.w / 2, y: fromBox.y + fromBox.h / 2 } : fromBox;
-      const p1 = fromIsBox ? edgePoint(fromBox, toCenter) : fromBox;
-      const p2 = toIsBox ? edgePoint(toBox, fromCenter) : toBox;
-      const createdId = nextShapeId(doc);
-      const xml = connectorXml(createdId, p1.x, p1.y, p2.x, p2.y, {
-        color: (color ?? "EF463C").replace("#", "").toUpperCase(),
-        weightPt: weightPt ?? 1,
-        alphaPct,
-        curve: curve ?? "straight"
-      });
-      const wrapper = new import_xmldom2.DOMParser().parseFromString(
-        `<root xmlns:p="${NS_P}" xmlns:a="${NS_A}">${xml}</root>`,
-        "text/xml"
-      );
-      const imported = wrapper.documentElement?.firstChild;
-      if (!imported) throw new Error("Failed to build connector XML");
-      const spTree = doc.getElementsByTagNameNS(NS_P, "spTree")[0];
-      const node2 = doc.importNode(imported, true);
-      let position = "top";
-      if (beforeShapeId) {
-        let anchor2 = null;
-        for (const tag of ["sp", "pic", "graphicFrame", "cxnSp"]) {
-          for (const el of spTree.getElementsByTagNameNS(NS_P, tag)) {
-            const cnv = el.getElementsByTagNameNS(NS_P, "cNvPr")[0];
-            if (cnv?.getAttribute("id") === beforeShapeId && el.parentNode === spTree) {
-              anchor2 = el;
-              break;
-            }
-          }
-          if (anchor2) break;
-        }
-        if (!anchor2) throw new Error(`beforeShapeId "${beforeShapeId}" not found on slide ${slide}`);
-        spTree.insertBefore(node2, anchor2);
-        position = `below shape ${beforeShapeId}`;
-      } else if (zOrder === "bottom") {
-        spTree.insertBefore(node2, spTree.firstChild);
-        position = "bottom";
-      } else {
-        spTree.appendChild(node2);
-      }
-      const modifiedBase64 = await updateSlideXmlInZip(zip, serializeXml(doc));
-      await reimportSlide(pool2, modifiedBase64, exported.slideId, exported.prevSlideId, target.ws, void 0, slideIndex);
-      const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount());
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              { success: true, connectorId: String(createdId), position, from: p1, to: p2, curve: curve ?? "straight" },
-              null,
-              2
-            ) + (warning ?? "")
-          }
-        ]
-      };
-    })
-  );
-  server.tool(
-    "transform_slide",
-    "Vertically rescale a band of shapes (e.g. shrink the content of a slide by 30%) in ONE atomic operation. Shapes whose top falls inside [topPt, bottomPt] are remapped to start at newTopPt with factor scaleY. Connector-like shapes (cxnSp, line/connector geometries, single-stroke bezier custGeom) get their height rescaled too so endpoints stay attached; all other shapes keep their height unless listed in scaleHeightShapeIds. Text, images and footers outside the band are untouched.",
-    {
-      slide: external_exports.number().int().min(1).describe("Slide number, 1-based"),
-      topPt: external_exports.number().describe("Top of the band to transform, in points (slide is 960x540 pt)."),
-      bottomPt: external_exports.number().describe("Bottom of the band to transform, in points."),
-      scaleY: external_exports.number().describe("Vertical scale factor, e.g. 0.7 = 30% shorter."),
-      newTopPt: external_exports.number().optional().describe("Where the top of the scaled band should land. Default: keep topPt."),
-      scaleHeightShapeIds: external_exports.array(external_exports.string()).optional().describe("Shape IDs (from scan_slide) whose height should scale with the band (e.g. the two big panel rectangles)."),
-      presentationId: external_exports.string().optional().describe("Target presentation ID. Optional when only one presentation is connected.")
-    },
-    withTool(async ({ slide, topPt, bottomPt, scaleY, newTopPt, scaleHeightShapeIds, presentationId }) => {
-      const slideIndex = slide - 1;
-      const target = pool2.resolveTarget(presentationId);
-      const exported = await exportSlide(pool2, slideIndex, target.ws);
-      const { zip, xmlString } = await extractSlideXmlFromZip(exported.base64);
-      const doc = parseSlideXml(xmlString);
-      const anchor2 = newTopPt ?? topPt;
-      const eps = 0.01;
-      const scaleIds = new Set(scaleHeightShapeIds ?? []);
-      const spTree = doc.getElementsByTagNameNS(NS_P, "spTree")[0];
-      const tags = ["sp", "pic", "graphicFrame", "cxnSp"];
-      const geom = /* @__PURE__ */ new Map();
-      for (const tag of tags) {
-        for (const el of [...spTree.getElementsByTagNameNS(NS_P, tag)]) {
-          if (el.parentNode !== spTree) continue;
-          const rb = readBox(el);
-          if (!rb) continue;
-          if (rb.box.y < topPt - eps || rb.box.y > bottomPt + eps) continue;
-          const cnv = el.getElementsByTagNameNS(NS_P, "cNvPr")[0];
-          const sid = cnv?.getAttribute("id") ?? "?";
-          const oldBox = { ...rb.box };
-          rb.off.setAttribute("y", String(Math.round((anchor2 + (rb.box.y - topPt) * scaleY) * PT)));
-          const isConn = isConnectorLike(el);
-          if (isConn) {
-            rb.ext.setAttribute("cy", String(Math.round(rb.box.h * scaleY * PT)));
-          } else if (scaleIds.has(sid)) {
-            rb.ext.setAttribute("cy", String(Math.round(rb.box.h * scaleY * PT)));
-          }
-          const newBox = {
-            x: rb.box.x,
-            y: anchor2 + (rb.box.y - topPt) * scaleY,
-            w: rb.box.w,
-            h: isConn || scaleIds.has(sid) ? rb.box.h * scaleY : rb.box.h
-          };
-          geom.set(sid, { old: oldBox, box: newBox, isConn, el });
-        }
-      }
-      const centers = [];
-      for (const g of geom.values()) {
-        if (g.isConn) continue;
-        centers.push({
-          ol: g.old.x,
-          or: g.old.x + g.old.w,
-          oy: g.old.y + g.old.h / 2,
-          ny: g.box.y + g.box.h / 2
-        });
-      }
-      const snapY = (oy, ox) => {
-        let best = null;
-        let bestD = 2;
-        for (const c of centers) {
-          if (ox < c.ol - 2 || ox > c.or + 2) continue;
-          const d = Math.abs(c.oy - oy);
-          if (d < bestD) {
-            bestD = d;
-            best = c.ny;
-          }
-        }
-        return best;
-      };
-      const mapY = (oy) => anchor2 + (oy - topPt) * scaleY;
-      const connectorsRescaled = [];
-      for (const g of geom.values()) {
-        if (!g.isConn) continue;
-        connectorsRescaled.push(g.el.getElementsByTagNameNS(NS_P, "cNvPr")[0]?.getAttribute("id") ?? "?");
-        const { old, box } = g;
-        const prst = g.el.getElementsByTagNameNS(NS_A, "prstGeom")[0]?.getAttribute("prst") ?? "";
-        let e1;
-        let e2;
-        if (prst === "line" || g.el.localName === "cxnSp") {
-          const xf = g.el.getElementsByTagNameNS(NS_A, "xfrm")[0];
-          const flipH = xf.getAttribute("flipH") === "1";
-          const flipV = xf.getAttribute("flipV") === "1";
-          e1 = { x: flipH ? old.x + old.w : old.x, y: flipV ? old.y + old.h : old.y };
-          e2 = { x: flipH ? old.x : old.x + old.w, y: flipV ? old.y : old.y + old.h };
-        } else {
-          const cust = g.el.getElementsByTagNameNS(NS_A, "custGeom")[0];
-          const path = cust?.getElementsByTagNameNS(NS_A, "path")[0];
-          if (!path) continue;
-          const pw = Number.parseInt(path.getAttribute("w") ?? "1", 10) || 1;
-          const ph = Number.parseInt(path.getAttribute("h") ?? "1", 10) || 1;
-          const pts = path.getElementsByTagNameNS(NS_A, "pt");
-          const first = pts[0];
-          const last = pts[pts.length - 1];
-          if (!first || !last) continue;
-          e1 = { x: old.x + Number.parseInt(first.getAttribute("x") ?? "0", 10) / pw * old.w, y: old.y + Number.parseInt(first.getAttribute("y") ?? "0", 10) / ph * old.h };
-          e2 = { x: old.x + Number.parseInt(last.getAttribute("x") ?? "0", 10) / pw * old.w, y: old.y + Number.parseInt(last.getAttribute("y") ?? "0", 10) / ph * old.h };
-        }
-        const n1 = { x: e1.x, y: snapY(e1.y, e1.x) ?? mapY(e1.y) };
-        const n2 = { x: e2.x, y: snapY(e2.y, e2.x) ?? mapY(e2.y) };
-        const X = Math.min(n1.x, n2.x);
-        const Y = Math.min(n1.y, n2.y);
-        const W = Math.abs(n2.x - n1.x);
-        const H = Math.abs(n2.y - n1.y);
-        const rb = readBox(g.el);
-        if (!rb) continue;
-        rb.off.setAttribute("x", String(Math.round(X * PT)));
-        rb.off.setAttribute("y", String(Math.round(Y * PT)));
-        rb.ext.setAttribute("cx", String(Math.round(W * PT)));
-        rb.ext.setAttribute("cy", String(Math.round(H * PT)));
-        if (prst === "line" || g.el.localName === "cxnSp") {
-          const xf = g.el.getElementsByTagNameNS(NS_A, "xfrm")[0];
-          if (n2.x < n1.x) xf.setAttribute("flipH", "1");
-          else xf.removeAttribute("flipH");
-          if (n2.y < n1.y) xf.setAttribute("flipV", "1");
-          else xf.removeAttribute("flipV");
-        } else {
-          const cust = g.el.getElementsByTagNameNS(NS_A, "custGeom")[0];
-          const path = cust?.getElementsByTagNameNS(NS_A, "path")[0];
-          if (!path) continue;
-          const pw = Number.parseInt(path.getAttribute("w") ?? "1", 10) || 1;
-          const ph = Number.parseInt(path.getAttribute("h") ?? "1", 10) || 1;
-          const pts = path.getElementsByTagNameNS(NS_A, "pt");
-          for (let i = 0; i < pts.length; i++) {
-            const pt = pts[i];
-            const px = Number.parseInt(pt.getAttribute("x") ?? "0", 10);
-            const py = Number.parseInt(pt.getAttribute("y") ?? "0", 10);
-            const ax = old.x + px / pw * old.w;
-            const ay = old.y + py / ph * old.h;
-            let ny = mapY(ay);
-            if (i === 0) ny = n1.y;
-            if (i === pts.length - 1) ny = n2.y;
-            pt.setAttribute("x", String(Math.round((ax - X) * PT)));
-            pt.setAttribute("y", String(Math.round((ny - Y) * PT)));
-          }
-          path.setAttribute("w", String(Math.round(W * PT)));
-          path.setAttribute("h", String(Math.round(H * PT)));
-        }
-      }
-      const heightScaled = [];
-      for (const [sid, g] of geom.entries()) {
-        if (!g.isConn && scaleIds.has(sid)) heightScaled.push(sid);
-      }
-      const modifiedBase64 = await updateSlideXmlInZip(zip, serializeXml(doc));
-      await reimportSlide(pool2, modifiedBase64, exported.slideId, exported.prevSlideId, target.ws, void 0, slideIndex);
-      const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount());
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              { success: true, moved: geom.size, heightScaled, connectorsRescaled },
-              null,
-              2
-            ) + (warning ?? "")
-          }
-        ]
-      };
-    })
-  );
-}
-
 // server/tools/exec.ts
 function registerExecTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
     "execute_officejs",
-    "Execute arbitrary Office.js code inside the live PowerPoint presentation. The code runs inside PowerPoint.run(async (context) => { ... }) with 'context' available as a variable. Use 'await context.sync()' after loading properties. Return a value to get it back as the tool result. For positioning, all values are in points (1 point = 1/72 inch). Common operations: add shapes, set text, change colors, add/delete slides. Edits run in place without reimporting the slide, so PowerPoint's current view position is preserved \u2014 prefer this over edit_shape_paragraphs / edit_slide_xml for text-only or formatting-only changes (to read a shape's text in place, load shape.textFrame with hasText + textRange).",
+    `Execute arbitrary Office.js code inside the live PowerPoint presentation. The code runs inside PowerPoint.run(async (context) => { ... }) with 'context' available as a variable. Use 'await context.sync()' after loading properties. Return a value to get it back as the tool result. For positioning, all values are in points (1 point = 1/72 inch). Common operations: add shapes, set text, change colors, add/delete slides. Edits run in place without reimporting the slide, so PowerPoint's current view position is preserved \u2014 prefer this over edit_shape_paragraphs / edit_slide_xml for text-only or formatting-only changes. Host limitations (live-tested on PowerPoint for Mac): (1) slide.shapes.getItemById and getItemByName do NOT exist \u2014 load shapes.load("id"), sync, then iterate shapes.items and match String(sh.id). (2) Loading textFrame paths (textFrame/hasText, textFrame/textRange/text) on shapes without text frames (Graphic/image shapes) fails the whole context.sync() with a bare InvalidArgument \u2014 load "id" first, then load textFrame paths only on shapes known to be text shapes, or wrap per-shape loads in separate syncs with try/catch.`,
     {
       code: external_exports.string().describe(
         "Office.js code to execute. Runs inside PowerPoint.run() with 'context' available. Use 'return' to send back a result."
@@ -81976,6 +81628,383 @@ function registerExecTools(server, pool2, getSessionId, getActiveSessionCount) {
       }
       const result = { slide, shapeCount: shapes.length, issueCount: issues.length, issues };
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    })
+  );
+}
+
+// server/tools/geometry.ts
+var import_xmldom2 = __toESM(require_lib(), 1);
+var PT = 12700;
+function getXfrm(el) {
+  let xfrm = el.getElementsByTagNameNS(NS_A, "xfrm")[0];
+  if (!xfrm) xfrm = el.getElementsByTagNameNS(NS_P, "xfrm")[0];
+  if (!xfrm) return null;
+  const off = xfrm.getElementsByTagNameNS(NS_A, "off")[0];
+  const ext = xfrm.getElementsByTagNameNS(NS_A, "ext")[0];
+  if (!off || !ext) return null;
+  return { xfrm, off, ext };
+}
+function readBox(el) {
+  const g = getXfrm(el);
+  if (!g) return null;
+  return {
+    box: {
+      x: Number.parseInt(g.off.getAttribute("x") ?? "0", 10) / PT,
+      y: Number.parseInt(g.off.getAttribute("y") ?? "0", 10) / PT,
+      w: Number.parseInt(g.ext.getAttribute("cx") ?? "0", 10) / PT,
+      h: Number.parseInt(g.ext.getAttribute("cy") ?? "0", 10) / PT
+    },
+    ...g
+  };
+}
+function isConnectorLike(el) {
+  if (el.localName === "cxnSp") return true;
+  const prst = el.getElementsByTagNameNS(NS_A, "prstGeom")[0]?.getAttribute("prst") ?? "";
+  if (/^(line|straightConnector\d+|bentConnector\d+|curvedConnector\d+|splineConnector\d*)$/.test(prst)) return true;
+  const cust = el.getElementsByTagNameNS(NS_A, "custGeom")[0];
+  if (cust) {
+    const paths = cust.getElementsByTagNameNS(NS_A, "path");
+    for (const p of paths) {
+      const moveTos = p.getElementsByTagNameNS(NS_A, "moveTo");
+      const curves = p.getElementsByTagNameNS(NS_A, "cubicBezTo");
+      const lines = p.getElementsByTagNameNS(NS_A, "lnTo");
+      if (moveTos.length === 1 && curves.length + lines.length === 1) return true;
+    }
+  }
+  return false;
+}
+function edgePoint(box, toward) {
+  const cx = box.x + box.w / 2;
+  const cy = box.y + box.h / 2;
+  const dx = toward.x - cx;
+  const dy = toward.y - cy;
+  if (dx === 0 && dy === 0) return { x: cx, y: cy };
+  const tx = dx !== 0 ? box.w / 2 / Math.abs(dx) : Number.POSITIVE_INFINITY;
+  const ty = dy !== 0 ? box.h / 2 / Math.abs(dy) : Number.POSITIVE_INFINITY;
+  const t = Math.min(tx, ty);
+  return { x: cx + dx * t, y: cy + dy * t };
+}
+function nextShapeId(doc) {
+  let max = 1;
+  for (const c of doc.getElementsByTagNameNS(NS_P, "cNvPr")) {
+    const v = Number.parseInt(c.getAttribute("id") ?? "1", 10);
+    if (Number.isFinite(v) && v > max) max = v;
+  }
+  return max + 1;
+}
+function connectorXml(id, x1, y1, x2, y2, opts) {
+  const X = Math.min(x1, x2);
+  const Y = Math.min(y1, y2);
+  const W = Math.abs(x2 - x1);
+  const H = Math.abs(y2 - y1);
+  const alpha = opts.alphaPct !== void 0 ? `<a:alpha val="${Math.round(opts.alphaPct * 1e3)}"/>` : "";
+  const ln = `<a:ln w="${Math.round(opts.weightPt * PT)}" cap="rnd"><a:solidFill><a:srgbClr val="${opts.color}">${alpha}</a:srgbClr></a:solidFill></a:ln>`;
+  let geom;
+  if (opts.curve === "bezier") {
+    const c1x = x1 + (x2 - x1) * 0.4;
+    const c2x = x2 - (x2 - x1) * 0.4;
+    const pt = (x, y) => `<a:pt x="${Math.round((x - X) * PT)}" y="${Math.round((y - Y) * PT)}"/>`;
+    geom = `<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:rect l="l" t="t" r="r" b="b"/><a:pathLst><a:path w="${Math.round(W * PT)}" h="${Math.round(Math.max(H, 1 / PT) * PT)}" fill="none"><a:moveTo>${pt(x1, y1)}</a:moveTo><a:cubicBezTo>${pt(c1x, y1)}${pt(c2x, y2)}${pt(x2, y2)}</a:cubicBezTo></a:path></a:pathLst></a:custGeom>`;
+  } else {
+    const flipH = x1 > x2 ? ' flipH="1"' : "";
+    const flipV = y1 > y2 ? ' flipV="1"' : "";
+    geom = `<a:prstGeom prst="line"${flipH}${flipV}><a:avLst/></a:prstGeom>`;
+  }
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Connector ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${Math.round(X * PT)}" y="${Math.round(Y * PT)}"/><a:ext cx="${Math.round(W * PT)}" cy="${Math.round(H * PT)}"/></a:xfrm>${geom}${ln}</p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="nl-NL"/></a:p></p:txBody></p:sp>`;
+}
+var endpointSchema = external_exports.union([
+  external_exports.object({
+    shapeId: external_exports.string().describe("Attach to this shape (line meets its bounding-box edge facing the other end).")
+  }),
+  external_exports.object({ x: external_exports.number(), y: external_exports.number() }).describe("Absolute point in points (slide is 960x540 pt).")
+]).describe("Endpoint: {shapeId} or {x, y}");
+function registerGeometryTools(server, pool2, getSessionId, getActiveSessionCount) {
+  server.tool(
+    "add_connector",
+    "Draw a line or curved connector between two shapes or points, with all OOXML bounding-box math (off/ext/flips, bezier path) computed for you. For bezier curves the path leaves and arrives horizontally \u2014 no flip attributes are used, avoiding the custGeom double-mirror pitfall. The shape is appended on top of the slide.",
+    {
+      slide: external_exports.number().int().min(1).describe("Slide number, 1-based"),
+      from: endpointSchema,
+      to: endpointSchema,
+      color: external_exports.string().optional().describe('Line color as RRGGBB hex, e.g. "EF463C". Default EF463C.'),
+      weightPt: external_exports.number().optional().describe("Line width in points. Default 1."),
+      alphaPct: external_exports.number().min(0).max(100).optional().describe("Opacity in percent (0-100). Omit for fully opaque."),
+      curve: external_exports.enum(["straight", "bezier"]).optional().describe("straight (default) or bezier (horizontal tangents at both ends)."),
+      zOrder: external_exports.enum(["top", "bottom"]).optional().describe('"top" (default) appends above all shapes; "bottom" inserts below all shapes.'),
+      beforeShapeId: external_exports.string().optional().describe("Insert the connector directly below this shape ID (z-order). Overrides zOrder."),
+      presentationId: external_exports.string().optional().describe("Target presentation ID. Optional when only one presentation is connected.")
+    },
+    withTool(async ({ slide, from, to, color, weightPt, alphaPct, curve, zOrder, beforeShapeId, presentationId }) => {
+      const slideIndex = slide - 1;
+      const target = pool2.resolveTarget(presentationId);
+      const exported = await exportSlide(pool2, slideIndex, target.ws);
+      const { zip, xmlString } = await extractSlideXmlFromZip(exported.base64);
+      const doc = parseSlideXml(xmlString);
+      const resolveEnd = async (end) => {
+        if (typeof end.x === "number" && typeof end.y === "number") return { x: end.x, y: end.y };
+        const id = end.shapeId;
+        if (!id) throw new Error("Endpoint must have either shapeId or x/y");
+        for (const tag of ["sp", "pic", "graphicFrame", "cxnSp"]) {
+          for (const el of doc.getElementsByTagNameNS(NS_P, tag)) {
+            const cnv = el.getElementsByTagNameNS(NS_P, "cNvPr")[0];
+            if (cnv?.getAttribute("id") === id) {
+              const rb = readBox(el);
+              if (!rb) throw new Error(`Shape "${id}" has no geometry`);
+              return rb.box;
+            }
+          }
+        }
+        throw new Error(`Shape with ID "${id}" not found on slide ${slide}`);
+      };
+      const fromBox = await resolveEnd(from);
+      const toBox = await resolveEnd(to);
+      const fromIsBox = !("x" in from) && !("y" in from);
+      const toIsBox = !("x" in to) && !("y" in to);
+      const toCenter = "w" in toBox ? { x: toBox.x + toBox.w / 2, y: toBox.y + toBox.h / 2 } : toBox;
+      const fromCenter = "w" in fromBox ? { x: fromBox.x + fromBox.w / 2, y: fromBox.y + fromBox.h / 2 } : fromBox;
+      const p1 = fromIsBox ? edgePoint(fromBox, toCenter) : fromBox;
+      const p2 = toIsBox ? edgePoint(toBox, fromCenter) : toBox;
+      const createdId = nextShapeId(doc);
+      const xml = connectorXml(createdId, p1.x, p1.y, p2.x, p2.y, {
+        color: (color ?? "EF463C").replace("#", "").toUpperCase(),
+        weightPt: weightPt ?? 1,
+        alphaPct,
+        curve: curve ?? "straight"
+      });
+      const wrapper = new import_xmldom2.DOMParser().parseFromString(
+        `<root xmlns:p="${NS_P}" xmlns:a="${NS_A}">${xml}</root>`,
+        "text/xml"
+      );
+      const imported = wrapper.documentElement?.firstChild;
+      if (!imported) throw new Error("Failed to build connector XML");
+      const spTree = doc.getElementsByTagNameNS(NS_P, "spTree")[0];
+      const node2 = doc.importNode(imported, true);
+      let position = "top";
+      if (beforeShapeId) {
+        let anchor2 = null;
+        for (const tag of ["sp", "pic", "graphicFrame", "cxnSp"]) {
+          for (const el of spTree.getElementsByTagNameNS(NS_P, tag)) {
+            const cnv = el.getElementsByTagNameNS(NS_P, "cNvPr")[0];
+            if (cnv?.getAttribute("id") === beforeShapeId && el.parentNode === spTree) {
+              anchor2 = el;
+              break;
+            }
+          }
+          if (anchor2) break;
+        }
+        if (!anchor2) throw new Error(`beforeShapeId "${beforeShapeId}" not found on slide ${slide}`);
+        spTree.insertBefore(node2, anchor2);
+        position = `below shape ${beforeShapeId}`;
+      } else if (zOrder === "bottom") {
+        spTree.insertBefore(node2, spTree.firstChild);
+        position = "bottom";
+      } else {
+        spTree.appendChild(node2);
+      }
+      const modifiedBase64 = await updateSlideXmlInZip(zip, serializeXml(doc));
+      await reimportSlide(
+        pool2,
+        modifiedBase64,
+        exported.slideId,
+        exported.prevSlideId,
+        target.ws,
+        void 0,
+        slideIndex
+      );
+      const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount());
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                success: true,
+                connectorId: String(createdId),
+                position,
+                from: p1,
+                to: p2,
+                curve: curve ?? "straight"
+              },
+              null,
+              2
+            ) + (warning ?? "")
+          }
+        ]
+      };
+    })
+  );
+  server.tool(
+    "transform_slide",
+    "Vertically rescale a band of shapes (e.g. shrink the content of a slide by 30%) in ONE atomic operation. Shapes whose top falls inside [topPt, bottomPt] are remapped to start at newTopPt with factor scaleY. Connector-like shapes (cxnSp, line/connector geometries, single-stroke bezier custGeom) get their height rescaled too so endpoints stay attached; all other shapes keep their height unless listed in scaleHeightShapeIds. Text, images and footers outside the band are untouched.",
+    {
+      slide: external_exports.number().int().min(1).describe("Slide number, 1-based"),
+      topPt: external_exports.number().describe("Top of the band to transform, in points (slide is 960x540 pt)."),
+      bottomPt: external_exports.number().describe("Bottom of the band to transform, in points."),
+      scaleY: external_exports.number().describe("Vertical scale factor, e.g. 0.7 = 30% shorter."),
+      newTopPt: external_exports.number().optional().describe("Where the top of the scaled band should land. Default: keep topPt."),
+      scaleHeightShapeIds: external_exports.array(external_exports.string()).optional().describe(
+        "Shape IDs (from scan_slide) whose height should scale with the band (e.g. the two big panel rectangles)."
+      ),
+      presentationId: external_exports.string().optional().describe("Target presentation ID. Optional when only one presentation is connected.")
+    },
+    withTool(async ({ slide, topPt, bottomPt, scaleY, newTopPt, scaleHeightShapeIds, presentationId }) => {
+      const slideIndex = slide - 1;
+      const target = pool2.resolveTarget(presentationId);
+      const exported = await exportSlide(pool2, slideIndex, target.ws);
+      const { zip, xmlString } = await extractSlideXmlFromZip(exported.base64);
+      const doc = parseSlideXml(xmlString);
+      const anchor2 = newTopPt ?? topPt;
+      const eps = 0.01;
+      const scaleIds = new Set(scaleHeightShapeIds ?? []);
+      const spTree = doc.getElementsByTagNameNS(NS_P, "spTree")[0];
+      const tags = ["sp", "pic", "graphicFrame", "cxnSp"];
+      const geom = /* @__PURE__ */ new Map();
+      for (const tag of tags) {
+        for (const el of [...spTree.getElementsByTagNameNS(NS_P, tag)]) {
+          if (el.parentNode !== spTree) continue;
+          const rb = readBox(el);
+          if (!rb) continue;
+          if (rb.box.y < topPt - eps || rb.box.y > bottomPt + eps) continue;
+          const cnv = el.getElementsByTagNameNS(NS_P, "cNvPr")[0];
+          const sid = cnv?.getAttribute("id") ?? "?";
+          const oldBox = { ...rb.box };
+          rb.off.setAttribute("y", String(Math.round((anchor2 + (rb.box.y - topPt) * scaleY) * PT)));
+          const isConn = isConnectorLike(el);
+          if (isConn) {
+            rb.ext.setAttribute("cy", String(Math.round(rb.box.h * scaleY * PT)));
+          } else if (scaleIds.has(sid)) {
+            rb.ext.setAttribute("cy", String(Math.round(rb.box.h * scaleY * PT)));
+          }
+          const newBox = {
+            x: rb.box.x,
+            y: anchor2 + (rb.box.y - topPt) * scaleY,
+            w: rb.box.w,
+            h: isConn || scaleIds.has(sid) ? rb.box.h * scaleY : rb.box.h
+          };
+          geom.set(sid, { old: oldBox, box: newBox, isConn, el });
+        }
+      }
+      const centers = [];
+      for (const g of geom.values()) {
+        if (g.isConn) continue;
+        centers.push({
+          ol: g.old.x,
+          or: g.old.x + g.old.w,
+          oy: g.old.y + g.old.h / 2,
+          ny: g.box.y + g.box.h / 2
+        });
+      }
+      const snapY = (oy, ox) => {
+        let best = null;
+        let bestD = 2;
+        for (const c of centers) {
+          if (ox < c.ol - 2 || ox > c.or + 2) continue;
+          const d = Math.abs(c.oy - oy);
+          if (d < bestD) {
+            bestD = d;
+            best = c.ny;
+          }
+        }
+        return best;
+      };
+      const mapY = (oy) => anchor2 + (oy - topPt) * scaleY;
+      const connectorsRescaled = [];
+      for (const g of geom.values()) {
+        if (!g.isConn) continue;
+        connectorsRescaled.push(g.el.getElementsByTagNameNS(NS_P, "cNvPr")[0]?.getAttribute("id") ?? "?");
+        const { old, box } = g;
+        const prst = g.el.getElementsByTagNameNS(NS_A, "prstGeom")[0]?.getAttribute("prst") ?? "";
+        let e1;
+        let e2;
+        if (prst === "line" || g.el.localName === "cxnSp") {
+          const xf = g.el.getElementsByTagNameNS(NS_A, "xfrm")[0];
+          const flipH = xf.getAttribute("flipH") === "1";
+          const flipV = xf.getAttribute("flipV") === "1";
+          e1 = { x: flipH ? old.x + old.w : old.x, y: flipV ? old.y + old.h : old.y };
+          e2 = { x: flipH ? old.x : old.x + old.w, y: flipV ? old.y : old.y + old.h };
+        } else {
+          const cust = g.el.getElementsByTagNameNS(NS_A, "custGeom")[0];
+          const path = cust?.getElementsByTagNameNS(NS_A, "path")[0];
+          if (!path) continue;
+          const pw = Number.parseInt(path.getAttribute("w") ?? "1", 10) || 1;
+          const ph = Number.parseInt(path.getAttribute("h") ?? "1", 10) || 1;
+          const pts = path.getElementsByTagNameNS(NS_A, "pt");
+          const first = pts[0];
+          const last = pts[pts.length - 1];
+          if (!first || !last) continue;
+          e1 = {
+            x: old.x + Number.parseInt(first.getAttribute("x") ?? "0", 10) / pw * old.w,
+            y: old.y + Number.parseInt(first.getAttribute("y") ?? "0", 10) / ph * old.h
+          };
+          e2 = {
+            x: old.x + Number.parseInt(last.getAttribute("x") ?? "0", 10) / pw * old.w,
+            y: old.y + Number.parseInt(last.getAttribute("y") ?? "0", 10) / ph * old.h
+          };
+        }
+        const n1 = { x: e1.x, y: snapY(e1.y, e1.x) ?? mapY(e1.y) };
+        const n2 = { x: e2.x, y: snapY(e2.y, e2.x) ?? mapY(e2.y) };
+        const X = Math.min(n1.x, n2.x);
+        const Y = Math.min(n1.y, n2.y);
+        const W = Math.abs(n2.x - n1.x);
+        const H = Math.abs(n2.y - n1.y);
+        const rb = readBox(g.el);
+        if (!rb) continue;
+        rb.off.setAttribute("x", String(Math.round(X * PT)));
+        rb.off.setAttribute("y", String(Math.round(Y * PT)));
+        rb.ext.setAttribute("cx", String(Math.round(W * PT)));
+        rb.ext.setAttribute("cy", String(Math.round(H * PT)));
+        if (prst === "line" || g.el.localName === "cxnSp") {
+          const xf = g.el.getElementsByTagNameNS(NS_A, "xfrm")[0];
+          if (n2.x < n1.x) xf.setAttribute("flipH", "1");
+          else xf.removeAttribute("flipH");
+          if (n2.y < n1.y) xf.setAttribute("flipV", "1");
+          else xf.removeAttribute("flipV");
+        } else {
+          const cust = g.el.getElementsByTagNameNS(NS_A, "custGeom")[0];
+          const path = cust?.getElementsByTagNameNS(NS_A, "path")[0];
+          if (!path) continue;
+          const pw = Number.parseInt(path.getAttribute("w") ?? "1", 10) || 1;
+          const ph = Number.parseInt(path.getAttribute("h") ?? "1", 10) || 1;
+          const pts = path.getElementsByTagNameNS(NS_A, "pt");
+          for (let i = 0; i < pts.length; i++) {
+            const pt = pts[i];
+            const px = Number.parseInt(pt.getAttribute("x") ?? "0", 10);
+            const py = Number.parseInt(pt.getAttribute("y") ?? "0", 10);
+            const ax = old.x + px / pw * old.w;
+            const ay = old.y + py / ph * old.h;
+            let ny = mapY(ay);
+            if (i === 0) ny = n1.y;
+            if (i === pts.length - 1) ny = n2.y;
+            pt.setAttribute("x", String(Math.round((ax - X) * PT)));
+            pt.setAttribute("y", String(Math.round((ny - Y) * PT)));
+          }
+          path.setAttribute("w", String(Math.round(W * PT)));
+          path.setAttribute("h", String(Math.round(H * PT)));
+        }
+      }
+      const heightScaled = [];
+      for (const [sid, g] of geom.entries()) {
+        if (!g.isConn && scaleIds.has(sid)) heightScaled.push(sid);
+      }
+      const modifiedBase64 = await updateSlideXmlInZip(zip, serializeXml(doc));
+      await reimportSlide(
+        pool2,
+        modifiedBase64,
+        exported.slideId,
+        exported.prevSlideId,
+        target.ws,
+        void 0,
+        slideIndex
+      );
+      const warning = getConcurrentWarning(getSessionId(), target.presentationId, getActiveSessionCount());
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({ success: true, moved: geom.size, heightScaled, connectorsRescaled }, null, 2) + (warning ?? "")
+          }
+        ]
+      };
     })
   );
 }
@@ -82941,7 +82970,7 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
           const slideRelsXml = slideRelsFile ? await slideRelsFile.async("string") : `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
           const files = buildNotesInjection(slideRelsXml, entry.text);
-          await applyZipEditAndReimport(pool2, exported, files, target.ws);
+          await applyZipEditAndReimport(pool2, exported, files, target.ws, slideIndex);
           results.push({ slide: entry.slide, success: true });
         } catch (err) {
           results.push({ slide: entry.slide, success: false, error: errorMessage(err) });
@@ -83316,7 +83345,7 @@ var import_node_fs10 = require("node:fs");
 function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
     "edit_shape_paragraphs",
-    "Replace paragraph content of a shape with raw OOXML <a:p> XML. Preserves <a:bodyPr> and <a:lstStyle>. Use read_shape_paragraphs first to get the current XML, modify it (using /pptx skill knowledge), then write it back. The slide is exported, modified server-side, and reimported \u2014 data never enters Claude's context. NOTE: the reimport deletes and reinserts the slide, which makes PowerPoint's view jump to the first slide. For text-only changes, prefer execute_officejs (in place via shape.textFrame.textRange \u2014 view position is preserved).",
+    "Replace paragraph content of a shape with raw OOXML <a:p> XML. Preserves <a:bodyPr> and <a:lstStyle>. Use read_shape_paragraphs first to get the current XML, modify it (using /pptx skill knowledge), then write it back. The slide is exported, modified server-side, and reimported \u2014 data never enters Claude's context. NOTE: the reimport deletes and reinserts the slide, but the view is restored to the edited slide afterwards. For text-only changes, execute_officejs still avoids the reimport entirely (in place via shape.textFrame.textRange).",
     {
       slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide)"),
       shapeId: external_exports.string().describe("Shape ID from inspect_slide results"),
@@ -84469,7 +84498,7 @@ var import_xmldom4 = __toESM(require_lib(), 1);
 function registerXmlTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
     "edit_slide_xml",
-    "Edit slide XML and reimport. Two modes: (1) xml mode \u2014 provide finished XML string (use read_slide_xml first to get current XML), (2) code mode \u2014 provide JS code that manipulates the pre-parsed DOM (receives: doc, findShapeById, NS_P, NS_A, escapeXml, serializeXml, DOMParser). Code mode preserves untouched attributes. The slide is exported, modified server-side, and reimported \u2014 data never enters Claude's context. NOTE: the reimport deletes and reinserts the slide, which makes PowerPoint's view jump to the first slide \u2014 reserve this for structural changes (new shapes, layout rebuilds).",
+    "Edit slide XML and reimport. Two modes: (1) xml mode \u2014 provide finished XML string (use read_slide_xml first to get current XML), (2) code mode \u2014 provide JS code that manipulates the pre-parsed DOM (receives: doc, findShapeById, NS_P, NS_A, escapeXml, serializeXml, DOMParser). Code mode preserves untouched attributes. The slide is exported, modified server-side, and reimported \u2014 data never enters Claude's context. NOTE: the reimport deletes and reinserts the slide, but the view is restored to the edited slide afterwards \u2014 reserve this for structural changes (new shapes, layout rebuilds).",
     {
       slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide)"),
       xml: external_exports.string().optional().describe(
