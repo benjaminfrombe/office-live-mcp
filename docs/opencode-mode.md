@@ -26,8 +26,11 @@ injects the `Authorization` header, and re-reads the file every 2s so service
 restarts are picked up automatically. Streaming (SSE) passes through chunk by
 chunk.
 
-Then in the taskpane: open the **OpenCode Chat** tab — the default URL is
-already the proxy, leave the password empty, press **Save & connect**.
+Then in the taskpane: open the **OpenCode Chat** tab. The password field is
+hidden by default (the proxy handles auth). **In Office, set the URL to
+`https://127.0.0.1:4096`** — Office's WKWebView blocks mixed content, so an
+HTTPS-served taskpane cannot fetch plain `http://` URLs (that is what a
+"Load failed" status means here). In a plain browser test `http://` works too.
 
 Manual (without proxy) configuration is still possible: `cat
 ~/.local/state/opencode/service.json` gives the direct URL and password, both

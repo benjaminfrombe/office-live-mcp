@@ -25,8 +25,11 @@
   <div id="mode-chat" class="mode-panel hidden">
     <div class="chat-config">
       <input id="oc-server-url" type="text" placeholder="OpenCode server URL (http://127.0.0.1:4096)">
-      <input id="oc-password" type="password" placeholder="Service password">
       <button id="oc-save-config" type="button">Save &amp; connect</button>
+      <div class="chat-advanced">
+        <button id="oc-toggle-advanced" type="button" class="link-button">Direct connection…</button>
+        <input id="oc-password" type="password" placeholder="Service password (direct connection only)" class="hidden">
+      </div>
     </div>
     <div class="chat-toolbar">
       <select id="oc-session"></select>

@@ -15,11 +15,20 @@
 import { readFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createServer, request as httpRequest } from 'node:http'
+import type { ServerOptions } from 'node:https'
+import { createServer as createHttpsServer } from 'node:https'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const PORT = Number(process.env.OPENCODE_PROXY_PORT || 4096)
 const SERVICE_FILE = process.env.OPENCODE_SERVICE_FILE || join(homedir(), '.local/state/opencode/service.json')
+// Office's WKWebView blocks mixed content: an add-in page served over HTTPS
+// cannot fetch http:// URLs. Set OPENCODE_PROXY_TLS=1 to serve the proxy over
+// TLS with the same mkcert dev certificates the bridge uses, and configure the
+// add-in with https://127.0.0.1:4096 instead.
+const CERT_DIR = process.env.OPENCODE_PROXY_CERT_DIR || join(fileURLToPath(new URL('.', import.meta.url)), '../certs')
+const useTls = process.env.OPENCODE_PROXY_TLS === '1'
 
 interface ServiceInfo {
   url: string
@@ -69,7 +78,7 @@ function pipe(req: IncomingMessage, res: ServerResponse, target: URL, password: 
   req.pipe(upstream)
 }
 
-const server = createServer((req, res) => {
+const handler = (req: IncomingMessage, res: ServerResponse) => {
   try {
     const { target, password } = service()
     pipe(req, res, target, password)
@@ -77,10 +86,20 @@ const server = createServer((req, res) => {
     res.writeHead(503, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ proxyError: `OpenCode service file unreadable: ${String(err)}` }))
   }
-})
+}
+
+const server = useTls
+  ? createHttpsServer(
+      {
+        key: readFileSync(join(CERT_DIR, 'localhost-key.pem')),
+        cert: readFileSync(join(CERT_DIR, 'localhost.pem')),
+      } satisfies ServerOptions,
+      handler,
+    )
+  : createServer(handler)
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`opencode-proxy listening on http://127.0.0.1:${PORT} -> ${SERVICE_FILE}`)
+  console.log(`opencode-proxy listening on ${useTls ? 'https' : 'http'}://127.0.0.1:${PORT} -> ${SERVICE_FILE}`)
 })
 
 // Graceful shutdown

@@ -157,6 +157,25 @@ h1 {
   width: 100%;
 }
 
+.chat-advanced {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chat-advanced input.hidden {
+  display: none;
+}
+
+.link-button {
+  border: none;
+  background: none;
+  color: #107c10;
+  text-decoration: underline;
+  padding: 0;
+  align-self: flex-start;
+}
+
 .chat-toolbar {
   margin-bottom: 8px;
 }

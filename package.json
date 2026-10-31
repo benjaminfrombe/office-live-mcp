@@ -70,7 +70,8 @@
     "sideload": "node --experimental-strip-types scripts/sideload.ts",
     "sideload:https": "node --experimental-strip-types scripts/sideload.ts --tls",
     "prepare": "husky",
-    "opencode-proxy": "node --experimental-strip-types ./scripts/opencode-proxy.ts"
+    "opencode-proxy": "node --experimental-strip-types ./scripts/opencode-proxy.ts",
+    "opencode-proxy:tls": "OPENCODE_PROXY_TLS=1 node --experimental-strip-types ./scripts/opencode-proxy.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
