@@ -14,6 +14,64 @@ var chatState = {
   reasoningActive: false, // true while the current step is still streaming reasoning
   reasoningRendered: 0, // chars already appended to the strip (incremental render)
   renderedIds: [], // message ids already on screen (incremental rendering)
+  inputHistory: [], // sent prompts, newest last (ArrowUp recalls them)
+  historyIndex: -1, // -1 = live input, otherwise an index into inputHistory
+  draft: '', // what the user typed before browsing history
+}
+
+var INPUT_HISTORY_KEY = 'olm-input-history'
+var INPUT_HISTORY_LIMIT = 50
+
+function loadInputHistory() {
+  try {
+    const raw = window.localStorage.getItem(INPUT_HISTORY_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    chatState.inputHistory = Array.isArray(parsed) ? parsed.filter((x) => typeof x === 'string') : []
+  } catch {
+    chatState.inputHistory = [] // private mode or corrupt storage — start empty
+  }
+}
+
+function rememberInput(text) {
+  const trimmed = text.trim()
+  if (!trimmed) return
+  // Consecutive duplicates occupy one history slot.
+  if (chatState.inputHistory[chatState.inputHistory.length - 1] === trimmed) return
+  chatState.inputHistory.push(trimmed)
+  if (chatState.inputHistory.length > INPUT_HISTORY_LIMIT) {
+    chatState.inputHistory = chatState.inputHistory.slice(-INPUT_HISTORY_LIMIT)
+  }
+  try {
+    window.localStorage.setItem(INPUT_HISTORY_KEY, JSON.stringify(chatState.inputHistory))
+  } catch {
+    // Storage unavailable — the in-memory history still works for this panel.
+  }
+}
+
+/* ArrowUp / ArrowDown walk the sent prompts, newest first. Browsing keeps the
+   user's draft; going past the newest entry restores it (terminal-style). */
+function historyMove(delta) {
+  const input = document.getElementById('oc-input')
+  if (!chatState.inputHistory.length) return
+  if (chatState.historyIndex === -1) {
+    if (delta > 0) return // already at the live input, nothing newer
+    chatState.draft = input.value
+    chatState.historyIndex = chatState.inputHistory.length - 1
+  } else {
+    chatState.historyIndex += delta
+    if (chatState.historyIndex >= chatState.inputHistory.length) {
+      chatState.historyIndex = -1
+      input.value = chatState.draft
+      input.setSelectionRange(chatState.draft.length, chatState.draft.length)
+      autoGrowInput()
+      return
+    }
+  }
+  if (chatState.historyIndex < 0) chatState.historyIndex = 0
+  const value = chatState.inputHistory[chatState.historyIndex]
+  input.value = value
+  input.setSelectionRange(value.length, value.length)
+  autoGrowInput()
 }
 
 var EVENT_TYPES = [
@@ -45,11 +103,21 @@ function initChat() {
   })
 
   document.getElementById('oc-send').addEventListener('click', sendChatMessage)
+  document.getElementById('oc-session').addEventListener('change', (event) => {
+    if (event.target.value) selectSession(event.target.value)
+  })
+  loadInputHistory()
   const input = document.getElementById('oc-input')
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       sendChatMessage()
+    } else if (event.key === 'ArrowUp' && !event.shiftKey && !event.altKey && !event.metaKey && !event.ctrlKey) {
+      event.preventDefault()
+      historyMove(-1)
+    } else if (event.key === 'ArrowDown' && !event.shiftKey && !event.altKey && !event.metaKey && !event.ctrlKey) {
+      event.preventDefault()
+      historyMove(1)
     }
   })
   input.addEventListener('input', autoGrowInput)
@@ -96,11 +164,11 @@ function initChat() {
     ).then((out) => {
       // Prefer the exact text-range text; fall back to per-shape text so
       // shape-only selections (no text) still carry their metadata.
-      let text = String(out && out.text ? out.text : '')
+      let text = String(out?.text ?? '')
         .replace(/\r/g, '')
         .replace(/\n{3,}/g, '\n\n')
         .trim()
-      const shapes = (out && out.shapes) || []
+      const shapes = out?.shapes ?? []
       if (!text && shapes.length) {
         text = shapes
           .map((s) => s.text.trim())
@@ -173,7 +241,7 @@ function refreshSessions() {
     var select = document.getElementById('oc-session')
     select.innerHTML = ''
     // Most recent activity first: the API order is not guaranteed.
-    var updatedAt = (session) => (session.time && session.time.updated) || 0
+    var updatedAt = (session) => session?.time?.updated ?? 0
     sessions
       .slice()
       .sort((a, b) => updatedAt(b) - updatedAt(a))
@@ -185,7 +253,9 @@ function refreshSessions() {
         select.appendChild(option)
       })
     if (chatState.sessionID) select.value = chatState.sessionID
-    if (select.value) selectSession(select.value)
+    // Auto-select only when no session is active yet; re-selecting the
+    // current session on every refresh would wipe and rebuild the bubbles.
+    if (select.value && !chatState.sessionID) selectSession(select.value)
   }, chatError)
 }
 
@@ -305,6 +375,9 @@ function sendChatMessage() {
   const context = chatState.pendingSelections.length ? `${selectionContextBlocks()}\n\n` : ''
   const text = `${context}${typed}`
   chatState.busy = true
+  rememberInput(typed)
+  chatState.historyIndex = -1
+  chatState.draft = ''
   input.value = ''
   chatState.pendingSelections = []
   renderSelectionChips()
@@ -442,36 +515,98 @@ function renderAttachmentChips() {
   })
 }
 
-/* Reasoning strip — a thin ticker above the messages showing the assistant's
-   live reasoning; after the step it stays as a one-line collapsed summary.
-   Rendering is incremental: each delta only appends its own text node, so the
-   element is never rewritten mid-stream (no flicker, scroll stays put). */
+/* Reasoning strip — a news-ticker above the messages: while the assistant
+   works, the reasoning crawls by in one unreadable line (two copies of the
+   text, translated -50% in a loop, so the band never shows a gap). After
+   the step it collapses to a label-only summary. Rendering is incremental:
+   each delta only appends its own text nodes, never a full rewrite. */
+/* Realtime tail-follow ticker: the newest reasoning stays visible at the
+   right edge and the band moves left exactly as fast as reasoning text
+   arrives — the speed IS the streaming rate. A px/s cap keeps delta bursts
+   from teleporting the band; when no deltas arrive, the band stands still.
+   The band follows the tail of the FIRST copy only: pinning the end of
+   copy 2 would make it travel double the distance and lag a full
+   copy-width behind. */
+var TICKER_MAX_SPEED = 600 // px/s
+var tickerRaf = 0
+var tickerOffset = null // null = snap to the tail on the next frame
+var tickerLast = 0
+
+function tickTicker(ts) {
+  var strip = document.getElementById('oc-reasoning-strip')
+  var body = document.getElementById('oc-reasoning-text')
+  if (!strip || !body || !strip.classList.contains('live')) {
+    tickerRaf = 0
+    return
+  }
+  var style = window.getComputedStyle(strip)
+  var viewport = strip.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+  var copyWidth = body.children[0] ? body.children[0].getBoundingClientRect().width : 0
+  var target = Math.min(0, viewport - copyWidth)
+  var dt
+  var want
+  if (tickerOffset === null || target > tickerOffset) {
+    tickerOffset = target // fresh text (new step) or text that shrank: snap
+  } else if (tickerLast) {
+    dt = (ts - tickerLast) / 1000
+    want = tickerOffset - target
+    tickerOffset -= Math.min(want, TICKER_MAX_SPEED * dt)
+  }
+  body.style.transform = `translateX(${tickerOffset}px)`
+  tickerLast = ts
+  tickerRaf = window.requestAnimationFrame(tickTicker)
+}
+
+function startTicker() {
+  var body = document.getElementById('oc-reasoning-text')
+  if (!body) return
+  if (!tickerRaf) {
+    tickerLast = 0
+    tickerRaf = window.requestAnimationFrame(tickTicker)
+  }
+}
+
+function stopTicker() {
+  if (tickerRaf) window.cancelAnimationFrame(tickerRaf)
+  tickerRaf = 0
+  tickerLast = 0
+  var body = document.getElementById('oc-reasoning-text')
+  if (body) body.style.transform = ''
+  tickerOffset = null
+}
+
 function updateReasoningStrip() {
   var strip = document.getElementById('oc-reasoning-strip')
   if (!strip) return
   var text = chatState.reasoningText
+  var body = document.getElementById('oc-reasoning-text')
+  var copies = body ? body.children : []
   var label = null
-  var body = null
+  var i
+  var delta
   if (!text) {
     strip.hidden = true
     strip.dataset.expanded = ''
     chatState.reasoningRendered = 0
-    body = document.getElementById('oc-reasoning-text')
-    if (body) body.textContent = ''
+    tickerOffset = null
+    if (body) {
+      for (i = 0; i < copies.length; i++) copies[i].textContent = ''
+    }
     return
   }
   strip.hidden = false
   label = document.getElementById('oc-reasoning-label')
-  body = document.getElementById('oc-reasoning-text')
   var rendered = chatState.reasoningRendered || 0
-  if (text.length >= rendered && text.slice(0, rendered) === (body.textContent || '')) {
-    // Normal case: append only the new tail.
+  if (text.length >= rendered && text.slice(0, rendered) === (copies[0] ? copies[0].textContent : '')) {
+    // Normal case: append only the new tail, to both ticker copies.
     if (text.length > rendered) {
-      body.appendChild(document.createTextNode(text.slice(rendered)))
+      delta = document.createTextNode(text.slice(rendered))
+      for (i = 0; i < copies.length; i++) copies[i].appendChild(delta.cloneNode(false))
     }
   } else {
     // Reset (new step): full rewrite is fine here, it happens once.
-    body.textContent = text
+    for (i = 0; i < copies.length; i++) copies[i].textContent = text
+    tickerOffset = null // new text: snap the band to its tail on the next frame
   }
   chatState.reasoningRendered = text.length
   var expanded = false
@@ -479,9 +614,10 @@ function updateReasoningStrip() {
     strip.classList.add('live')
     label.textContent = 'Reasoning…'
     body.classList.remove('expanded')
-    body.scrollTop = body.scrollHeight
+    startTicker()
   } else {
     strip.classList.remove('live')
+    stopTicker()
     expanded = strip.dataset.expanded === '1'
     label.textContent = `Reasoning · ${text.length} chars · click to ${expanded ? 'collapse' : 'expand'}`
     body.classList.toggle('expanded', expanded)
@@ -535,27 +671,51 @@ function runLocalOffice(code) {
 
 /* Incremental rendering — only append messages that are not on screen yet.
    A full wipe-and-rebuild replays every bubble's entry animation, which reads
-   as flicker on every refetch. */
+   as flicker on every refetch. Session switches load the full history. */
+function windowShiftIndex(ids, rendered) {
+  if (!rendered.length) return -1
+  for (let j = 0; j + rendered.length <= ids.length; j++) {
+    let ok = true
+    for (let k = 0; k < rendered.length; k++) {
+      if (ids[j + k] !== rendered[k]) {
+        ok = false
+        break
+      }
+    }
+    if (ok) return j
+  }
+  return -1
+}
+
 function renderFromRows(rows) {
   const visible = rows.filter((row) => !OpenCodeChat.isTerminalRow(row)).reverse() // server returns newest-first; render chronologically
   const ids = visible.map((row) => row.id)
   const rendered = chatState.renderedIds || []
 
-  // Prefix match → history is append-only; only render the new tail.
-  // Otherwise (session switch, reverted messages) rebuild from scratch.
-  const isAppend = ids.length >= rendered.length && rendered.every((id, i) => ids[i] === id)
+  // The old window reappears shifted inside the new one → render only the
+  // new tail and drop the messages that slid out of the window. Otherwise
+  // (session switch, reverted messages) rebuild from scratch.
+  const shift = windowShiftIndex(ids, rendered)
+  const isAppend = shift >= 0
   const messages = document.getElementById('oc-messages')
   if (!isAppend) {
     messages.innerHTML = ''
     chatState.renderedIds = []
+  } else if (shift > 0) {
+    for (let d = 0; d < shift; d++) {
+      const first = messages.querySelector('.chat-message')
+      if (first) first.remove()
+    }
   }
 
   const streamingEl = messages.querySelector('.chat-message.streaming')
   let streamingReused = false
-  for (let i = chatState.renderedIds.length; i < visible.length; i++) {
+  const firstNew = isAppend ? shift + rendered.length : 0
+  for (let i = firstNew; i < visible.length; i++) {
     const row = visible[i]
     const text = OpenCodeChat.messageText(row)
-    if (!text) {
+    const images = OpenCodeChat.messageImages(row)
+    if (!text && !images.length) {
       chatState.renderedIds.push(row.id)
       continue
     }
@@ -575,26 +735,38 @@ function renderFromRows(rows) {
     // same content, so reusing the element avoids a visible swap.
     if (streamingEl && !streamingReused && role === 'assistant') {
       streamingEl.className = 'chat-message assistant'
-      streamingEl.textContent = text
+      fillMessageBubble(streamingEl, text, images)
       streamingReused = true
       chatState.renderedIds.push(row.id)
       continue
     }
-    appendMessage(role, text)
+    appendMessage(role, text, false, images)
     chatState.renderedIds.push(row.id)
   }
   if (!chatState.streamingText) setChatStatus('')
-  scrollMessages()
+  scrollMessages(true)
 }
 
-function appendMessage(role, text, pending) {
+function appendMessage(role, text, pending, images) {
   var messages = document.getElementById('oc-messages')
   var div = document.createElement('div')
   div.className = `chat-message ${role}`
-  div.textContent = text
+  fillMessageBubble(div, text, images)
   if (pending) div.dataset.pending = '1'
   messages.appendChild(div)
-  scrollMessages()
+  scrollMessages(true)
+}
+
+/* Text plus any model-rendered images (file parts) inside one bubble. */
+function fillMessageBubble(div, text, images) {
+  div.textContent = text
+  ;(images || []).forEach((image) => {
+    var img = document.createElement('img')
+    img.className = 'chat-image'
+    img.src = image.src
+    img.alt = image.name
+    div.appendChild(img)
+  })
 }
 
 function renderStreaming() {
@@ -612,12 +784,14 @@ function renderStreaming() {
   scrollMessages()
 }
 
-function scrollMessages() {
+function scrollMessages(smooth) {
   const messages = document.getElementById('oc-messages')
   if (!messages) return
-  // rAF: the browser needs a laid-out frame before scrollTop sticks
+  // rAF: the browser needs a laid-out frame before scrollTop sticks. History
+  // loads glide to the bottom; streaming deltas follow instantly so the
+  // smooth animation never lags behind the text.
   requestAnimationFrame(() => {
-    messages.scrollTop = messages.scrollHeight
+    messages.scrollTo({ top: messages.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
   })
 }
 

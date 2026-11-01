@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reasoning ticker mockup</title>
+  <link rel="stylesheet" href="../addin/style.css?v=mock2">
+  <style>
+    /* Mockup-only chrome: centers the addin-sized taskpane on a neutral page */
+    body { display: flex; gap: 16px; align-items: flex-start; justify-content: center; padding: 24px; background: #f2f2f4; }
+    .mockup-controls {
+      width: 220px; padding: 12px; background: #fff; border: 1px solid #ddd; border-radius: 10px;
+      font-size: 12px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .mockup-controls h2 { font-size: 13px; margin: 0; }
+    .mockup-controls label { display: flex; flex-direction: column; gap: 4px; }
+    .mockup-controls button { cursor: pointer; }
+    .taskpane {
+      width: 380px; height: 640px; background: #fff; border: 1px solid #ccc; border-radius: 12px;
+      padding: 12px; box-shadow: 0 8px 30px rgb(0 0 0 / 10%); overflow-y: auto;
+    }
+    .taskpane h1 { font-size: 15px; }
+    .variant-note { color: #666; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="mockup-controls">
+    <h2>Ticker mockup</h2>
+    <label>
+      Ticker variant
+      <select id="mock-variant">
+        <option value="ticker">A — realtime: follows the stream</option>
+        <option value="tail">B — tail-follow (last line, no crawl)</option>
+        <option value="fade">C — fade-in tail, static</option>
+      </select>
+    </label>
+    <label>
+      Max follow speed <span class="variant-note">(variant A, px/s cap)</span>
+      <input id="mock-speed" type="range" min="60" max="1200" value="600">
+      <span id="mock-speed-value">600 px/s</span>
+    </label>
+    <button id="mock-replay" type="button">Replay conversation</button>
+    <p class="variant-note">Simulated session: reasoning streams live (ticker), a step starts (reset), a tool runs, the reply streams, then the strip collapses.</p>
+  </div>
+
+  <div class="taskpane">
+    <h1>Office Live MCP</h1>
+    <div class="mode-tabs">
+      <button class="mode-tab" type="button">Bridge</button>
+      <button class="mode-tab active" type="button">OpenCode Chat</button>
+    </div>
+    <div class="mode-panel">
+      <div id="oc-status" class="chat-status">mock session</div>
+      <div id="oc-reasoning-strip" class="reasoning-strip" hidden>
+        <span id="oc-reasoning-label" class="reasoning-label">Reasoning…</span>
+        <pre id="oc-reasoning-text" class="reasoning-text"><span></span><span></span></pre>
+      </div>
+      <div id="oc-messages" class="chat-messages"></div>
+      <div class="chat-input">
+        <textarea rows="3" placeholder="Ask OpenCode..."></textarea>
+        <div class="chat-input-actions">
+          <button type="button">+ Selection</button>
+          <button type="button">Insert last reply</button>
+          <span class="chat-input-spacer"></span>
+          <button type="button" class="primary">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="mock.js"></script>
+</body>
+</html>
