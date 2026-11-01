@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFile, readFileSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createServer as createHttpServer } from 'node:http'
 import { createServer as createHttpsServer } from 'node:https'
@@ -13,6 +13,7 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import type { WebSocket } from 'ws'
 import { WebSocketServer } from 'ws'
 import { ConnectionPool, startHeartbeat } from './bridge.ts'
+import { resolveImageFileRequest } from './file-serve.ts'
 import { substituteManifestPort } from './manifest.ts'
 import { handleOpenCodeProxy } from './opencode-proxy.ts'
 import { runSetup } from './setup.ts'
@@ -393,6 +394,28 @@ function serveStatic(req: IncomingMessage, res: ServerResponse): void {
     return
   }
 
+  // Local image files (tool outputs like rendered slide checks) for the
+  // taskpane chat: GET /file?path=/abs/image.png — image extensions only.
+  if (rawUrl === '/file' && req.method === 'GET') {
+    const query = new URL(req.url ?? '/', 'http://localhost').searchParams
+    const resolved = resolveImageFileRequest(query.get('path'))
+    if (typeof resolved === 'string') {
+      res.writeHead(400, { 'Content-Type': 'text/plain' })
+      res.end(resolved)
+      return
+    }
+    readFile(resolved.filePath, (err, data) => {
+      if (err) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' })
+        res.end('file not found')
+        return
+      }
+      res.writeHead(200, { 'Content-Type': resolved.mime, 'Cache-Control': 'no-store' })
+      res.end(data)
+    })
+    return
+  }
+
   // SharePoint app-catalog emulation: recent Office builds query trusted URL
   // catalogs via the SharePoint REST API instead of fetching a plain
   // manifest. Handled before static serving so `_api` paths never fall
@@ -408,7 +431,16 @@ function serveStatic(req: IncomingMessage, res: ServerResponse): void {
   // (MCP-on-the-bridge) and relay to it instead of spawning a doomed daemon.
   if (rawUrl === '/health' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ status: 'ok', connections: pool.size, bridge: true, mcp: true, version: PKG_VERSION }))
+    res.end(
+      JSON.stringify({
+        status: 'ok',
+        connections: pool.size,
+        bridge: true,
+        mcp: true,
+        version: PKG_VERSION,
+        pid: process.pid,
+      }),
+    )
     return
   }
 
@@ -660,6 +692,7 @@ function startMcpHttpServer(): void {
         JSON.stringify({
           status: 'ok',
           version: PKG_VERSION,
+          pid: process.pid,
           connections: pool.size,
           sessions: mcpHttpTransports.size,
           bridge: bridgeActive,

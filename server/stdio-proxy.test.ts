@@ -6,7 +6,7 @@ vi.hoisted(() => {
   process.env.OLM_DAEMON_LOG = '/tmp/olm-stdio-proxy-test/daemon.log'
 })
 
-import { mkdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
 import { createServer, type Server } from 'node:http'
 import { PassThrough } from 'node:stream'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -192,6 +192,26 @@ describe('ensureDaemon', () => {
       /did not become healthy/,
     )
     expect(spawn).toHaveBeenCalledTimes(1)
+  })
+
+  it('heals a stale or missing daemon.lock from the health-reported pid', async () => {
+    const server = await startFakeDaemon({
+      health: () => ({ status: 200, body: { status: 'ok', version: '0.6.0', bridge: true, pid: 424242 } }),
+    })
+    const result = await ensureDaemon('0.6.0')
+    expect(result.alreadyRunning).toBe(true)
+    expect(JSON.parse(readFileSync(TEST_LOCK_FILE, 'utf8'))).toMatchObject({ pid: 424242 })
+    await closeServer(server)
+  })
+
+  it('does not clobber a daemon.lock held by a live process', async () => {
+    writeFileSync(TEST_LOCK_FILE, JSON.stringify({ pid: process.pid, startedAt: 'x' }))
+    const server = await startFakeDaemon({
+      health: () => ({ status: 200, body: { status: 'ok', version: '0.6.0', bridge: true, pid: 424242 } }),
+    })
+    await ensureDaemon('0.6.0')
+    expect(JSON.parse(readFileSync(TEST_LOCK_FILE, 'utf8')).pid).toBe(process.pid)
+    await closeServer(server)
   })
 
   it('starts a daemon when none is running and health appears', async () => {
@@ -426,6 +446,190 @@ describe('runStdioProxy', () => {
     // One error for the request (carrying its id); none for the notification.
     expect(lines).toHaveLength(1)
     expect(lines[0].id).toBe(7)
+  })
+
+  it('re-discovers the daemon and retries when the daemon dies mid-session', async () => {
+    // Daemon A answers initialize, then dies before the next request — the
+    // situation after a version-skew daemon restart while proxies stay up.
+    const serverA = await startFakeDaemon({
+      mcpPost: () => ({
+        status: 200,
+        contentType: 'application/json',
+        sessionId: 's1',
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, result: { initialized: true } }),
+      }),
+    })
+    const portA = process.env.MCP_PORT
+    let serverBSeenSession: string | undefined
+    const serverB = await startFakeDaemon({
+      mcpPost: (body, req) => {
+        const sid = req.headers['mcp-session-id']
+        serverBSeenSession = Array.isArray(sid) ? sid[0] : sid
+        return {
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ jsonrpc: '2.0', id: JSON.parse(body).id, result: { ok: true } }),
+        }
+      },
+    })
+    const portB = process.env.MCP_PORT
+
+    let ensureCalls = 0
+    const bases = [portA, portB]
+    const stdin = new PassThrough()
+    const stdout = new PassThrough()
+    const chunks: string[] = []
+    stdout.on('data', (c: Buffer) => chunks.push(c.toString()))
+    const done = runStdioProxy({
+      stdin,
+      stdout,
+      localVersion: '0.6.0',
+      ensure: () =>
+        Promise.resolve({
+          alreadyRunning: ensureCalls > 0,
+          health: { status: 'ok' },
+          base: `http://127.0.0.1:${bases[Math.min(ensureCalls++, bases.length - 1)]}`,
+        }),
+    })
+
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} })}\n`)
+    await new Promise((r) => setTimeout(r, 150))
+    await closeServer(serverA)
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: {} })}\n`)
+    await new Promise((r) => setTimeout(r, 300))
+    stdin.end()
+    await done
+    void serverB
+
+    const lines = chunks
+      .join('')
+      .trim()
+      .split('\n')
+      .map((l) => JSON.parse(l))
+    // Both requests answered — the second one after re-discovery, not with an error.
+    expect(lines.map((l) => l.id)).toEqual([1, 2])
+    expect((lines[1] as { result: unknown }).result).toEqual({ ok: true })
+    expect(ensureCalls).toBe(2)
+    // The stale session id must not leak to the fresh daemon.
+    expect(serverBSeenSession).toBeUndefined()
+    await closeServer(serverB)
+  })
+
+  it('recovers the session when the daemon reports it as invalid', async () => {
+    // A restarted daemon rejects the proxy's old session id with -32000; the
+    // proxy must drop the session, re-discover, and retry instead of passing
+    // the daemon's error through to the client.
+    let rejectedOnce = false
+    let retriedWithoutSession = false
+    const server = await startFakeDaemon({
+      mcpPost: (body, req) => {
+        const parsed = JSON.parse(body) as { id?: number; method?: string }
+        if (parsed.method === 'initialize') {
+          return {
+            status: 200,
+            contentType: 'application/json',
+            sessionId: 'old-sess',
+            body: JSON.stringify({ jsonrpc: '2.0', id: parsed.id, result: { initialized: true } }),
+          }
+        }
+        if (req.headers['mcp-session-id'] === 'old-sess' && !rejectedOnce) {
+          rejectedOnce = true
+          return {
+            status: 400,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              error: { code: -32000, message: 'Bad request: no valid session' },
+              id: parsed.id ?? null,
+            }),
+          }
+        }
+        retriedWithoutSession = !req.headers['mcp-session-id']
+        return {
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ jsonrpc: '2.0', id: parsed.id, result: { ok: true } }),
+        }
+      },
+    })
+
+    let ensureCalls = 0
+    const stdin = new PassThrough()
+    const stdout = new PassThrough()
+    const chunks: string[] = []
+    stdout.on('data', (c: Buffer) => chunks.push(c.toString()))
+    const done = runStdioProxy({
+      stdin,
+      stdout,
+      localVersion: '0.6.0',
+      ensure: () => {
+        ensureCalls++
+        return Promise.resolve({
+          alreadyRunning: ensureCalls > 1,
+          health: { status: 'ok' },
+          base: `http://127.0.0.1:${process.env.MCP_PORT}`,
+        })
+      },
+    })
+
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} })}\n`)
+    await new Promise((r) => setTimeout(r, 150))
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: {} })}\n`)
+    await new Promise((r) => setTimeout(r, 300))
+    stdin.end()
+    await done
+
+    const lines = chunks
+      .join('')
+      .trim()
+      .split('\n')
+      .map((l) => JSON.parse(l))
+    // The client sees the recovered result, not the daemon's -32000.
+    expect(lines.map((l) => l.id)).toEqual([1, 2])
+    expect((lines[1] as { result: unknown }).result).toEqual({ ok: true })
+    expect(ensureCalls).toBe(2)
+    expect(retriedWithoutSession).toBe(true)
+    await closeServer(server)
+  })
+
+  it('answers with an error instead of blocking forever when the daemon hangs', async () => {
+    // Raw server that accepts the request but never responds — a wedged
+    // keep-alive socket after a daemon kill must not block the proxy forever.
+    const server = await new Promise<Server>((resolve) => {
+      const srv = createServer(() => undefined) // no response ever
+      srv.listen(0, '127.0.0.1', () => {
+        process.env.MCP_PORT = String((srv.address() as { port: number }).port)
+        resolve(srv)
+      })
+    })
+    const stdin = new PassThrough()
+    const stdout = new PassThrough()
+    const chunks: string[] = []
+    stdout.on('data', (c: Buffer) => chunks.push(c.toString()))
+    const done = runStdioProxy({
+      stdin,
+      stdout,
+      localVersion: '0.6.0',
+      requestTimeoutMs: 100,
+      ensure: () =>
+        Promise.resolve({
+          alreadyRunning: true,
+          health: { status: 'ok' },
+          base: `http://127.0.0.1:${process.env.MCP_PORT}`,
+        }),
+    })
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: {} })}\n`)
+    await new Promise((r) => setTimeout(r, 500))
+    stdin.end()
+    await done
+    const lines = chunks
+      .join('')
+      .trim()
+      .split('\n')
+      .map((l) => JSON.parse(l))
+    expect(lines).toHaveLength(1)
+    expect((lines[0] as { error: { code: number } }).error.code).toBe(-32603)
+    await closeServer(server)
   })
 })
 

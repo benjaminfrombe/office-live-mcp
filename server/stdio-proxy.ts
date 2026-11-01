@@ -26,6 +26,13 @@ const HEALTH_TIMEOUT_MS = 1_000
 const DAEMON_START_TIMEOUT_MS = 15_000
 const DAEMON_POLL_INTERVAL_MS = 200
 const DAEMON_SHUTDOWN_WAIT_MS = 3_000
+/**
+ * Per-request ceiling for proxied JSON-RPC calls. Long tool calls legitimately
+ * take a while, but a wedged keep-alive socket to a dead daemon used to hang
+ * forever; a finite (generous) timeout turns that into a recoverable failure.
+ * Well above the harness-side MCP timeouts (120s) so real calls finish first.
+ */
+const REQUEST_TIMEOUT_MS = 150_000
 
 /** Base URL of the daemon's HTTP MCP server (read per call so tests can point it elsewhere). */
 function mcpHttpBase(): string {
@@ -53,6 +60,8 @@ export interface DaemonHealth {
   status: string
   version?: string
   bridge?: boolean
+  /** Daemon process pid, when the daemon reports it (used to heal the lock file). */
+  pid?: number
   /** True on bridge /health responses of builds that serve /mcp on the bridge port. */
   mcp?: boolean
   [key: string]: unknown
@@ -220,6 +229,21 @@ function spawnDaemon(): number {
 }
 
 /**
+ * Point the lock file at a running daemon when it does not already reference a
+ * live process. Covers daemons started outside the spawn path (manual nohup,
+ * restarts) that would otherwise leave `daemon.lock` stale or absent.
+ */
+function selfHealDaemonLock(health: DaemonHealth): void {
+  const pid = health.pid
+  if (typeof pid !== 'number' || !Number.isInteger(pid) || pid <= 0) return
+  const lock = readDaemonLock()
+  if (lock?.pid === pid) return
+  // A lock held by another live process belongs to something else; never clobber it.
+  if (lock && isPidAlive(lock.pid)) return
+  writeDaemonLock(pid)
+}
+
+/**
  * Make sure exactly one daemon is running, starting it if needed.
  * Safe under races: if another wrapper spawns concurrently, the loser's child
  * dies on EADDRINUSE and this wrapper still finds the winner via /health.
@@ -236,6 +260,7 @@ export async function ensureDaemon(localVersion: string, deps: EnsureDaemonDeps 
   if (existingBase) {
     const existingHealth = await fetchDaemonHealth()
     if (existingHealth && versionsMatch(existingHealth.version, localVersion)) {
+      selfHealDaemonLock(existingHealth)
       return { alreadyRunning: true, health: existingHealth, base: existingBase }
     }
     // Version skew: the running daemon predates this build, and the daemon
@@ -337,6 +362,8 @@ interface ProxyOptions {
   localVersion: string
   /** Injected for tests. */
   ensure?: () => Promise<EnsureDaemonResult>
+  /** Per-request ceiling; tests shrink it. Defaults to REQUEST_TIMEOUT_MS. */
+  requestTimeoutMs?: number
 }
 
 /**
@@ -347,11 +374,13 @@ interface ProxyOptions {
 export async function runStdioProxy(options: ProxyOptions): Promise<void> {
   const stdin = options.stdin ?? process.stdin
   const stdout = options.stdout ?? process.stdout
+  const requestTimeoutMs = options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS
   const ensure = options.ensure ?? (() => ensureDaemon(options.localVersion))
-  const { alreadyRunning, base } = await ensure()
-  if (!alreadyRunning) {
+  let ensureResult = await ensure()
+  if (!ensureResult.alreadyRunning) {
     console.error('[stdio-proxy] Daemon started (detached); it stays up after this session ends.')
   }
+  let base = ensureResult.base
 
   let sessionId: string | undefined
   // Until the daemon has issued a session id, requests run strictly in order:
@@ -399,12 +428,7 @@ export async function runStdioProxy(options: ProxyOptions): Promise<void> {
     void task.finally(() => inflight.delete(task))
   }
 
-  async function handleMessage(raw: string): Promise<void> {
-    try {
-      JSON.parse(raw)
-    } catch {
-      return // Not valid JSON-RPC; the daemon would reject it too. Drop.
-    }
+  async function postToDaemon(raw: string): Promise<void> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       Accept: 'application/json, text/event-stream',
@@ -415,6 +439,7 @@ export async function runStdioProxy(options: ProxyOptions): Promise<void> {
       method: 'POST',
       headers,
       body: raw,
+      signal: AbortSignal.timeout(requestTimeoutMs),
     })
 
     const newSessionId = res.headers.get('mcp-session-id')
@@ -422,6 +447,18 @@ export async function runStdioProxy(options: ProxyOptions): Promise<void> {
 
     const contentType = res.headers.get('content-type') ?? ''
     const body = await res.text()
+    // A restarted daemon no longer knows this proxy's session id and answers
+    // -32000. That is a transport-level failure for us: drop the session and
+    // let the recovery path in handleMessage retry on a fresh session.
+    if (!res.ok) {
+      let code: unknown
+      try {
+        code = (JSON.parse(body) as { error?: { code?: unknown } }).error?.code
+      } catch {
+        // non-JSON error body — fall through to the generic error below
+      }
+      if (code === -32000) throw new Error('daemon rejected the session as invalid')
+    }
     let messages: unknown[]
     if (contentType.includes('text/event-stream')) {
       messages = parseSseMessages(body)
@@ -432,6 +469,26 @@ export async function runStdioProxy(options: ProxyOptions): Promise<void> {
     }
     for (const msg of messages) {
       stdout.write(`${JSON.stringify(msg)}\n`)
+    }
+  }
+
+  async function handleMessage(raw: string): Promise<void> {
+    try {
+      JSON.parse(raw)
+    } catch {
+      return // Not valid JSON-RPC; the daemon would reject it too. Drop.
+    }
+    try {
+      await postToDaemon(raw)
+    } catch {
+      // Transport failure (dead daemon, wedged socket, timeout) or an invalid
+      // session: the daemon may have died or been restarted since this proxy
+      // connected. Re-discover it (spawning one if needed), drop the stale
+      // session id, and retry the request once on the fresh endpoint.
+      ensureResult = await ensure()
+      base = ensureResult.base
+      sessionId = undefined
+      await postToDaemon(raw)
     }
   }
 

@@ -78442,6 +78442,25 @@ var ConnectionPool = class {
   }
 };
 
+// server/file-serve.ts
+var IMAGE_MIME_BY_EXTENSION = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".svg": "image/svg+xml"
+};
+function resolveImageFileRequest(rawPath) {
+  if (!rawPath) return "missing path parameter";
+  if (rawPath.startsWith("\0")) return "invalid path";
+  const dot = rawPath.lastIndexOf(".");
+  if (dot === -1) return "not an image file";
+  const mime = IMAGE_MIME_BY_EXTENSION[rawPath.slice(dot).toLowerCase()];
+  if (!mime) return "not an image file";
+  return { filePath: rawPath, mime };
+}
+
 // server/manifest.ts
 function substituteManifestPort(content, defaultPort, targetPort) {
   if (defaultPort === targetPort) return content;
@@ -79084,6 +79103,7 @@ var HEALTH_TIMEOUT_MS = 1e3;
 var DAEMON_START_TIMEOUT_MS = 15e3;
 var DAEMON_POLL_INTERVAL_MS = 200;
 var DAEMON_SHUTDOWN_WAIT_MS = 3e3;
+var REQUEST_TIMEOUT_MS = 15e4;
 function mcpHttpBase() {
   return `http://127.0.0.1:${Number(process.env.MCP_PORT) || 8792}`;
 }
@@ -79186,6 +79206,14 @@ function spawnDaemon() {
   (0, import_node_fs4.closeSync)(logFd);
   return child.pid ?? -1;
 }
+function selfHealDaemonLock(health) {
+  const pid = health.pid;
+  if (typeof pid !== "number" || !Number.isInteger(pid) || pid <= 0) return;
+  const lock = readDaemonLock();
+  if (lock?.pid === pid) return;
+  if (lock && isPidAlive(lock.pid)) return;
+  writeDaemonLock(pid);
+}
 async function ensureDaemon(localVersion, deps = {}) {
   const spawnFn = deps.spawnDaemon ?? spawnDaemon;
   const startTimeoutMs = deps.startTimeoutMs ?? DAEMON_START_TIMEOUT_MS;
@@ -79195,6 +79223,7 @@ async function ensureDaemon(localVersion, deps = {}) {
   if (existingBase) {
     const existingHealth = await fetchDaemonHealth();
     if (existingHealth && versionsMatch(existingHealth.version, localVersion)) {
+      selfHealDaemonLock(existingHealth);
       return { alreadyRunning: true, health: existingHealth, base: existingBase };
     }
     console.error(
@@ -79261,11 +79290,13 @@ function parseSseMessages(body) {
 async function runStdioProxy(options) {
   const stdin = options.stdin ?? process.stdin;
   const stdout = options.stdout ?? process.stdout;
+  const requestTimeoutMs = options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
   const ensure = options.ensure ?? (() => ensureDaemon(options.localVersion));
-  const { alreadyRunning, base } = await ensure();
-  if (!alreadyRunning) {
+  let ensureResult = await ensure();
+  if (!ensureResult.alreadyRunning) {
     console.error("[stdio-proxy] Daemon started (detached); it stays up after this session ends.");
   }
+  let base = ensureResult.base;
   let sessionId;
   let queue = Promise.resolve();
   const inflight = /* @__PURE__ */ new Set();
@@ -79301,12 +79332,7 @@ async function runStdioProxy(options) {
     inflight.add(task);
     void task.finally(() => inflight.delete(task));
   }
-  async function handleMessage(raw) {
-    try {
-      JSON.parse(raw);
-    } catch {
-      return;
-    }
+  async function postToDaemon(raw) {
     const headers = {
       "Content-Type": "application/json",
       Accept: "application/json, text/event-stream"
@@ -79315,12 +79341,21 @@ async function runStdioProxy(options) {
     const res = await fetch(`${base}/mcp`, {
       method: "POST",
       headers,
-      body: raw
+      body: raw,
+      signal: AbortSignal.timeout(requestTimeoutMs)
     });
     const newSessionId = res.headers.get("mcp-session-id");
     if (newSessionId) sessionId = newSessionId;
     const contentType3 = res.headers.get("content-type") ?? "";
     const body = await res.text();
+    if (!res.ok) {
+      let code;
+      try {
+        code = JSON.parse(body).error?.code;
+      } catch {
+      }
+      if (code === -32e3) throw new Error("daemon rejected the session as invalid");
+    }
     let messages;
     if (contentType3.includes("text/event-stream")) {
       messages = parseSseMessages(body);
@@ -79332,6 +79367,21 @@ async function runStdioProxy(options) {
     for (const msg of messages) {
       stdout.write(`${JSON.stringify(msg)}
 `);
+    }
+  }
+  async function handleMessage(raw) {
+    try {
+      JSON.parse(raw);
+    } catch {
+      return;
+    }
+    try {
+      await postToDaemon(raw);
+    } catch {
+      ensureResult = await ensure();
+      base = ensureResult.base;
+      sessionId = void 0;
+      await postToDaemon(raw);
     }
   }
   return new Promise((resolve4, reject) => {
@@ -85068,12 +85118,40 @@ function serveStatic(req, res) {
   if (handleOpenCodeProxy(req, res, req.url ?? "/")) {
     return;
   }
+  if (rawUrl === "/file" && req.method === "GET") {
+    const query = new URL(req.url ?? "/", "http://localhost").searchParams;
+    const resolved = resolveImageFileRequest(query.get("path"));
+    if (typeof resolved === "string") {
+      res.writeHead(400, { "Content-Type": "text/plain" });
+      res.end(resolved);
+      return;
+    }
+    (0, import_node_fs12.readFile)(resolved.filePath, (err, data) => {
+      if (err) {
+        res.writeHead(404, { "Content-Type": "text/plain" });
+        res.end("file not found");
+        return;
+      }
+      res.writeHead(200, { "Content-Type": resolved.mime, "Cache-Control": "no-store" });
+      res.end(data);
+    });
+    return;
+  }
   if (handleSharePointCatalog(req, res, rawUrl)) {
     return;
   }
   if (rawUrl === "/health" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "ok", connections: pool.size, bridge: true, mcp: true, version: PKG_VERSION }));
+    res.end(
+      JSON.stringify({
+        status: "ok",
+        connections: pool.size,
+        bridge: true,
+        mcp: true,
+        version: PKG_VERSION,
+        pid: process.pid
+      })
+    );
     return;
   }
   if (rawUrl === "/mcp") {
@@ -85242,6 +85320,7 @@ function startMcpHttpServer() {
         JSON.stringify({
           status: "ok",
           version: PKG_VERSION,
+          pid: process.pid,
           connections: pool.size,
           sessions: mcpHttpTransports.size,
           bridge: bridgeActive
