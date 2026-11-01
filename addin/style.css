@@ -357,12 +357,12 @@ select:hover {
 
 .reasoning-text {
   font-family: "SF Mono", Menlo, monospace;
-  font-size: 0.65rem;
-  line-height: 1.35;
+  font-size: 0.7rem;
+  line-height: 1.4;
   color: var(--text-muted);
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 64px;
+  max-height: 150px;
   overflow-y: auto;
   margin-top: 2px;
 }

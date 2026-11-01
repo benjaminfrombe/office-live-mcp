@@ -12,6 +12,7 @@ var chatState = {
   pendingAttachments: [], // pasted images kept as data URIs for the next message
   reasoningText: '', // live assistant reasoning buffer for the strip
   reasoningActive: false, // true while the current step is still streaming reasoning
+  reasoningRendered: 0, // chars already appended to the strip (incremental render)
   renderedIds: [], // message ids already on screen (incremental rendering)
 }
 
@@ -264,7 +265,12 @@ function startEventStream() {
     } else if (event.type === 'session.text.ended') {
       chatState.streamingText = ''
       renderStreaming()
+    } else if (event.type === 'session.reasoning.started') {
+      chatState.reasoningActive = true
+      updateReasoningStrip()
     } else if (event.type === 'session.reasoning.delta') {
+      // A delta without a preceding started/step event still means live reasoning.
+      chatState.reasoningActive = true
       chatState.reasoningText += data.delta || ''
       updateReasoningStrip()
     } else if (event.type === 'session.reasoning.ended') {
@@ -454,24 +460,42 @@ function renderAttachmentChips() {
 }
 
 /* Reasoning strip — a thin ticker above the messages showing the assistant's
-   live reasoning; after the step it stays as a one-line collapsed summary. */
+   live reasoning; after the step it stays as a one-line collapsed summary.
+   Rendering is incremental: each delta only appends its own text node, so the
+   element is never rewritten mid-stream (no flicker, scroll stays put). */
 function updateReasoningStrip() {
   var strip = document.getElementById('oc-reasoning-strip')
   if (!strip) return
   var text = chatState.reasoningText
+  var label = null
+  var body = null
   if (!text) {
     strip.hidden = true
     strip.dataset.expanded = ''
+    chatState.reasoningRendered = 0
+    body = document.getElementById('oc-reasoning-text')
+    if (body) body.textContent = ''
     return
   }
   strip.hidden = false
-  var label = document.getElementById('oc-reasoning-label')
-  var body = document.getElementById('oc-reasoning-text')
-  body.textContent = text
+  label = document.getElementById('oc-reasoning-label')
+  body = document.getElementById('oc-reasoning-text')
+  var rendered = chatState.reasoningRendered || 0
+  if (text.length >= rendered && text.slice(0, rendered) === (body.textContent || '')) {
+    // Normal case: append only the new tail.
+    if (text.length > rendered) {
+      body.appendChild(document.createTextNode(text.slice(rendered)))
+    }
+  } else {
+    // Reset (new step): full rewrite is fine here, it happens once.
+    body.textContent = text
+  }
+  chatState.reasoningRendered = text.length
   var expanded = false
   if (chatState.reasoningActive) {
     strip.classList.add('live')
     label.textContent = 'Reasoning…'
+    body.classList.remove('expanded')
     body.scrollTop = body.scrollHeight
   } else {
     strip.classList.remove('live')
