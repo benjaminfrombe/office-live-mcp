@@ -30,17 +30,17 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 48px 16px 16px; /* top padding avoids macOS personality menu (34x32px) */
+  padding: 38px 16px 12px; /* top padding avoids macOS personality menu (34x32px) */
   background: var(--canvas);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
 
 h1 {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: -0.01em;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 /* ---------- Bridge mode ---------- */
@@ -130,7 +130,7 @@ h1 {
 .mode-tabs {
   display: flex;
   gap: 3px;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
   padding: 3px;
   background: rgb(20 40 20 / 6%);
   border-radius: 999px;
@@ -357,20 +357,21 @@ select:hover {
 
 .reasoning-text {
   font-family: "SF Mono", Menlo, monospace;
-  font-size: 0.7rem;
-  line-height: 1.4;
+  font-size: 0.62rem;
+  line-height: 1.35;
   color: var(--text-muted);
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 150px;
+  max-height: 100px;
   overflow-y: auto;
   margin-top: 2px;
 }
 
-/* Collapsed after the step: one line only */
+/* Collapsed after the step: reasoning text fully hidden, label only */
 .reasoning-strip:not(.live) .reasoning-text {
-  max-height: 0.9em;
-  overflow-y: hidden;
+  max-height: 0;
+  overflow: hidden;
+  margin-top: 0;
 }
 
 .reasoning-strip:not(.live) .reasoning-text.expanded {
@@ -389,11 +390,11 @@ select:hover {
 .chat-input textarea {
   width: 100%;
   font-size: 0.79rem;
-  line-height: 1.4;
-  padding: 8px 10px;
+  line-height: 1.35;
+  padding: 6px 10px;
   border-radius: var(--radius);
   resize: none;
-  min-height: 72px;
+  min-height: 52px;
   overflow-y: hidden;
 }
 
@@ -409,7 +410,7 @@ select:hover {
 
 .chat-config {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
