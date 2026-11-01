@@ -6,7 +6,7 @@
   <title>Office Live MCP</title>
   <!-- Office.js MUST be in head, before any other scripts -->
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js" type="text/javascript"></script>
-  <link rel="stylesheet" href="style.css?v=12">
+  <link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
   <h1>Office Live MCP</h1>
@@ -23,17 +23,6 @@
   </div>
 
   <div id="mode-chat" class="mode-panel hidden">
-    <details class="chat-config">
-      <summary>Connection</summary>
-      <div class="chat-config-body">
-        <input id="oc-server-url" type="text" placeholder="OpenCode server URL (https://127.0.0.1:4096)">
-        <button id="oc-save-config" type="button">Save &amp; connect</button>
-        <div class="chat-advanced">
-          <button id="oc-toggle-advanced" type="button" class="link-button">Direct connection…</button>
-          <input id="oc-password" type="password" placeholder="Service password (direct connection only)" class="hidden">
-        </div>
-      </div>
-    </details>
     <div class="chat-toolbar">
       <select id="oc-session"></select>
       <button id="oc-new-session" type="button">New session</button>
@@ -57,8 +46,8 @@
     </div>
   </div>
 
-  <script src="opencode.js?v=12"></script>
-  <script src="chat.js?v=12"></script>
-  <script src="app.js?v=12"></script>
+  <script src="opencode.js?v=13"></script>
+  <script src="chat.js?v=13"></script>
+  <script src="app.js?v=13"></script>
 </body>
 </html>

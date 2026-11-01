@@ -32,32 +32,9 @@ var EVENT_TYPES = [
 ]
 
 function initChat() {
+  // Connection config comes from localStorage (loadConfig); the pane itself
+  // offers no connection UI — the same-origin /opencode proxy is the default.
   chatState.config = OpenCodeChat.loadConfig()
-  document.getElementById('oc-server-url').value = chatState.config.url
-  document.getElementById('oc-password').value = chatState.config.password
-  // Only show the password field when a direct (non-proxy) connection is stored
-  if (chatState.config.password) document.getElementById('oc-password').classList.remove('hidden')
-
-  document.getElementById('oc-save-config').addEventListener('click', () => {
-    chatState.config = {
-      url: document.getElementById('oc-server-url').value.trim() || OpenCodeChat.DEFAULT_URL,
-      password: document.getElementById('oc-password').value,
-    }
-    OpenCodeChat.saveConfig(chatState.config)
-    setChatStatus('Config saved — reconnecting...')
-    refreshSessions()
-    focusInput()
-  })
-
-  document.getElementById('oc-toggle-advanced').addEventListener('click', () => {
-    const password = document.getElementById('oc-password')
-    password.classList.toggle('hidden')
-    if (!password.classList.contains('hidden')) {
-      password.focus()
-    } else {
-      focusInput()
-    }
-  })
 
   document.getElementById('oc-new-session').addEventListener('click', () => {
     OpenCodeChat.createSession(chatState.config, 'Office add-in chat').then((session) => {
