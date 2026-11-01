@@ -172,12 +172,18 @@ function refreshSessions() {
   OpenCodeChat.listSessions(chatState.config).then((sessions) => {
     var select = document.getElementById('oc-session')
     select.innerHTML = ''
-    sessions.slice(0, 25).forEach((session) => {
-      var option = document.createElement('option')
-      option.value = session.id
-      option.textContent = session.title || session.id
-      select.appendChild(option)
-    })
+    // Most recent activity first: the API order is not guaranteed.
+    var updatedAt = (session) => (session.time && session.time.updated) || 0
+    sessions
+      .slice()
+      .sort((a, b) => updatedAt(b) - updatedAt(a))
+      .slice(0, 25)
+      .forEach((session) => {
+        var option = document.createElement('option')
+        option.value = session.id
+        option.textContent = session.title || session.id
+        select.appendChild(option)
+      })
     if (chatState.sessionID) select.value = chatState.sessionID
     if (select.value) selectSession(select.value)
   }, chatError)
