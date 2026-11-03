@@ -25,6 +25,8 @@ One bridge server, one add-in taskpane, three Office apps. The add-in detects wh
 
 That is 86 tools on one server. Anything the typed tools do not cover, the execute escape hatch handles with raw Office.js in the right host.
 
+There is also a **reverse direction**: an OpenCode Chat tab inside the taskpane that chats with your local OpenCode agent and applies its replies straight into the live document (see [OpenCode Chat](#opencode-chat-in-the-taskpane-reverse-bridge) below).
+
 ## Why live matters
 
 File-based tools (openpyxl, python-docx, python-pptx) read and write bytes on disk. They cannot refresh a PivotTable, they silently drop charts and macros, and you only see the result after reopening the file. This server works inside the running app instead: formulas are calculated by Excel itself, edits appear on screen while the agent works, and nothing that Excel owns gets lost.
@@ -128,6 +130,28 @@ args = ["<server path>"]
 ```
 
 (ChatGPT on the web only reaches remote HTTPS servers, so it needs a tunnel for a local bridge like this one.)
+
+### OpenCode Chat in the taskpane (reverse bridge)
+
+Besides acting as an MCP *client* of this server, OpenCode can also be driven **from inside Office**: the taskpane has an **OpenCode Chat** tab that connects to your running OpenCode service, renders the conversation, and applies replies to the live document. The MCP bridge keeps running in the background — the two directions work side by side.
+
+Quick setup:
+
+```bash
+npm run opencode-proxy
+```
+
+This local proxy (`http://127.0.0.1:4096`) reads the OpenCode service URL + password from `~/.local/state/opencode/service.json`, injects the auth header, and follows service restarts automatically. Then open the **OpenCode Chat** tab in the taskpane and point it at `https://127.0.0.1:4096` (Office's WKWebView blocks plain-`http` fetches from an HTTPS taskpane — a "Load failed" status usually means exactly this).
+
+What it gives you:
+
+- **Chat with live context** — the first prompt of a session carries an invisible preamble (open document, live-MCP instructions) and every prompt carries the active slide + selected shapes, so "this slide" just works.
+- **+ Selection** — paste the current document selection into the input as context.
+- **Image paste** — paste screenshots into the input as inline attachments.
+- **Reasoning strip** — live streaming of the model's reasoning while it works.
+- **Insert last reply at selection** — write the reply into the document at the cursor.
+
+Full details (SSE handling, session model, testing): [docs/opencode-mode.md](docs/opencode-mode.md).
 
 ### Optional: the ribbon icon (HTTPS)
 
