@@ -25,7 +25,7 @@ One bridge server, one add-in taskpane, three Office apps. The add-in detects wh
 
 That is 86 tools on one server. Anything the typed tools do not cover, the execute escape hatch handles with raw Office.js in the right host.
 
-There is also a **reverse direction**: an OpenCode Chat tab inside the taskpane that chats with your local OpenCode agent and applies its replies straight into the live document (see [OpenCode Chat](#opencode-chat-in-the-taskpane-reverse-bridge) below).
+There is also a **reverse direction** for opencode users (optional): an OpenCode Chat tab inside the taskpane that chats with your local OpenCode agent and applies its replies straight into the live document (see [OpenCode Chat](#opencode-chat-in-the-taskpane-reverse-bridge) below).
 
 ## Why live matters
 
