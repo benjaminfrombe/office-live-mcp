@@ -366,6 +366,21 @@ interface ProxyOptions {
   requestTimeoutMs?: number
 }
 
+/** Retry an ensure() call: a daemon mid-restart (or a race loser waiting for
+ * EADDRINUSE) must not kill the proxy at startup — retry with backoff. */
+async function ensureWithRetry(ensure: () => Promise<EnsureDaemonResult>, attempts = 4): Promise<EnsureDaemonResult> {
+  let lastError: unknown
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await ensure()
+    } catch (err: unknown) {
+      lastError = err
+      if (i < attempts - 1) await new Promise((resolve) => setTimeout(resolve, 500 * (i + 1)))
+    }
+  }
+  throw lastError
+}
+
 /**
  * Run the stdio proxy: newline-delimited JSON-RPC on stdin → POST /mcp on the
  * daemon → responses (JSON or SSE) back as newline-delimited JSON on stdout.
@@ -376,7 +391,7 @@ export async function runStdioProxy(options: ProxyOptions): Promise<void> {
   const stdout = options.stdout ?? process.stdout
   const requestTimeoutMs = options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS
   const ensure = options.ensure ?? (() => ensureDaemon(options.localVersion))
-  let ensureResult = await ensure()
+  let ensureResult = await ensureWithRetry(ensure)
   if (!ensureResult.alreadyRunning) {
     console.error('[stdio-proxy] Daemon started (detached); it stays up after this session ends.')
   }
@@ -484,11 +499,19 @@ export async function runStdioProxy(options: ProxyOptions): Promise<void> {
       // Transport failure (dead daemon, wedged socket, timeout) or an invalid
       // session: the daemon may have died or been restarted since this proxy
       // connected. Re-discover it (spawning one if needed), drop the stale
-      // session id, and retry the request once on the fresh endpoint.
-      ensureResult = await ensure()
-      base = ensureResult.base
-      sessionId = undefined
-      await postToDaemon(raw)
+      // session id, and retry on the fresh endpoint. The ensure itself can
+      // fail while the daemon is mid-restart — retry with backoff so a
+      // restart never turns into a hard error for the client.
+      try {
+        ensureResult = await ensureWithRetry(ensure, 3)
+        base = ensureResult.base
+        sessionId = undefined
+        await postToDaemon(raw)
+      } catch (retryErr: unknown) {
+        // Surface a plain Error (the client already shows a proxy-prefixed
+        // message); never let the proxy itself die on a daemon hiccup.
+        throw retryErr instanceof Error ? retryErr : new Error(String(retryErr))
+      }
     }
   }
 

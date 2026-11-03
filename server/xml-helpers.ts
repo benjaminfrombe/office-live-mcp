@@ -41,6 +41,26 @@ export async function exportSlide(
 // Reimport modified slide (delete old + insert modified at same position)
 // ---------------------------------------------------------------------------
 
+// Minimum interval between slide reimports. Rapid back-to-back reimports
+// (delete + reinsert + view-restore, each a native PowerPoint transaction)
+// crash PowerPoint for Mac (EXC_BAD_ACCESS, observed with 8 alternating
+// edit_slide_xml + screenshot cycles). Agents batch edits per slide, so a
+// short cooldown between reimports is invisible in practice.
+const REIMPORT_MIN_INTERVAL_MS = 600
+let lastReimportAt = 0
+let reimportChain: Promise<void> = Promise.resolve()
+
+/** Serialize reimports and enforce a minimum interval between them. */
+export function reimportThrottle(): Promise<void> {
+  const run = reimportChain.then(async () => {
+    const wait = lastReimportAt + REIMPORT_MIN_INTERVAL_MS - Date.now()
+    if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
+    lastReimportAt = Date.now()
+  })
+  reimportChain = run.catch(() => {})
+  return run
+}
+
 export async function reimportSlide(
   pool: ConnectionPool,
   modifiedBase64: string,
@@ -50,6 +70,7 @@ export async function reimportSlide(
   timeout?: number,
   restoredSlideIndex?: number,
 ): Promise<void> {
+  await reimportThrottle()
   const optionsParts = ['formatting: "KeepSourceFormatting"']
   if (prevSlideId) {
     optionsParts.push(`targetSlideId: "${prevSlideId}"`)

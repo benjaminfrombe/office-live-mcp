@@ -79287,12 +79287,24 @@ function parseSseMessages(body) {
   }
   return messages;
 }
+async function ensureWithRetry(ensure, attempts = 4) {
+  let lastError;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await ensure();
+    } catch (err) {
+      lastError = err;
+      if (i < attempts - 1) await new Promise((resolve4) => setTimeout(resolve4, 500 * (i + 1)));
+    }
+  }
+  throw lastError;
+}
 async function runStdioProxy(options) {
   const stdin = options.stdin ?? process.stdin;
   const stdout = options.stdout ?? process.stdout;
   const requestTimeoutMs = options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
   const ensure = options.ensure ?? (() => ensureDaemon(options.localVersion));
-  let ensureResult = await ensure();
+  let ensureResult = await ensureWithRetry(ensure);
   if (!ensureResult.alreadyRunning) {
     console.error("[stdio-proxy] Daemon started (detached); it stays up after this session ends.");
   }
@@ -79378,10 +79390,14 @@ async function runStdioProxy(options) {
     try {
       await postToDaemon(raw);
     } catch {
-      ensureResult = await ensure();
-      base = ensureResult.base;
-      sessionId = void 0;
-      await postToDaemon(raw);
+      try {
+        ensureResult = await ensureWithRetry(ensure, 3);
+        base = ensureResult.base;
+        sessionId = void 0;
+        await postToDaemon(raw);
+      } catch (retryErr) {
+        throw retryErr instanceof Error ? retryErr : new Error(String(retryErr));
+      }
     }
   }
   return new Promise((resolve4, reject) => {
@@ -79644,7 +79660,21 @@ async function exportSlide(pool2, slideIndex, targetWs, timeout) {
   `;
   return await pool2.sendCommand("executeCode", { code }, targetWs, timeout);
 }
+var REIMPORT_MIN_INTERVAL_MS = 600;
+var lastReimportAt = 0;
+var reimportChain = Promise.resolve();
+function reimportThrottle() {
+  const run = reimportChain.then(async () => {
+    const wait = lastReimportAt + REIMPORT_MIN_INTERVAL_MS - Date.now();
+    if (wait > 0) await new Promise((resolve4) => setTimeout(resolve4, wait));
+    lastReimportAt = Date.now();
+  });
+  reimportChain = run.catch(() => {
+  });
+  return run;
+}
 async function reimportSlide(pool2, modifiedBase64, slideId, prevSlideId, targetWs, timeout, restoredSlideIndex) {
+  await reimportThrottle();
   const optionsParts = ['formatting: "KeepSourceFormatting"'];
   if (prevSlideId) {
     optionsParts.push(`targetSlideId: "${prevSlideId}"`);
@@ -84628,7 +84658,7 @@ var import_xmldom4 = __toESM(require_lib(), 1);
 function registerXmlTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
     "edit_slide_xml",
-    "Edit slide XML and reimport. Two modes: (1) xml mode \u2014 provide finished XML string (use read_slide_xml first to get current XML), (2) code mode \u2014 provide JS code that manipulates the pre-parsed DOM (receives: doc, findShapeById, NS_P, NS_A, escapeXml, serializeXml, DOMParser). Code mode preserves untouched attributes. The slide is exported, modified server-side, and reimported \u2014 data never enters Claude's context. NOTE: the reimport deletes and reinserts the slide, but the view is restored to the edited slide afterwards \u2014 reserve this for structural changes (new shapes, layout rebuilds).",
+    "Edit slide XML and reimport. Two modes: (1) xml mode \u2014 provide finished XML string (use read_slide_xml first to get current XML), (2) code mode \u2014 provide JS code that manipulates the pre-parsed DOM (receives: doc, findShapeById, NS_P, NS_A, escapeXml, serializeXml, DOMParser). Code mode preserves untouched attributes. The slide is exported, modified server-side, and reimported \u2014 data never enters Claude's context. NOTE: the reimport deletes and reinserts the slide, but the view is restored to the edited slide afterwards \u2014 reserve this for structural changes (new shapes, layout rebuilds). BULK EDITS: apply ALL edits across slides first, then verify with a single screenshot \u2014 do NOT alternate screenshot and edit_slide_xml calls; rapid reimport cycles crash PowerPoint for Mac (reimports are throttled server-side, so interleaving only wastes time).",
     {
       slide: external_exports.number().int().min(1).describe("Slide number, 1-based (slide 1 = first slide)"),
       xml: external_exports.string().optional().describe(
@@ -84970,7 +85000,7 @@ function createMcpServer(getSessionId, getActiveSessionCount) {
       instructions: [
         "This server drives LIVE Office documents (Word, Excel, PowerPoint) through an add-in taskpane; the user watches every change happen in real time.",
         "View etiquette: the user wants to SEE edits as they happen. Before starting an edit burst on a slide, bring that slide into view first (PowerPoint: show_slide; Word/Excel: navigate to or select the target content), then make the changes.",
-        "Slide edits: prefer the OOXML route (edit_slide_xml, edit_shape_paragraphs, edit_slide_zip, edit_slide_chart) \u2014 full fidelity, and the view automatically returns to the edited slide after the reimport. Use execute_officejs only for quick in-place tweaks or APIs the OOXML route cannot reach.",
+        "Slide edits: prefer the OOXML route (edit_slide_xml, edit_shape_paragraphs, edit_slide_zip, edit_slide_chart) \u2014 full fidelity, and the view automatically returns to the edited slide after the reimport. Use execute_officejs only for quick in-place tweaks or APIs the OOXML route cannot reach. BULK EDITS: apply ALL edits first, then verify with at most one screenshot at the end \u2014 never alternate screenshot and edit_slide_xml calls; rapid reimport cycles crash PowerPoint for Mac.",
         "When multiple documents are connected, always pass the explicit documentId/workbookId/presentationId from list_documents/list_workbooks/list_presentations.",
         "Tools that need a saved file (get_local_copy, read_deck_text, read_speaker_notes, add_slide) fail on unsaved documents with a GeneralException; save first."
       ].join("\n")

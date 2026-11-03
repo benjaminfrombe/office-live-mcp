@@ -17,6 +17,84 @@ var chatState = {
   inputHistory: [], // sent prompts, newest last (ArrowUp recalls them)
   historyIndex: -1, // -1 = live input, otherwise an index into inputHistory
   draft: '', // what the user typed before browsing history
+  contextSent: false, // the document-context preamble rides on the first prompt of a session
+}
+
+/* Invisible context that teaches the LLM about the live MCP and the open
+   document. Markers let the renderer strip it from displayed history. */
+var CONTEXT_MARKER_START = '--- office-live context ---'
+var CONTEXT_MARKER_END = '--- end context ---'
+
+function documentContextPreamble() {
+  var url = null
+  try {
+    url = Office.context.document.url || null
+  } catch (_e) {
+    // Not available in standalone/browser mode
+  }
+  var host = null
+  try {
+    host = typeof detectHost === 'function' ? detectHost() : null
+  } catch (_e) {
+    // detectHost lives in app.js; absence must never block sending
+  }
+  if (!url && !host?.name) return ''
+  return (
+    `${CONTEXT_MARKER_START}\n` +
+    'You are editing a LIVE document through the office-live-mcp MCP tools. Confirm the open document with ' +
+    'list_presentations / list_documents / list_workbooks before the first edit, then use the edit tools against it.\n' +
+    `Current document: ${host?.name || 'document'}${url ? ` — ${url}` : ''}\n` +
+    'The user watches every change live: bring the relevant slide or section into view before editing, ' +
+    'keep edits minimal, and verify the result afterwards.\n' +
+    `${CONTEXT_MARKER_END}\n\n`
+  )
+}
+
+function stripContextPreamble(text) {
+  if (typeof text !== 'string' || text.indexOf(CONTEXT_MARKER_START) !== 0) return text
+  var idx = text.indexOf(CONTEXT_MARKER_END)
+  if (idx === -1) return text
+  return text.slice(idx + CONTEXT_MARKER_END.length).replace(/^\s+/, '')
+}
+
+/* The slide the user is looking at right now, injected with every prompt so
+   phrases like "this slide" resolve without the user having to spell out a
+   number. Empty in Word/Excel or when the selection API says nothing. */
+function currentSlideContext() {
+  return runLocalOffice(
+    'const out = { slides: [], shapes: [], total: 0 };\n' +
+      'const pres = context.presentation;\n' +
+      'try {\n' +
+      '  pres.load("slideCount");\n' +
+      '  await context.sync();\n' +
+      '  out.total = pres.slideCount;\n' +
+      '} catch (e) {}\n' +
+      'try {\n' +
+      '  const slides = pres.getSelectedSlides();\n' +
+      '  slides.load("items");\n' +
+      '  await context.sync();\n' +
+      '  out.slides = slides.items.map((x) => x.index + 1);\n' +
+      '} catch (e) {}\n' +
+      'try {\n' +
+      '  const shapes = pres.getSelectedShapes();\n' +
+      '  shapes.load("items");\n' +
+      '  await context.sync();\n' +
+      '  for (const s of shapes.items) {\n' +
+      '    try { s.load("name,id"); await context.sync(); } catch (e) { continue; }\n' +
+      '    out.shapes.push({ name: s.name, id: s.id });\n' +
+      '  }\n' +
+      '} catch (e) {}\n' +
+      'return out;',
+  )
+    .then((out) => {
+      if (!out || !out.slides || !out.slides.length) return ''
+      var line = `Active slide: ${out.slides.join(', ')} of ${out.total || '?'}`
+      if (out.shapes?.length) {
+        line += `; selected shapes: ${out.shapes.map((s) => `${s.name} (id ${s.id})`).join(', ')}`
+      }
+      return `${line}. "This slide" refers to the active slide.\n`
+    })
+    .catch(() => '')
 }
 
 var INPUT_HISTORY_KEY = 'olm-input-history'
@@ -264,6 +342,7 @@ function selectSession(sessionID) {
   chatState.sessionID = sessionID
   chatState.streamingText = ''
   chatState.renderedIds = []
+  chatState.contextSent = false
   chatState.reasoningText = ''
   chatState.reasoningActive = false
   updateReasoningStrip()
@@ -372,40 +451,52 @@ function sendChatMessage() {
     focusInput()
     return
   }
-  const context = chatState.pendingSelections.length ? `${selectionContextBlocks()}\n\n` : ''
-  const text = `${context}${typed}`
-  chatState.busy = true
-  rememberInput(typed)
-  chatState.historyIndex = -1
-  chatState.draft = ''
-  input.value = ''
-  chatState.pendingSelections = []
-  renderSelectionChips()
-  autoGrowInput()
-  setChatStatus('Sending...')
-  appendMessage(
-    'user',
-    typed ||
-      (attachments.length
-        ? `(${attachments.length} image${attachments.length > 1 ? 's' : ''})`
-        : '(document selection)'),
-    true,
-  )
-  autoGrowInput()
-  focusInput()
-  OpenCodeChat.sendPrompt(chatState.config, chatState.sessionID, text, attachments).then(
-    () => {
-      chatState.busy = false
-      // Attachments are cleared only on success so a failed send can be retried.
-      chatState.pendingAttachments = []
-      renderAttachmentChips()
-      setChatStatus('')
-    },
-    (err) => {
-      chatState.busy = false
-      chatError(err)
-    },
-  )
+  // The active slide rides on every prompt — "this slide" must always resolve.
+  currentSlideContext().then((slideContext) => {
+    const context = chatState.pendingSelections.length ? `${selectionContextBlocks()}\n\n` : ''
+    // One invisible context block: the document preamble (first prompt only)
+    // plus the active slide (every prompt), both inside the strip markers.
+    let invisible = chatState.contextSent ? '' : documentContextPreamble()
+    chatState.contextSent = true
+    if (slideContext) {
+      invisible = invisible
+        ? invisible.replace(CONTEXT_MARKER_END, `${slideContext}${CONTEXT_MARKER_END}`)
+        : `${CONTEXT_MARKER_START}\n${slideContext}${CONTEXT_MARKER_END}\n\n`
+    }
+    const text = `${invisible}${context}${typed}`
+    chatState.busy = true
+    rememberInput(typed)
+    chatState.historyIndex = -1
+    chatState.draft = ''
+    input.value = ''
+    chatState.pendingSelections = []
+    renderSelectionChips()
+    autoGrowInput()
+    setChatStatus('Sending...')
+    appendMessage(
+      'user',
+      typed ||
+        (attachments.length
+          ? `(${attachments.length} image${attachments.length > 1 ? 's' : ''})`
+          : '(document selection)'),
+      true,
+    )
+    autoGrowInput()
+    focusInput()
+    OpenCodeChat.sendPrompt(chatState.config, chatState.sessionID, text, attachments).then(
+      () => {
+        chatState.busy = false
+        // Attachments are cleared only on success so a failed send can be retried.
+        chatState.pendingAttachments = []
+        renderAttachmentChips()
+        setChatStatus('')
+      },
+      (err) => {
+        chatState.busy = false
+        chatError(err)
+      },
+    )
+  })
 }
 
 /* Keep the input focused: every action returns focus so the user can keep
@@ -531,6 +622,7 @@ var TICKER_MAX_SPEED = 600 // px/s
 var tickerRaf = 0
 var tickerOffset = null // null = snap to the tail on the next frame
 var tickerLast = 0
+var tickerLastLen = 0 // reasoning length at the last tick — idle detection
 
 function tickTicker(ts) {
   var strip = document.getElementById('oc-reasoning-strip')
@@ -552,8 +644,20 @@ function tickTicker(ts) {
     want = tickerOffset - target
     tickerOffset -= Math.min(want, TICKER_MAX_SPEED * dt)
   }
-  body.style.transform = `translateX(${tickerOffset}px)`
+  var textLen = body.textContent.length
+  if (tickerOffset !== target || textLen !== tickerLastLen) {
+    body.style.transform = `translateX(${tickerOffset}px)`
+  }
   tickerLast = ts
+  tickerLastLen = textLen
+  // Idle: caught up and no new text — stop the loop entirely (no per-frame
+  // DOM churn while the model thinks or a tool runs). The next delta calls
+  // startTicker() again.
+  if (tickerOffset === target && textLen === tickerLastLen) {
+    tickerRaf = 0
+    tickerLast = 0
+    return
+  }
   tickerRaf = window.requestAnimationFrame(tickTicker)
 }
 
@@ -713,7 +817,7 @@ function renderFromRows(rows) {
   const firstNew = isAppend ? shift + rendered.length : 0
   for (let i = firstNew; i < visible.length; i++) {
     const row = visible[i]
-    const text = OpenCodeChat.messageText(row)
+    const text = stripContextPreamble(OpenCodeChat.messageText(row))
     const images = OpenCodeChat.messageImages(row)
     if (!text && !images.length) {
       chatState.renderedIds.push(row.id)

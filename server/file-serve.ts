@@ -28,19 +28,37 @@ export function resolveImageFileRequest(rawPath: string | null): ImageFileReques
   return { filePath: rawPath, mime }
 }
 
-/** Absolute image paths mentioned in tool output text, deduplicated in order. */
+/** Absolute image paths mentioned in tool output text, deduplicated in order.
+ * Tools often wrap exact paths in <file>...</file> tags (spaces included);
+ * bare mentions fall back to a space-free path regex. */
 export function imagePathsInText(text: string): string[] {
-  const matches = text.match(/(?:~?\/)[\w.@/-]+\.(?:png|jpe?g|gif|webp|svg)/gi) || []
-  const seen = new Set<string>()
   const paths: string[] = []
-  for (const match of matches) {
+  const seen = new Set<string>()
+  const push = (candidate: string) => {
+    const dot = candidate.lastIndexOf('.')
+    if (dot === -1) return
+    if (!IMAGE_MIME_BY_EXTENSION[candidate.slice(dot).toLowerCase()]) return
+    if (!candidate.startsWith('/') && !candidate.startsWith('~/')) return
     // Drop relative paths: "./out.jpg" matches with its "./" as the slash.
-    const start = text.indexOf(match)
-    if (match.startsWith('/') && text[start - 1] === '.') continue
-    if (!seen.has(match)) {
-      seen.add(match)
-      paths.push(match)
+    const start = text.indexOf(candidate)
+    if (candidate.startsWith('/') && text[start - 1] === '.') return
+    if (!seen.has(candidate)) {
+      // A bare match can be the tail of an already-extracted <file> path
+      // (the regex restarts after a space) — never push it as a second image.
+      if ([...seen].some((existing) => existing.endsWith(candidate))) return
+      seen.add(candidate)
+      paths.push(candidate)
     }
+  }
+  // Exact paths wrapped in <file>...</file> — may contain spaces.
+  const wrapped = text.match(/<file>([^<]+)<\/file>/g) || []
+  for (const wrapper of wrapped) {
+    push(wrapper.slice(6, -7).trim())
+  }
+  // Bare mentions: space-free absolute paths.
+  const matches = text.match(/(?:~?\/)[\w.@/-]+/g) || []
+  for (const match of matches) {
+    push(match)
   }
   return paths
 }

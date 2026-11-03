@@ -120,15 +120,30 @@ var OpenCodeChat = (() => {
       var state = part.state || {}
       ;(state.content || []).forEach((block) => {
         if (block.type !== 'text' || !block.text) return
-        // Mirrors server/file-serve.ts imagePathsInText (kept in sync).
-        var matches = block.text.match(/(?:~?\/)[\w.@/-]+\.(?:png|jpe?g|gif|webp|svg)/gi) || []
-        matches.forEach((match) => {
-          if (match.startsWith('/') && block.text[block.text.indexOf(match) - 1] === '.') return
-          if (images.some((existing) => existing.src.indexOf(encodeURIComponent(match)) !== -1)) return
+        // Mirrors server/file-serve.ts imagePathsInText (kept in sync):
+        // exact paths from <file>...</file> wrappers (spaces included),
+        // then bare space-free mentions, skipping suffix duplicates.
+        var text = block.text
+        var candidates = []
+        ;(text.match(/<file>([^<]+)<\/file>/g) || []).forEach((wrapper) => {
+          candidates.push(wrapper.slice(6, -7).trim())
+        })
+        ;(text.match(/(?:~?\/)[\w.@/-]+/g) || []).forEach((match) => {
+          candidates.push(match)
+        })
+        candidates.forEach((candidate) => {
+          var dot = candidate.lastIndexOf('.')
+          if (dot === -1) return
+          var ext = candidate.slice(dot).toLowerCase()
+          if (!/^\.(png|jpe?g|gif|webp|svg)$/.test(ext)) return
+          if (!candidate.startsWith('/') && !candidate.startsWith('~/')) return
+          if (candidate.startsWith('/') && text[text.indexOf(candidate) - 1] === '.') return
+          if (candidates.some((other) => other !== candidate && other.endsWith(candidate))) return
+          if (images.some((existing) => existing.src.indexOf(encodeURIComponent(candidate)) !== -1)) return
           images.push({
             mime: 'image/*',
-            name: match.split('/').pop() || match,
-            src: `${origin}/file?path=${encodeURIComponent(match)}`,
+            name: candidate.split('/').pop() || candidate,
+            src: `${origin}/file?path=${encodeURIComponent(candidate)}`,
           })
         })
       })

@@ -33,7 +33,7 @@ function startFakeDaemon(handlers: {
   health?: () => { status: number; body: unknown }
   mcpPost?: (
     body: string,
-    req: { headers: Record<string, string | string[] | undefined> },
+    req: { headers: Record<string, string | string[] | undefined>; socket: { destroy(): void } },
   ) => {
     status: number
     contentType: string
@@ -56,6 +56,9 @@ function startFakeDaemon(handlers: {
           res.end(JSON.stringify(h.body))
         } else if (url === '/mcp' && handlers.mcpPost) {
           const out = handlers.mcpPost(body, req)
+          // A dead-daemon simulation destroys the socket and reports status 0 —
+          // never touch the response after that (writeHead(0) throws async).
+          if (out.status === 0 || res.socket?.destroyed) return
           const headers: Record<string, string> = { 'Content-Type': out.contentType }
           if (out.sessionId) headers['Mcp-Session-Id'] = out.sessionId
           res.writeHead(out.status, headers)
@@ -589,6 +592,110 @@ describe('runStdioProxy', () => {
     expect((lines[1] as { result: unknown }).result).toEqual({ ok: true })
     expect(ensureCalls).toBe(2)
     expect(retriedWithoutSession).toBe(true)
+    await closeServer(server)
+  })
+
+  it('survives a transiently failing ensure at startup', async () => {
+    // A daemon mid-restart must not kill the proxy: ensure fails twice, then
+    // succeeds, and the very first request still gets answered.
+    const server = await startFakeDaemon({
+      mcpPost: (body) => ({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ jsonrpc: '2.0', id: JSON.parse(body).id, result: { ok: true } }),
+      }),
+    })
+    let attempts = 0
+    const stdin = new PassThrough()
+    const stdout = new PassThrough()
+    const chunks: string[] = []
+    stdout.on('data', (c: Buffer) => chunks.push(c.toString()))
+    const done = runStdioProxy({
+      stdin,
+      stdout,
+      localVersion: '0.6.0',
+      ensure: () => {
+        attempts++
+        if (attempts < 3) return Promise.reject(new Error('daemon not healthy yet'))
+        return Promise.resolve({
+          alreadyRunning: true,
+          health: { status: 'ok' },
+          base: `http://127.0.0.1:${process.env.MCP_PORT}`,
+        })
+      },
+    })
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} })}\n`)
+    await new Promise((r) => setTimeout(r, 2500))
+    stdin.end()
+    await done
+    const lines = chunks
+      .join('')
+      .trim()
+      .split('\n')
+      .map((l) => JSON.parse(l))
+    expect(lines).toHaveLength(1)
+    expect((lines[0] as { result: unknown }).result).toEqual({ ok: true })
+    expect(attempts).toBe(3)
+    await closeServer(server)
+  })
+
+  it('retries recovery when the re-ensure fails transiently', async () => {
+    // Daemon dies mid-session AND the first recovery ensure also fails
+    // (daemon still restarting): the request must still be answered once the
+    // daemon is back, instead of surfacing a hard error.
+    let alive = true
+    let ensureCalls = 0
+    const stdin = new PassThrough()
+    const stdout = new PassThrough()
+    const chunks: string[] = []
+    stdout.on('data', (c: Buffer) => chunks.push(c.toString()))
+    const server = await startFakeDaemon({
+      mcpPost: (body, req) => {
+        if (!alive) {
+          // Simulate a dead daemon: destroy the connection instead of answering.
+          req.socket.destroy()
+          return { status: 0, contentType: '', body: '' }
+        }
+        return {
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ jsonrpc: '2.0', id: JSON.parse(body).id, result: { n: JSON.parse(body).id } }),
+        }
+      },
+    })
+    const done = runStdioProxy({
+      stdin,
+      stdout,
+      localVersion: '0.6.0',
+      ensure: () => {
+        ensureCalls++
+        if (!alive && ensureCalls <= 3) return Promise.reject(new Error('daemon not healthy yet'))
+        return Promise.resolve({
+          alreadyRunning: true,
+          health: { status: 'ok' },
+          base: `http://127.0.0.1:${process.env.MCP_PORT}`,
+        })
+      },
+    })
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} })}\n`)
+    await new Promise((r) => setTimeout(r, 200))
+    alive = false
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: {} })}\n`)
+    await new Promise((r) => setTimeout(r, 400))
+    alive = true
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} })}\n`)
+    await new Promise((r) => setTimeout(r, 2500))
+    stdin.end()
+    await done
+    const lines = chunks
+      .join('')
+      .trim()
+      .split('\n')
+      .map((l) => JSON.parse(l))
+    const byId = new Map(lines.map((l) => [l.id, l]))
+    expect((byId.get(1) as { result: unknown }).result).toEqual({ n: 1 })
+    expect((byId.get(2) as { result: unknown }).result).toEqual({ n: 2 })
+    expect((byId.get(3) as { result: unknown }).result).toEqual({ n: 3 })
     await closeServer(server)
   })
 

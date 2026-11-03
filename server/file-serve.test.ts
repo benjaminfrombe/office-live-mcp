@@ -30,6 +30,11 @@ describe('imagePathsInText', () => {
     expect(imagePathsInText(text)).toEqual(['~/slide.png'])
   })
 
+  it('extracts exact paths with spaces from <file> wrappers', () => {
+    const text = 'available: <file>/Users/x/brand/logos/dee/black and white/delaware-dee-white-web.svg</file> and notes'
+    expect(imagePathsInText(text)).toEqual(['/Users/x/brand/logos/dee/black and white/delaware-dee-white-web.svg'])
+  })
+
   it('ignores relative paths and non-image extensions', () => {
     expect(imagePathsInText('saved slide.png and notes.md and ./local/out.jpg')).toEqual([])
   })
