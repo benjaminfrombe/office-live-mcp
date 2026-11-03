@@ -133,8 +133,77 @@ function daemonTlsEnabled(): boolean {
   }
 }
 
+/** Copy-paste commands printed when mkcert is not installed. */
+export const MAC_TLS_HINT_COMMANDS = [
+  'brew install mkcert && mkcert -install',
+  'mkcert -cert-file certs/localhost.pem -key-file certs/localhost-key.pem localhost 127.0.0.1 ::1',
+  'office-live-mcp setup   # picks up TLS: HTTPS manifests + daemon on :8791',
+]
+
+/**
+ * Decide how macOS setup should handle TLS. TLS stays optional on macOS
+ * (WKWebView only needs it for the ribbon icon), but when mkcert is on the
+ * PATH we can flip it on automatically instead of telling the user how.
+ */
+export function planMacTls(input: {
+  daemonTls: boolean
+  mkcertAvailable: boolean
+  certExists: boolean
+}): { action: 'skip' } | { action: 'enable' } | { action: 'hint'; commands: string[] } {
+  if (input.daemonTls) return { action: 'skip' }
+  if (input.mkcertAvailable) return { action: 'enable' }
+  return { action: 'hint', commands: MAC_TLS_HINT_COMMANDS }
+}
+
+/** mkcert on the PATH? (checked via PATH lookup, no shell) */
+function mkcertAvailable(): boolean {
+  const dirs = (process.env.PATH ?? '').split(':')
+  return dirs.some((dir) => {
+    if (!dir) return false
+    try {
+      return existsSync(resolve(dir, 'mkcert'))
+    } catch {
+      return false
+    }
+  })
+}
+
 function setupMac(): void {
-  const tls = daemonTlsEnabled()
+  const plan = planMacTls({
+    daemonTls: daemonTlsEnabled(),
+    mkcertAvailable: mkcertAvailable(),
+    certExists: existsSync(CERT_PATH()) && existsSync(CERT_KEY_PATH()),
+  })
+  let tls = plan.action === 'skip'
+  if (plan.action === 'enable') {
+    // mkcert -install is a no-op (no prompt) when its CA is already trusted;
+    // if it fails (password cancelled), fall through to the hint instead of
+    // half-enabling TLS.
+    const install = spawnSync('mkcert', ['-install'], { stdio: 'pipe' })
+    const cert =
+      install.status === 0
+        ? spawnSync(
+            'mkcert',
+            ['-cert-file', CERT_PATH(), '-key-file', CERT_KEY_PATH(), 'localhost', '127.0.0.1', '::1'],
+            { stdio: 'pipe' },
+          )
+        : null
+    if (cert && cert.status === 0) {
+      writeDaemonTlsEnv()
+      tls = true
+      console.log('[setup] mkcert certificate installed — the bridge will run over HTTPS (https://localhost:8791).')
+    } else {
+      console.log('[setup] mkcert found, but the trust step did not complete (password cancelled?).')
+      console.log('[setup] Run these commands manually to enable the ribbon icon over HTTPS:')
+      for (const command of MAC_TLS_HINT_COMMANDS) console.log(`  ${command}`)
+    }
+  } else if (plan.action === 'hint') {
+    console.log(
+      '[setup] Optional: for the real ribbon icon, serve the bridge over HTTPS. Install mkcert and rerun setup:',
+    )
+    for (const command of plan.commands) console.log(`  ${command}`)
+  }
+
   const defaultPort = tls ? 8791 : 8790
   const port = Number(process.env.BRIDGE_PORT) || defaultPort
   let installed = 0

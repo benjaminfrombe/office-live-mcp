@@ -11,6 +11,7 @@ import {
   manifestNameFor,
   mcpConfigSnippet,
   mergeDaemonTls,
+  planMacTls,
   registryCommands,
 } from './setup.ts'
 
@@ -84,6 +85,26 @@ describe('ensureLocalhostCert', () => {
       delete process.env.BRIDGE_CERT_PATH
       delete process.env.BRIDGE_KEY_PATH
       rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('planMacTls', () => {
+  it('skips when the daemon already runs TLS', () => {
+    expect(planMacTls({ daemonTls: true, mkcertAvailable: true, certExists: false })).toEqual({ action: 'skip' })
+  })
+
+  it('enables TLS via mkcert when available', () => {
+    expect(planMacTls({ daemonTls: false, mkcertAvailable: true, certExists: false })).toEqual({ action: 'enable' })
+    // An existing cert pair still needs the daemon.env flip, so still enable.
+    expect(planMacTls({ daemonTls: false, mkcertAvailable: true, certExists: true })).toEqual({ action: 'enable' })
+  })
+
+  it('falls back to a hint with copy-paste commands when mkcert is absent', () => {
+    const plan = planMacTls({ daemonTls: false, mkcertAvailable: false, certExists: false })
+    expect(plan.action).toBe('hint')
+    if (plan.action === 'hint') {
+      expect(plan.commands.some((c) => c.includes('mkcert'))).toBe(true)
     }
   })
 })

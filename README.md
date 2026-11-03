@@ -157,17 +157,16 @@ Full details (SSE handling, session model, testing): [docs/opencode-mode.md](doc
 
 Everything works over plain HTTP except one cosmetic detail: Office refuses to load the **ribbon icon** over HTTP, so the button shows a generic placeholder. The add-in, taskpane and bridge connection are unaffected.
 
-To get the real icon, serve the bridge over HTTPS with a locally trusted certificate (one-time setup):
+On **macOS**, setup now handles this for you when [mkcert](https://github.com/FiloSottile/mkcert) is installed: it generates the localhost certificate, trusts it, flips `BRIDGE_TLS=1` in the daemon env, and installs the HTTPS manifests — the daemon then serves `https://localhost:8791`. So:
 
 ```bash
-brew install mkcert && mkcert -install        # or: npx office-addin-dev-certs install
-mkcert -cert-file certs/localhost.pem -key-file certs/localhost-key.pem localhost 127.0.0.1 ::1
-
-printf 'BRIDGE_TLS=1\n' > ~/.office-live-mcp/daemon.env   # picked up by the auto-started daemon
-node --experimental-strip-types scripts/sideload.ts --tls      # per app: add --app word / --app excel
+brew install mkcert && mkcert -install   # one-time CA trust (asks your password)
+office-live-mcp setup                    # re-run: switches everything to HTTPS
 ```
 
-Then restart the Office apps. Without this step, just ignore the placeholder icon.
+If mkcert is not installed, setup prints these commands as a hint and keeps running over HTTP. To undo, remove the `BRIDGE_TLS=1` line from `~/.office-live-mcp/daemon.env` and rerun setup.
+
+On **Windows** no certificate is needed: the supported install route is a shared-folder catalog over plain HTTP (see below), and the ribbon icon stays a placeholder unless you opt into the legacy HTTPS catalog route with `OLM_HTTPS_CATALOG=1` (which generates and trusts a self-signed certificate automatically — but modern Office ignores that catalog anyway).
 
 ## Windows installation
 

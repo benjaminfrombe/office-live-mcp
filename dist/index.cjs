@@ -78620,8 +78620,56 @@ function daemonTlsEnabled() {
     return false;
   }
 }
+var MAC_TLS_HINT_COMMANDS = [
+  "brew install mkcert && mkcert -install",
+  "mkcert -cert-file certs/localhost.pem -key-file certs/localhost-key.pem localhost 127.0.0.1 ::1",
+  "office-live-mcp setup   # picks up TLS: HTTPS manifests + daemon on :8791"
+];
+function planMacTls(input2) {
+  if (input2.daemonTls) return { action: "skip" };
+  if (input2.mkcertAvailable) return { action: "enable" };
+  return { action: "hint", commands: MAC_TLS_HINT_COMMANDS };
+}
+function mkcertAvailable() {
+  const dirs = (process.env.PATH ?? "").split(":");
+  return dirs.some((dir) => {
+    if (!dir) return false;
+    try {
+      return (0, import_node_fs2.existsSync)((0, import_node_path2.resolve)(dir, "mkcert"));
+    } catch {
+      return false;
+    }
+  });
+}
 function setupMac() {
-  const tls = daemonTlsEnabled();
+  const plan = planMacTls({
+    daemonTls: daemonTlsEnabled(),
+    mkcertAvailable: mkcertAvailable(),
+    certExists: (0, import_node_fs2.existsSync)(CERT_PATH()) && (0, import_node_fs2.existsSync)(CERT_KEY_PATH())
+  });
+  let tls = plan.action === "skip";
+  if (plan.action === "enable") {
+    const install = (0, import_node_child_process.spawnSync)("mkcert", ["-install"], { stdio: "pipe" });
+    const cert = install.status === 0 ? (0, import_node_child_process.spawnSync)(
+      "mkcert",
+      ["-cert-file", CERT_PATH(), "-key-file", CERT_KEY_PATH(), "localhost", "127.0.0.1", "::1"],
+      { stdio: "pipe" }
+    ) : null;
+    if (cert && cert.status === 0) {
+      writeDaemonTlsEnv();
+      tls = true;
+      console.log("[setup] mkcert certificate installed \u2014 the bridge will run over HTTPS (https://localhost:8791).");
+    } else {
+      console.log("[setup] mkcert found, but the trust step did not complete (password cancelled?).");
+      console.log("[setup] Run these commands manually to enable the ribbon icon over HTTPS:");
+      for (const command of MAC_TLS_HINT_COMMANDS) console.log(`  ${command}`);
+    }
+  } else if (plan.action === "hint") {
+    console.log(
+      "[setup] Optional: for the real ribbon icon, serve the bridge over HTTPS. Install mkcert and rerun setup:"
+    );
+    for (const command of plan.commands) console.log(`  ${command}`);
+  }
   const defaultPort = tls ? 8791 : 8790;
   const port = Number(process.env.BRIDGE_PORT) || defaultPort;
   let installed = 0;
