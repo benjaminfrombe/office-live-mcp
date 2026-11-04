@@ -1,5 +1,5 @@
 import { type ChildProcessWithoutNullStreams, execFileSync, spawn } from 'node:child_process'
-import { existsSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, rmSync } from 'node:fs'
 import { request as httpRequest } from 'node:http'
 import { request as httpsRequest } from 'node:https'
 import { createServer, type Server } from 'node:net'
@@ -10,6 +10,7 @@ import WebSocket from 'ws'
 const MAX_HTTP_BODY_BYTES = 16 * 1024 * 1024
 const STARTUP_TIMEOUT_MS = 10_000
 const POLL_INTERVAL_MS = 50
+const TEST_DAEMON_DIR = resolve(`/tmp/olm-index-test-${process.pid}`)
 
 type Health = {
   status: string
@@ -245,7 +246,15 @@ async function spawnBridge(
     ['--experimental-strip-types', resolve(process.cwd(), 'server/index.ts'), '--bridge', ...extraArgs],
     {
       cwd: process.cwd(),
-      env: { ...process.env, BRIDGE_NO_UPDATE_CHECK: '1', ...env },
+      env: {
+        ...process.env,
+        BRIDGE_NO_UPDATE_CHECK: '1',
+        // Isolate the daemon dir: without this, a daemon-mode child would read
+        // the developer's real ~/.office-live-mcp/daemon.env (e.g. BRIDGE_TLS=1)
+        // and claim the real daemon.lock.
+        OLM_DAEMON_DIR: TEST_DAEMON_DIR,
+        ...env,
+      },
       stdio: 'pipe',
     },
   )
@@ -285,6 +294,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await killProcess(serverProcess)
+  rmSync(TEST_DAEMON_DIR, { recursive: true, force: true })
 })
 
 describe('bridge WebSocket origin policy', () => {

@@ -79209,6 +79209,13 @@ function writeDaemonLock(pid) {
   (0, import_node_fs4.mkdirSync)(DAEMON_DIR, { recursive: true });
   (0, import_node_fs4.writeFileSync)(DAEMON_LOCK_FILE, JSON.stringify({ pid, startedAt: (/* @__PURE__ */ new Date()).toISOString() }));
 }
+function claimDaemonLock(pid) {
+  const lock = readDaemonLock();
+  if (lock?.pid === pid) return true;
+  if (lock && isPidAlive(lock.pid)) return false;
+  writeDaemonLock(pid);
+  return true;
+}
 async function waitForDaemonHealth(timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -79257,10 +79264,7 @@ function spawnDaemon() {
 function selfHealDaemonLock(health) {
   const pid = health.pid;
   if (typeof pid !== "number" || !Number.isInteger(pid) || pid <= 0) return;
-  const lock = readDaemonLock();
-  if (lock?.pid === pid) return;
-  if (lock && isPidAlive(lock.pid)) return;
-  writeDaemonLock(pid);
+  claimDaemonLock(pid);
 }
 async function ensureDaemon(localVersion, deps = {}) {
   const spawnFn = deps.spawnDaemon ?? spawnDaemon;
@@ -84958,6 +84962,9 @@ var noFlagsGiven = !enableStdio && !enableHttp && !enableBridge && !setupRequest
 var stdioActive = (enableStdio || noFlagsGiven) && !enableStopDaemon && !setupRequested;
 var httpActive = enableHttp && !setupRequested;
 var bridgeActive = enableBridge && !setupRequested;
+if (bridgeActive && !stdioActive) {
+  process.env = { ...process.env, ...readDaemonEnvFile() };
+}
 if (stdioActive) {
   const stderrWrite = (...stderrArgs) => {
     process.stderr.write(`${stderrArgs.map(String).join(" ")}
@@ -85386,6 +85393,7 @@ function startBridgeServer(onListening) {
     console.error(`  ${bridgeScheme.toUpperCase()}: ${bridgeScheme}://localhost:${BRIDGE_PORT}`);
     console.error(`  ${bridgeWsScheme.toUpperCase()}:  ${bridgeWsScheme}://localhost:${BRIDGE_PORT}`);
     console.error(`  MCP:  ${bridgeScheme}://localhost:${BRIDGE_PORT}/mcp`);
+    if (!stdioActive) claimDaemonLock(process.pid);
     onListening?.();
   });
 }

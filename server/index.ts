@@ -18,7 +18,7 @@ import { substituteManifestPort } from './manifest.ts'
 import { handleOpenCodeProxy } from './opencode-proxy.ts'
 import { runSetup } from './setup.ts'
 import { handleSharePointCatalog, setManifestDir } from './sharepoint-catalog.ts'
-import { discoverMcpEndpoint, runStdioProxy, stopDaemon } from './stdio-proxy.ts'
+import { claimDaemonLock, discoverMcpEndpoint, readDaemonEnvFile, runStdioProxy, stopDaemon } from './stdio-proxy.ts'
 import { clearSessionWarnings, registerTools } from './tools.ts'
 import { runVersionCheck } from './version-check.ts'
 
@@ -66,6 +66,17 @@ const stdioActive = (enableStdio || noFlagsGiven) && !enableStopDaemon && !setup
 // sandboxed extension host, which kills detached child processes.
 let httpActive = enableHttp && !setupRequested
 let bridgeActive = enableBridge && !setupRequested
+
+// A standalone bridge/daemon start (manual nohup, dev server) must see the
+// same environment the stdio wrapper gives its spawned daemon:
+// ~/.office-live-mcp/daemon.env pins settings like BRIDGE_TLS=1 for
+// HTTPS-sideloaded add-ins. Without this overlay a manually started daemon
+// silently skips the TLS listener and the Mac add-in fails with
+// "can't load the add-in" — same overlay semantics as spawnDaemon
+// (daemon.env wins over the inherited env).
+if (bridgeActive && !stdioActive) {
+  process.env = { ...process.env, ...readDaemonEnvFile() }
+}
 
 // ---------------------------------------------------------------------------
 // Stderr redirect: when STDIO transport is active, all console output → stderr
@@ -675,6 +686,10 @@ function startBridgeServer(onListening?: () => void): void {
     console.error(`  ${bridgeScheme.toUpperCase()}: ${bridgeScheme}://localhost:${BRIDGE_PORT}`)
     console.error(`  ${bridgeWsScheme.toUpperCase()}:  ${bridgeWsScheme}://localhost:${BRIDGE_PORT}`)
     console.error(`  MCP:  ${bridgeScheme}://localhost:${BRIDGE_PORT}/mcp`)
+    // We own the bridge, so we are the daemon: claim daemon.lock ourselves so
+    // `--stop-daemon` and discovery stay correct for daemons started outside
+    // the wrapper's spawn path. Never clobber a lock held by a live process.
+    if (!stdioActive) claimDaemonLock(process.pid)
     onListening?.()
   })
 }

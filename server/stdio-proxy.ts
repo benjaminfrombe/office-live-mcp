@@ -140,6 +140,21 @@ function writeDaemonLock(pid: number): void {
   writeFileSync(DAEMON_LOCK_FILE, JSON.stringify({ pid, startedAt: new Date().toISOString() }))
 }
 
+/**
+ * Point the lock file at `pid` unless a live other process already holds it.
+ * Used both by the wrapper's self-heal and by the daemon itself at startup,
+ * so a daemon started outside the spawn path (manual nohup, dev server)
+ * still leaves a correct lock for `--stop-daemon` and later discovery.
+ * Returns false when a live foreign lock was left untouched.
+ */
+export function claimDaemonLock(pid: number): boolean {
+  const lock = readDaemonLock()
+  if (lock?.pid === pid) return true
+  if (lock && isPidAlive(lock.pid)) return false
+  writeDaemonLock(pid)
+  return true
+}
+
 // ---------------------------------------------------------------------------
 // Daemon lifecycle
 // ---------------------------------------------------------------------------
@@ -189,7 +204,12 @@ async function waitForDaemonHealth(timeoutMs: number): Promise<{ health: DaemonH
  * daemon settings the harness doesn't know about, e.g. BRIDGE_TLS=1 for
  * HTTPS-sideloaded add-ins.
  */
-function readDaemonEnvFile(): Record<string, string> {
+/**
+ * Read ~/.office-live-mcp/daemon.env (KEY=VALUE lines, '#' comments). That
+ * file is how users pin daemon settings the harness doesn't know about, e.g.
+ * BRIDGE_TLS=1 for HTTPS-sideloaded add-ins.
+ */
+export function readDaemonEnvFile(): Record<string, string> {
   const env: Record<string, string> = {}
   try {
     const lines = readFileSync(join(DAEMON_DIR, 'daemon.env'), 'utf8').split('\n')
@@ -236,11 +256,7 @@ function spawnDaemon(): number {
 function selfHealDaemonLock(health: DaemonHealth): void {
   const pid = health.pid
   if (typeof pid !== 'number' || !Number.isInteger(pid) || pid <= 0) return
-  const lock = readDaemonLock()
-  if (lock?.pid === pid) return
-  // A lock held by another live process belongs to something else; never clobber it.
-  if (lock && isPidAlive(lock.pid)) return
-  writeDaemonLock(pid)
+  claimDaemonLock(pid)
 }
 
 /**

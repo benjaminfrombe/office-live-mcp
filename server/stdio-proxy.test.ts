@@ -6,11 +6,20 @@ vi.hoisted(() => {
   process.env.OLM_DAEMON_LOG = '/tmp/olm-stdio-proxy-test/daemon.log'
 })
 
+import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
 import { createServer, type Server } from 'node:http'
 import { PassThrough } from 'node:stream'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { type EnsureDaemonResult, ensureDaemon, parseSseMessages, runStdioProxy, stopDaemon } from './stdio-proxy.ts'
+import {
+  claimDaemonLock,
+  type EnsureDaemonResult,
+  ensureDaemon,
+  parseSseMessages,
+  readDaemonEnvFile,
+  runStdioProxy,
+  stopDaemon,
+} from './stdio-proxy.ts'
 
 const TEST_DAEMON_DIR = '/tmp/olm-stdio-proxy-test'
 const TEST_LOCK_FILE = `${TEST_DAEMON_DIR}/daemon.lock`
@@ -92,6 +101,52 @@ function closeServer(server: Server): Promise<void> {
   server.closeAllConnections?.()
   return new Promise<void>((r) => server.close(() => r()))
 }
+
+describe('readDaemonEnvFile', () => {
+  it('parses KEY=VALUE lines and skips comments and blanks', () => {
+    writeFileSync(
+      `${TEST_DAEMON_DIR}/daemon.env`,
+      ['# comment', '', 'BRIDGE_TLS=1', '  MCP_PORT = 8799 ', 'BADLINE', '=novalue'].join('\n'),
+    )
+    expect(readDaemonEnvFile()).toEqual({ BRIDGE_TLS: '1', MCP_PORT: '8799' })
+  })
+
+  it('returns an empty object when daemon.env does not exist', () => {
+    expect(readDaemonEnvFile()).toEqual({})
+  })
+})
+
+describe('claimDaemonLock', () => {
+  it('writes the lock when none exists', () => {
+    expect(claimDaemonLock(4242)).toBe(true)
+    expect(JSON.parse(readFileSync(TEST_LOCK_FILE, 'utf8'))).toMatchObject({ pid: 4242 })
+  })
+
+  it('overwrites a stale lock whose pid is dead', async () => {
+    // Spawn a child that exits immediately: its pid is deterministically dead
+    // afterwards, unlike a made-up pid (out-of-range pids can return EPERM
+    // instead of ESRCH on macOS, which the liveness check reads as alive).
+    const dead = await new Promise<number>((resolve) => {
+      const child = spawn(process.execPath, ['-e', 'process.exit(0)'])
+      child.on('exit', () => resolve(child.pid ?? 0))
+    })
+    writeFileSync(TEST_LOCK_FILE, JSON.stringify({ pid: dead }))
+    expect(claimDaemonLock(4242)).toBe(true)
+    expect(JSON.parse(readFileSync(TEST_LOCK_FILE, 'utf8'))).toMatchObject({ pid: 4242 })
+  })
+
+  it('refuses to clobber a lock held by a live process', () => {
+    writeFileSync(TEST_LOCK_FILE, JSON.stringify({ pid: process.pid }))
+    expect(claimDaemonLock(4242)).toBe(false)
+    expect(JSON.parse(readFileSync(TEST_LOCK_FILE, 'utf8'))).toMatchObject({ pid: process.pid })
+  })
+
+  it('is a no-op when the lock already points at the same pid', () => {
+    writeFileSync(TEST_LOCK_FILE, JSON.stringify({ pid: 4242, startedAt: 'kept' }))
+    expect(claimDaemonLock(4242)).toBe(true)
+    expect(JSON.parse(readFileSync(TEST_LOCK_FILE, 'utf8'))).toMatchObject({ pid: 4242, startedAt: 'kept' })
+  })
+})
 
 describe('parseSseMessages', () => {
   it('extracts JSON-RPC messages from SSE data lines', () => {
