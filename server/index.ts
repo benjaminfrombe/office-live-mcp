@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, readFile, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFile, readFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createServer as createHttpServer } from 'node:http'
 import { createServer as createHttpsServer } from 'node:https'
-import { homedir, networkInterfaces as osNetworkInterfaces } from 'node:os'
+import { networkInterfaces as osNetworkInterfaces } from 'node:os'
 import { dirname, extname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
@@ -16,7 +16,7 @@ import { ConnectionPool, startHeartbeat } from './bridge.ts'
 import { resolveImageFileRequest } from './file-serve.ts'
 import { substituteManifestPort } from './manifest.ts'
 import { handleOpenCodeProxy } from './opencode-proxy.ts'
-import { runSetup } from './setup.ts'
+import { runSetup, syncMacManifests } from './setup.ts'
 import { handleSharePointCatalog, setManifestDir } from './sharepoint-catalog.ts'
 import { claimDaemonLock, discoverMcpEndpoint, readDaemonEnvFile, runStdioProxy, stopDaemon } from './stdio-proxy.ts'
 import { clearSessionWarnings, registerTools } from './tools.ts'
@@ -149,49 +149,20 @@ const BRIDGE_PORT =
 // ---------------------------------------------------------------------------
 
 function autoSideloadManifest(tls: boolean, port: number): void {
-  // Sideloading copies the add-in manifest into PowerPoint's sandboxed container,
-  // which triggers a macOS TCC prompt ("node would like to access data from other
-  // apps"). We use a versioned marker file (.sideloaded) to skip sideloading when
-  // the version/port hasn't changed, so the prompt only appears on first install or
-  // after an update. Use `npm run sideload` to force re-install.
-  const markerFile = resolve(PROJECT_ROOT, '.sideloaded')
-  const pkgPath = resolve(PROJECT_ROOT, 'package.json')
+  // Keep the add-in manifests of every installed Office app in sync with what
+  // this daemon actually serves (transport + port). Content-based: a manifest
+  // is rewritten only when it drifted (e.g. a manifest from an older port
+  // survived a migration), so the pane can never point at a dead port.
+  // Accessing the WEF directories may trigger a macOS TCC prompt; errors are
+  // reported per app and never break startup.
+  if (process.platform !== 'darwin') return
 
-  let currentVersion = 'unknown'
-  try {
-    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
-    currentVersion = pkg.version
-  } catch {}
-
-  const markerValue = `${currentVersion}:${port}`
-
-  try {
-    const existing = readFileSync(markerFile, 'utf8').trim()
-    if (existing === markerValue) {
-      console.error('[sideload] Add-in already installed (use `npm run sideload` to update)')
-      return
+  for (const result of syncMacManifests(tls, port)) {
+    if (result.action === 'installed' || result.action === 'updated') {
+      console.error(`[sideload] ${result.app}: manifest ${result.action} (${tls ? 'HTTPS' : 'HTTP'}, port ${port})`)
+    } else if (result.action === 'error') {
+      console.error(`[sideload] ${result.app}: ${result.detail}`)
     }
-    console.error(`[sideload] Config changed (${existing} → ${markerValue}), re-sideloading`)
-  } catch {
-    // marker doesn't exist — first install
-  }
-
-  const defaultPort = tls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT
-  const wefDir = join(homedir(), 'Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef')
-  const manifestName = tls ? 'manifest-https.xml' : 'manifest.xml'
-  const src = resolve(ADDIN_STATIC_DIR, manifestName)
-  const dest = join(wefDir, 'manifest.xml')
-  try {
-    if (!existsSync(src)) return
-    const template = readFileSync(src, 'utf8')
-    const content = substituteManifestPort(template, defaultPort, port)
-    mkdirSync(wefDir, { recursive: true })
-    writeFileSync(dest, content)
-    writeFileSync(markerFile, markerValue)
-    console.error('[sideload] Add-in manifest installed for PowerPoint')
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error(`[sideload] Warning: could not sideload manifest: ${msg}`)
   }
 }
 

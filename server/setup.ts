@@ -47,6 +47,77 @@ export function manifestNameFor(manifest: string, tls: boolean): string {
   return tls ? manifest.replace('.xml', '-https.xml') : manifest
 }
 
+export type ManifestSyncAction = 'ok' | 'installed' | 'updated' | 'skipped' | 'missing-template' | 'error'
+
+export interface ManifestSyncResult {
+  app: string
+  action: ManifestSyncAction
+  detail?: string
+}
+
+/**
+ * Ensure every installed Office app's WEF manifest matches what the daemon
+ * actually serves right now (transport + port). Content-based: an app is
+ * rewritten only when the installed manifest differs from the expected
+ * content, so drift from older ports/transports is repaired on the next
+ * daemon start without needless writes or TCC prompts. Idempotent.
+ */
+export function syncMacManifests(
+  tls: boolean,
+  port: number,
+  dirs: { homeDir?: string; addinDir?: string } = {},
+): ManifestSyncResult[] {
+  const home = dirs.homeDir ?? homedir()
+  const addin = dirs.addinDir ?? resolve(PROJECT_ROOT, 'addin')
+  const defaultPort = tls ? 8791 : 8790
+  const results: ManifestSyncResult[] = []
+
+  for (const app of Object.values(MAC_APPS)) {
+    const containerDir = resolve(home, `Library/Containers/${app.container}`)
+    if (!existsSync(containerDir)) {
+      results.push({ app: app.label, action: 'skipped' })
+      continue
+    }
+    const manifest = manifestNameFor(app.manifest, tls)
+    const src = resolve(addin, manifest)
+    if (!existsSync(src)) {
+      results.push({ app: app.label, action: 'missing-template', detail: manifest })
+      continue
+    }
+    const wefDir = resolve(containerDir, 'Data/Documents/wef')
+    const dest = resolve(wefDir, 'manifest.xml')
+    const expected = substituteManifestPort(readFileSync(src, 'utf8'), defaultPort, port)
+
+    let current: string | undefined
+    try {
+      current = readFileSync(dest, 'utf8')
+    } catch {
+      // No manifest installed yet (or unreadable) — install it below.
+    }
+    if (current === expected) {
+      results.push({ app: app.label, action: 'ok' })
+      continue
+    }
+
+    try {
+      mkdirSync(wefDir, { recursive: true })
+      writeFileSync(dest, expected)
+      results.push({ app: app.label, action: current === undefined ? 'installed' : 'updated' })
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code
+      const hint =
+        code === 'EPERM' || code === 'EACCES'
+          ? 'blocked by macOS privacy protection (TCC) — grant Full Disk Access or run `npm run sideload`'
+          : err instanceof Error
+            ? err.message
+            : String(err)
+      results.push({ app: app.label, action: 'error', detail: hint })
+    }
+  }
+
+  return results
+}
+
 /**
  * Decide the UNC catalog path for the add-in folder on Windows. Candidates in
  * priority order; the first one that exists (checked by the caller) wins.

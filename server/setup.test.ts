@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -13,6 +13,7 @@ import {
   mergeDaemonTls,
   planMacTls,
   registryCommands,
+  syncMacManifests,
 } from './setup.ts'
 
 afterEach(() => {
@@ -170,5 +171,80 @@ describe('MAC_APPS', () => {
       expect(app.container).toMatch(/^com\.microsoft\./)
       expect(app.manifest).toMatch(/^manifest(\.word|\.excel)?\.xml$/)
     }
+  })
+})
+
+describe('syncMacManifests', () => {
+  const mkManifestTree = () => {
+    const root = mkdtempSync(join(tmpdir(), 'olm-sync-'))
+    const addin = join(root, 'addin')
+    mkdirSync(addin, { recursive: true })
+    for (const app of Object.values(MAC_APPS)) {
+      for (const variant of [app.manifest, app.manifest.replace('.xml', '-https.xml')]) {
+        writeFileSync(join(addin, variant), `<manifest src="${variant}" url="https://localhost:8791/index.html" />`)
+      }
+    }
+    return { root, addin }
+  }
+
+  const wefDir = (home: string, container: string) => join(home, 'Library/Containers', container, 'Data/Documents/wef')
+
+  it('installs manifests for installed apps only', () => {
+    const { root, addin } = mkManifestTree()
+    mkdirSync(join(root, 'Library/Containers/com.microsoft.Word'), { recursive: true })
+
+    const results = syncMacManifests(true, 8791, { homeDir: root, addinDir: addin })
+
+    const word = results.find((r) => r.app === 'Word')
+    expect(word?.action).toBe('installed')
+    expect(readFileSync(join(wefDir(root, 'com.microsoft.Word'), 'manifest.xml'), 'utf8')).toContain(
+      'manifest.word-https.xml',
+    )
+    expect(results.find((r) => r.app === 'PowerPoint')?.action).toBe('skipped')
+    expect(results.find((r) => r.app === 'Excel')?.action).toBe('skipped')
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it('reports ok when the installed manifest already matches', () => {
+    const { root, addin } = mkManifestTree()
+    for (const app of Object.values(MAC_APPS)) {
+      const dir = wefDir(root, app.container)
+      mkdirSync(dir, { recursive: true })
+      writeFileSync(
+        join(dir, 'manifest.xml'),
+        readFileSync(join(addin, app.manifest.replace('.xml', '-https.xml')), 'utf8'),
+      )
+      mkdirSync(join(root, 'Library/Containers', app.container), { recursive: true })
+    }
+
+    const results = syncMacManifests(true, 8791, { homeDir: root, addinDir: addin })
+    expect(results.filter((r) => r.action === 'ok')).toHaveLength(3)
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it('repairs a manifest that drifted to an old port', () => {
+    const { root, addin } = mkManifestTree()
+    mkdirSync(join(root, 'Library/Containers/com.microsoft.Powerpoint'), { recursive: true })
+    const dir = wefDir(root, 'com.microsoft.Powerpoint')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'manifest.xml'), '<manifest url="https://localhost:63233/index.html" />')
+
+    const results = syncMacManifests(true, 8791, { homeDir: root, addinDir: addin })
+
+    expect(results.find((r) => r.app === 'PowerPoint')?.action).toBe('updated')
+    expect(readFileSync(join(dir, 'manifest.xml'), 'utf8')).toContain('localhost:8791')
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it('substitutes a custom port into the installed manifest', () => {
+    const { root, addin } = mkManifestTree()
+    mkdirSync(join(root, 'Library/Containers/com.microsoft.Powerpoint'), { recursive: true })
+
+    syncMacManifests(true, 9443, { homeDir: root, addinDir: addin })
+
+    expect(readFileSync(join(wefDir(root, 'com.microsoft.Powerpoint'), 'manifest.xml'), 'utf8')).toContain(
+      'localhost:9443',
+    )
+    rmSync(root, { recursive: true, force: true })
   })
 })

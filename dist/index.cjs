@@ -78570,6 +78570,47 @@ var MAC_APPS = {
 function manifestNameFor(manifest, tls) {
   return tls ? manifest.replace(".xml", "-https.xml") : manifest;
 }
+function syncMacManifests(tls, port, dirs = {}) {
+  const home = dirs.homeDir ?? (0, import_node_os2.homedir)();
+  const addin = dirs.addinDir ?? (0, import_node_path2.resolve)(PROJECT_ROOT, "addin");
+  const defaultPort = tls ? 8791 : 8790;
+  const results = [];
+  for (const app of Object.values(MAC_APPS)) {
+    const containerDir = (0, import_node_path2.resolve)(home, `Library/Containers/${app.container}`);
+    if (!(0, import_node_fs2.existsSync)(containerDir)) {
+      results.push({ app: app.label, action: "skipped" });
+      continue;
+    }
+    const manifest = manifestNameFor(app.manifest, tls);
+    const src = (0, import_node_path2.resolve)(addin, manifest);
+    if (!(0, import_node_fs2.existsSync)(src)) {
+      results.push({ app: app.label, action: "missing-template", detail: manifest });
+      continue;
+    }
+    const wefDir = (0, import_node_path2.resolve)(containerDir, "Data/Documents/wef");
+    const dest = (0, import_node_path2.resolve)(wefDir, "manifest.xml");
+    const expected = substituteManifestPort((0, import_node_fs2.readFileSync)(src, "utf8"), defaultPort, port);
+    let current;
+    try {
+      current = (0, import_node_fs2.readFileSync)(dest, "utf8");
+    } catch {
+    }
+    if (current === expected) {
+      results.push({ app: app.label, action: "ok" });
+      continue;
+    }
+    try {
+      (0, import_node_fs2.mkdirSync)(wefDir, { recursive: true });
+      (0, import_node_fs2.writeFileSync)(dest, expected);
+      results.push({ app: app.label, action: current === void 0 ? "installed" : "updated" });
+    } catch (err) {
+      const code = err.code;
+      const hint = code === "EPERM" || code === "EACCES" ? "blocked by macOS privacy protection (TCC) \u2014 grant Full Disk Access or run `npm run sideload`" : err instanceof Error ? err.message : String(err);
+      results.push({ app: app.label, action: "error", detail: hint });
+    }
+  }
+  return results;
+}
 function catalogUncCandidates(installDir, packageRoot) {
   const candidates = [];
   if (process.env.OLM_CATALOG_UNC) candidates.push(process.env.OLM_CATALOG_UNC);
@@ -85007,40 +85048,13 @@ if (bridgeActive && bridgeTls && (!(0, import_node_fs12.existsSync)(BRIDGE_CERT_
 }
 var BRIDGE_PORT = Number(process.env.BRIDGE_PORT) || (bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT);
 function autoSideloadManifest(tls, port) {
-  const markerFile = (0, import_node_path7.resolve)(PROJECT_ROOT2, ".sideloaded");
-  const pkgPath = (0, import_node_path7.resolve)(PROJECT_ROOT2, "package.json");
-  let currentVersion = "unknown";
-  try {
-    const pkg = JSON.parse((0, import_node_fs12.readFileSync)(pkgPath, "utf8"));
-    currentVersion = pkg.version;
-  } catch {
-  }
-  const markerValue = `${currentVersion}:${port}`;
-  try {
-    const existing = (0, import_node_fs12.readFileSync)(markerFile, "utf8").trim();
-    if (existing === markerValue) {
-      console.error("[sideload] Add-in already installed (use `npm run sideload` to update)");
-      return;
+  if (process.platform !== "darwin") return;
+  for (const result of syncMacManifests(tls, port)) {
+    if (result.action === "installed" || result.action === "updated") {
+      console.error(`[sideload] ${result.app}: manifest ${result.action} (${tls ? "HTTPS" : "HTTP"}, port ${port})`);
+    } else if (result.action === "error") {
+      console.error(`[sideload] ${result.app}: ${result.detail}`);
     }
-    console.error(`[sideload] Config changed (${existing} \u2192 ${markerValue}), re-sideloading`);
-  } catch {
-  }
-  const defaultPort = tls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT;
-  const wefDir = (0, import_node_path7.join)((0, import_node_os5.homedir)(), "Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef");
-  const manifestName = tls ? "manifest-https.xml" : "manifest.xml";
-  const src = (0, import_node_path7.resolve)(ADDIN_STATIC_DIR, manifestName);
-  const dest = (0, import_node_path7.join)(wefDir, "manifest.xml");
-  try {
-    if (!(0, import_node_fs12.existsSync)(src)) return;
-    const template = (0, import_node_fs12.readFileSync)(src, "utf8");
-    const content = substituteManifestPort(template, defaultPort, port);
-    (0, import_node_fs12.mkdirSync)(wefDir, { recursive: true });
-    (0, import_node_fs12.writeFileSync)(dest, content);
-    (0, import_node_fs12.writeFileSync)(markerFile, markerValue);
-    console.error("[sideload] Add-in manifest installed for PowerPoint");
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[sideload] Warning: could not sideload manifest: ${msg}`);
   }
 }
 var pool = new ConnectionPool();
