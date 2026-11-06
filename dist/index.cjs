@@ -85248,7 +85248,9 @@ function serveStatic(req, res) {
         bridge: true,
         mcp: true,
         version: PKG_VERSION,
-        pid: process.pid
+        pid: process.pid,
+        ws: wsSelfTest ? wsSelfTest.ok ? "ok" : "fail" : "unknown",
+        wsCheckedAt: wsSelfTest?.checkedAt ?? null
       })
     );
     return;
@@ -85307,6 +85309,7 @@ function serveStatic(req, res) {
   });
   res.end(content);
 }
+var wsSelfTest = null;
 function startBridgeServer(onListening) {
   autoSideloadManifest(bridgeTls, BRIDGE_PORT);
   const useTls = bridgeTls && (0, import_node_fs12.existsSync)(BRIDGE_CERT_PATH) && (0, import_node_fs12.existsSync)(BRIDGE_KEY_PATH);
@@ -85334,10 +85337,19 @@ function startBridgeServer(onListening) {
     }
   });
   startHeartbeat(wss);
-  wss.on("connection", (ws) => {
-    console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] Add-in WebSocket connected`);
+  wss.on("error", (err) => {
+    console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] WebSocketServer error: ${err.message}`);
+  });
+  if (useTls) {
+    bridgeServer.on("tlsClientError", (err) => {
+      console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] TLS handshake error: ${err.message}`);
+    });
+  }
+  wss.on("connection", (ws, req) => {
+    const isSelfTest = (req.url ?? "").includes("selftest=1");
+    if (!isSelfTest) console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] Add-in WebSocket connected`);
     ws.on("close", () => {
-      console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] Add-in WebSocket closed`);
+      if (!isSelfTest) console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] Add-in WebSocket closed`);
     });
     ws.on("error", (err) => {
       console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] Add-in WebSocket error: ${err.message}`);
@@ -85409,6 +85421,40 @@ function startBridgeServer(onListening) {
     console.error(`  MCP:  ${bridgeScheme}://localhost:${BRIDGE_PORT}/mcp`);
     if (!stdioActive) claimDaemonLock(process.pid);
     onListening?.();
+    if (!stdioActive) {
+      const selfTestUrl = `${bridgeWsScheme}://localhost:${BRIDGE_PORT}/?selftest=1`;
+      let failures = 0;
+      const runSelfTest = async () => {
+        try {
+          await new Promise((resolveTest, rejectTest) => {
+            const probe = new import_websocket.default(selfTestUrl, {
+              headers: { Origin: `${bridgeScheme}://localhost:${BRIDGE_PORT}` },
+              rejectUnauthorized: false,
+              handshakeTimeout: 5e3
+            });
+            probe.on("open", () => probe.close());
+            probe.on("close", () => resolveTest());
+            probe.on("error", (err) => rejectTest(err));
+          });
+          failures = 0;
+          wsSelfTest = { ok: true, checkedAt: (/* @__PURE__ */ new Date()).toISOString() };
+        } catch (err) {
+          failures++;
+          wsSelfTest = {
+            ok: false,
+            checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
+            error: err instanceof Error ? err.message : String(err)
+          };
+          console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] WS self-test FAILED (${failures}/2): ${wsSelfTest.error}`);
+          if (failures >= 2) {
+            console.error(`[${(/* @__PURE__ */ new Date()).toISOString()}] WS layer wedged \u2014 exiting for supervisor restart`);
+            process.exit(1);
+          }
+        }
+      };
+      setTimeout(() => void runSelfTest(), 5e3);
+      setInterval(() => void runSelfTest(), 3e4);
+    }
   });
 }
 function startMcpHttpServer() {

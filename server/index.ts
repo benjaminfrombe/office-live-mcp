@@ -10,8 +10,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
-import type { WebSocket } from 'ws'
-import { WebSocketServer } from 'ws'
+import { WebSocket, WebSocketServer } from 'ws'
 import { ConnectionPool, startHeartbeat } from './bridge.ts'
 import { resolveImageFileRequest } from './file-serve.ts'
 import { substituteManifestPort } from './manifest.ts'
@@ -422,6 +421,8 @@ function serveStatic(req: IncomingMessage, res: ServerResponse): void {
         mcp: true,
         version: PKG_VERSION,
         pid: process.pid,
+        ws: wsSelfTest ? (wsSelfTest.ok ? 'ok' : 'fail') : 'unknown',
+        wsCheckedAt: wsSelfTest?.checkedAt ?? null,
       }),
     )
     return
@@ -505,6 +506,12 @@ function serveStatic(req: IncomingMessage, res: ServerResponse): void {
 // Start: Bridge server (HTTP or HTTPS based on BRIDGE_TLS)
 // ---------------------------------------------------------------------------
 
+// Result of the last WS-layer self-test (the /health endpoint reports it; a
+// wedged WS layer is the failure mode where HTTP still answers but the add-in
+// can no longer connect — observed 2026-11-06, daemon looked healthy while
+// every pane got "can't load the add-in").
+let wsSelfTest: { ok: boolean; checkedAt: string; error?: string } | null = null
+
 function startBridgeServer(onListening?: () => void): void {
   autoSideloadManifest(bridgeTls, BRIDGE_PORT)
 
@@ -559,10 +566,25 @@ function startBridgeServer(onListening?: () => void): void {
   // Detect half-open add-in sockets so commands fail fast instead of waiting out their timeout.
   startHeartbeat(wss)
 
-  wss.on('connection', (ws: WebSocket) => {
-    console.error(`[${new Date().toISOString()}] Add-in WebSocket connected`)
+  // Diagnostics (2026-11-06 wedge left no trace in the log): surface
+  // WS-server-level errors and failed TLS handshakes explicitly.
+  wss.on('error', (err: Error) => {
+    console.error(`[${new Date().toISOString()}] WebSocketServer error: ${err.message}`)
+  })
+  if (useTls) {
+    bridgeServer.on('tlsClientError', (err: Error) => {
+      console.error(`[${new Date().toISOString()}] TLS handshake error: ${err.message}`)
+    })
+  }
+
+  wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
+    // The daemon's own self-test loop connects every 30s to prove the WS
+    // layer still accepts handshakes; it must not pollute the add-in logs
+    // or the connection pool (it never sends `ready`).
+    const isSelfTest = (req.url ?? '').includes('selftest=1')
+    if (!isSelfTest) console.error(`[${new Date().toISOString()}] Add-in WebSocket connected`)
     ws.on('close', () => {
-      console.error(`[${new Date().toISOString()}] Add-in WebSocket closed`)
+      if (!isSelfTest) console.error(`[${new Date().toISOString()}] Add-in WebSocket closed`)
     })
     ws.on('error', (err: Error) => {
       console.error(`[${new Date().toISOString()}] Add-in WebSocket error: ${err.message}`)
@@ -662,6 +684,46 @@ function startBridgeServer(onListening?: () => void): void {
     // the wrapper's spawn path. Never clobber a lock held by a live process.
     if (!stdioActive) claimDaemonLock(process.pid)
     onListening?.()
+
+    // WS-layer watchdog (daemon mode only): every 30s, prove the WebSocket
+    // server still completes handshakes. /health lying was the 2026-11-06
+    // failure: HTTP answered `status: ok` while the WS layer was wedged and
+    // every add-in pane failed. Two consecutive failures => exit so the
+    // supervisor (launchd KeepAlive) restarts us with a fresh listener.
+    if (!stdioActive) {
+      const selfTestUrl = `${bridgeWsScheme}://localhost:${BRIDGE_PORT}/?selftest=1`
+      let failures = 0
+      const runSelfTest = async () => {
+        try {
+          await new Promise<void>((resolveTest, rejectTest) => {
+            const probe = new WebSocket(selfTestUrl, {
+              headers: { Origin: `${bridgeScheme}://localhost:${BRIDGE_PORT}` },
+              rejectUnauthorized: false,
+              handshakeTimeout: 5000,
+            })
+            probe.on('open', () => probe.close())
+            probe.on('close', () => resolveTest())
+            probe.on('error', (err: Error) => rejectTest(err))
+          })
+          failures = 0
+          wsSelfTest = { ok: true, checkedAt: new Date().toISOString() }
+        } catch (err) {
+          failures++
+          wsSelfTest = {
+            ok: false,
+            checkedAt: new Date().toISOString(),
+            error: err instanceof Error ? err.message : String(err),
+          }
+          console.error(`[${new Date().toISOString()}] WS self-test FAILED (${failures}/2): ${wsSelfTest.error}`)
+          if (failures >= 2) {
+            console.error(`[${new Date().toISOString()}] WS layer wedged — exiting for supervisor restart`)
+            process.exit(1)
+          }
+        }
+      }
+      setTimeout(() => void runSelfTest(), 5000)
+      setInterval(() => void runSelfTest(), 30_000)
+    }
   })
 }
 
