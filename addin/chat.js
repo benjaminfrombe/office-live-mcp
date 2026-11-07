@@ -994,6 +994,12 @@ var INPUT_MAX_HEIGHT = 200
 function autoGrowInput() {
   const input = document.getElementById('oc-input')
   if (!input) return
+  // Hidden (chat tab not shown yet): scrollHeight is 0 and would pin the box
+  // at zero height. Fall back to the rows-based height; showMode re-measures.
+  if (!input.offsetParent) {
+    input.style.height = ''
+    return
+  }
   input.style.height = 'auto'
   input.style.height = `${Math.min(input.scrollHeight, INPUT_MAX_HEIGHT)}px`
   input.style.overflowY = input.scrollHeight > INPUT_MAX_HEIGHT ? 'auto' : 'hidden'
@@ -1111,7 +1117,7 @@ function appendMessage(role, text, pending, images) {
 
 /* Text plus any model-rendered images (file parts) inside one bubble. */
 function fillMessageBubble(div, text, images) {
-  div.textContent = text
+  setBubbleText(div, text)
   ;(images || []).forEach((image) => {
     var img = document.createElement('img')
     img.className = 'chat-image'
@@ -1137,8 +1143,34 @@ function renderStreaming() {
     existing.className = 'chat-message assistant streaming'
     document.getElementById('oc-messages').appendChild(existing)
   }
-  existing.textContent = chatState.streamingText
+  setBubbleText(existing, chatState.streamingText)
   scrollMessages()
+}
+
+/* Links in rendered Markdown: Office's own browser window when the host
+   offers one (a plain target=_blank is swallowed by some Office webviews). */
+document.getElementById('oc-messages').addEventListener('click', (event) => {
+  var link = event.target.closest('.chat-message.md a[href]')
+  if (!link) return
+  try {
+    if (window.Office && Office.context && Office.context.ui && Office.context.ui.openBrowserWindow) {
+      event.preventDefault()
+      Office.context.ui.openBrowserWindow(link.href)
+    }
+  } catch (_e) {
+    /* fall back to the default target=_blank navigation */
+  }
+})
+
+/* Assistant replies render as Markdown (tables, lists, code, emphasis);
+   user messages stay literal text, exactly as typed. */
+function setBubbleText(div, text) {
+  if (div.classList.contains('assistant')) {
+    div.classList.add('md')
+    div.replaceChildren(OfficeMarkdown.render(text))
+  } else {
+    div.textContent = text
+  }
 }
 
 /* Stick-to-bottom: follow the newest content while it streams in, unless the
@@ -1169,6 +1201,7 @@ function showMode(mode) {
   document.getElementById('mode-chat').classList.toggle('hidden', mode !== 'chat')
   document.getElementById('tab-bridge').classList.toggle('active', mode === 'bridge')
   document.getElementById('tab-chat').classList.toggle('active', mode === 'chat')
+  if (mode === 'chat') autoGrowInput() // measurable only once visible
 }
 
 document.getElementById('tab-bridge').addEventListener('click', () => {

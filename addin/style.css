@@ -29,6 +29,12 @@ body {
   height: 100%;
 }
 
+/* [hidden] must win over any author display value (buttons are inline-flex,
+   the reasoning strip is flex); the UA rule alone loses to those. */
+[hidden] {
+  display: none !important;
+}
+
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.45;
@@ -427,7 +433,8 @@ select {
   flex-wrap: wrap;
   align-items: center;
   gap: 0 7px;
-  width: 100%;
+  flex: 1 1 0;
+  min-width: 0;
   padding: 0 9px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -436,10 +443,6 @@ select {
   user-select: none;
   overflow: hidden;
   line-height: 1.4;
-  /* Fixed height in every collapsed state (live, done, empty): the strip sits
-     above the message scroller in a flex column, so ANY height change resizes
-     the chat viewport and pushes the newest message out of view. Expanded
-     (class below) switches to auto. */
   height: 28px;
   transition: background-color 0.15s ease;
 }
@@ -448,17 +451,15 @@ select {
   background: var(--accent-soft);
 }
 
+/* display:flex above would otherwise override the UA [hidden] rule. The
+   activity row keeps the height, so the strip may vanish entirely. */
+.reasoning-strip[hidden] {
+  display: none;
+}
+
 .reasoning-strip.expanded {
   height: auto;
   padding-bottom: 8px;
-}
-
-.reasoning-strip[hidden] {
-  /* Reserve the strip's space even when empty. display:flex is required —
-     the UA stylesheet keeps [hidden] at display:none, and visibility alone
-     would not stop the column from collapsing. */
-  display: flex;
-  visibility: hidden;
 }
 
 /* Indicator: pulsing dot while live, chevron once the step is done. */
@@ -589,8 +590,9 @@ select {
   padding: 6px 10px;
   border-radius: var(--radius);
   resize: none;
-  /* Two lines tall (rows="2"); autoGrowInput grows it while typing. */
-  min-height: 0;
+  /* Never below two lines (rows="2"), even if a measurement goes wrong;
+     autoGrowInput grows it while typing. 14px = vertical padding + border. */
+  min-height: calc(2 * 1.35em + 14px);
   overflow-y: hidden;
 }
 
@@ -637,14 +639,37 @@ select {
   min-width: 0;
 }
 
-/* Status line: icon + one line of text, fixed height. An empty status still
-   reserves its row: toggling it away and back made the layout jump on every
-   step start/end. data-kind (set by setChatStatus) picks icon and colour. */
-.chat-status {
+/* Activity row: status line and reasoning strip share ONE row of fixed
+   height above the message scroller. It sits in a flex column, so ANY height
+   change would resize the chat viewport and push the newest message out of
+   view; the row therefore keeps its 28px even when both are empty, and only
+   grows while the reasoning is expanded. */
+.activity-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 18px;
+  gap: 8px;
+  width: 100%;
+  height: 28px;
+}
+
+.activity-row:has(.reasoning-strip.expanded) {
+  height: auto;
+  align-items: flex-start;
+}
+
+/* While reasoning streams, its pulsing dot already says "busy". */
+.activity-row:has(.reasoning-strip.live) .chat-status[data-kind="busy"] {
+  display: none;
+}
+
+/* Status line: icon + one line of text. data-kind (set by setChatStatus)
+   picks icon and colour. Next to a reasoning strip it takes at most half. */
+.chat-status {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  display: block;
+  line-height: 28px;
   padding: 0 2px;
   font-size: 0.7rem;
   font-weight: 500;
@@ -654,13 +679,19 @@ select {
   text-overflow: ellipsis;
 }
 
+.activity-row:has(.reasoning-strip:not([hidden])) .chat-status {
+  max-width: 50%;
+}
+
 .chat-status:empty {
-  visibility: hidden;
+  display: none;
 }
 
 .chat-status::before {
   content: "";
-  flex: none;
+  display: inline-block;
+  vertical-align: middle;
+  margin: -2px 6px 0 0;
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -767,6 +798,146 @@ select {
   color: var(--text);
   border: 1px solid var(--border);
   border-bottom-left-radius: 4px;
+}
+
+/* ---------- Markdown in assistant bubbles (addin/markdown.js) ---------- */
+.chat-message.md {
+  white-space: normal; /* markdown-it emits the line breaks itself */
+}
+
+.chat-message.md > :first-child {
+  margin-top: 0;
+}
+
+.chat-message.md > :last-child {
+  margin-bottom: 0;
+}
+
+.chat-message.md p,
+.chat-message.md ul,
+.chat-message.md ol,
+.chat-message.md pre,
+.chat-message.md blockquote,
+.chat-message.md .md-table-wrap {
+  margin: 0 0 7px;
+}
+
+.chat-message.md h1,
+.chat-message.md h2,
+.chat-message.md h3,
+.chat-message.md h4,
+.chat-message.md h5,
+.chat-message.md h6 {
+  margin: 10px 0 4px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.chat-message.md h1 {
+  font-size: 0.92rem;
+}
+
+.chat-message.md h2 {
+  font-size: 0.87rem;
+}
+
+.chat-message.md ul,
+.chat-message.md ol {
+  padding-left: 18px;
+}
+
+.chat-message.md li + li {
+  margin-top: 2px;
+}
+
+.chat-message.md li > ul,
+.chat-message.md li > ol {
+  margin: 2px 0 0;
+}
+
+.chat-message.md code {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgb(20 40 20 / 7%);
+}
+
+.chat-message.md pre {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #e6ebe6;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.chat-message.md pre code {
+  padding: 0;
+  background: none;
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.chat-message.md blockquote {
+  padding-left: 9px;
+  border-left: 3px solid #cfd6cf;
+  color: var(--text-muted);
+}
+
+.chat-message.md hr {
+  margin: 9px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.chat-message.md a {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Tables: scroll sideways inside the bubble instead of widening the pane. */
+.chat-message.md .md-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.chat-message.md table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.chat-message.md th,
+.chat-message.md td {
+  padding: 5px 8px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-message.md th + th,
+.chat-message.md td + td {
+  border-left: 1px solid var(--border);
+}
+
+.chat-message.md th {
+  font-weight: 600;
+  background: var(--accent-soft);
+  white-space: nowrap;
+}
+
+.chat-message.md tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.chat-message.md tbody tr:nth-child(even) td {
+  background: #fafbfa;
 }
 
 .chat-message.streaming::after {

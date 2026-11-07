@@ -6,7 +6,7 @@
   <title>Office Live MCP</title>
   <!-- Office.js MUST be in head, before any other scripts -->
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js" type="text/javascript"></script>
-  <link rel="stylesheet" href="style.css?v=59">
+  <link rel="stylesheet" href="style.css?v=63">
 </head>
 <body>
   <div class="mode-tabs">
@@ -26,11 +26,13 @@
       <select id="oc-session"></select>
       <button id="oc-new-session" type="button">New session</button>
     </div>
-    <div id="oc-status" class="chat-status"></div>
-    <div id="oc-reasoning-strip" class="reasoning-strip" hidden>
-      <span class="reasoning-icon"></span>
-      <span id="oc-reasoning-label" class="reasoning-label">Reasoning</span>
-      <div class="reasoning-window"><pre id="oc-reasoning-text" class="reasoning-text"><span></span><span></span></pre></div>
+    <div class="activity-row">
+      <div id="oc-status" class="chat-status"></div>
+      <div id="oc-reasoning-strip" class="reasoning-strip" hidden>
+        <span class="reasoning-icon"></span>
+        <span id="oc-reasoning-label" class="reasoning-label">Reasoning</span>
+        <div class="reasoning-window"><pre id="oc-reasoning-text" class="reasoning-text"><span></span><span></span></pre></div>
+      </div>
     </div>
     <div id="oc-messages" class="chat-messages"></div>
     <div id="oc-form-cards" class="form-cards"></div>
@@ -48,9 +50,11 @@
     </div>
   </div>
 
-  <script src="opencode.js?v=59"></script>
-  <script src="forms.js?v=59"></script>
-  <script src="chat.js?v=59"></script>
-  <script src="app.js?v=59"></script>
+  <script src="opencode.js?v=63"></script>
+  <script src="forms.js?v=63"></script>
+  <script src="vendor/markdown-it-14.3.3.min.js"></script>
+  <script src="markdown.js?v=63"></script>
+  <script src="chat.js?v=63"></script>
+  <script src="app.js?v=63"></script>
 </body>
 </html>

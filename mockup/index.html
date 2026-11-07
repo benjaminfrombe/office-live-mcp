@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reasoning ticker mockup</title>
-  <link rel="stylesheet" href="../addin/style.css?v=mock10">
+  <link rel="stylesheet" href="../addin/style.css?v=mock12">
   <style>
     /* Mockup-only chrome: two columns, controls left and a taskpane sized
        like the real Office one (about 350px wide, full window height). The
@@ -65,11 +65,13 @@
         <select><option>Make the title on slide 1 bigger</option></select>
         <button type="button">New session</button>
       </div>
-      <div id="oc-status" class="chat-status"></div>
-      <div id="oc-reasoning-strip" class="reasoning-strip" hidden>
-        <span class="reasoning-icon"></span>
-        <span id="oc-reasoning-label" class="reasoning-label">Reasoning</span>
-        <div class="reasoning-window"><pre id="oc-reasoning-text" class="reasoning-text"><span></span><span></span></pre></div>
+      <div class="activity-row">
+        <div id="oc-status" class="chat-status"></div>
+        <div id="oc-reasoning-strip" class="reasoning-strip" hidden>
+          <span class="reasoning-icon"></span>
+          <span id="oc-reasoning-label" class="reasoning-label">Reasoning</span>
+          <div class="reasoning-window"><pre id="oc-reasoning-text" class="reasoning-text"><span></span><span></span></pre></div>
+        </div>
       </div>
       <div id="oc-messages" class="chat-messages"></div>
       <div id="oc-form-cards" class="form-cards"></div>
