@@ -45378,7 +45378,7 @@ var require_ZipFileWorker = __commonJS({
     var generateDosExternalFileAttr = function(dosPermissions) {
       return (dosPermissions || 0) & 63;
     };
-    var generateZipParts = function(streamInfo, streamedContent, streamingEnded, offset, platform, encodeFileName) {
+    var generateZipParts = function(streamInfo, streamedContent, streamingEnded, offset, platform2, encodeFileName) {
       var file2 = streamInfo["file"], compression = streamInfo["compression"], useCustomEncoding = encodeFileName !== utf8.utf8encode, encodedFileName = utils.transformTo("string", encodeFileName(file2.name)), utfEncodedFileName = utils.transformTo("string", utf8.utf8encode(file2.name)), comment = file2.comment, encodedComment = utils.transformTo("string", encodeFileName(comment)), utfEncodedComment = utils.transformTo("string", utf8.utf8encode(comment)), useUTF8ForFileName = utfEncodedFileName.length !== file2.name.length, useUTF8ForComment = utfEncodedComment.length !== comment.length, dosTime, dosDate, extraFields = "", unicodePathExtraField = "", unicodeCommentExtraField = "", dir = file2.dir, date5 = file2.date;
       var dataInfo = {
         crc32: 0,
@@ -45402,7 +45402,7 @@ var require_ZipFileWorker = __commonJS({
       if (dir) {
         extFileAttr |= 16;
       }
-      if (platform === "UNIX") {
+      if (platform2 === "UNIX") {
         versionMadeBy = 798;
         extFileAttr |= generateUnixExternalFileAttr(file2.unixPermissions, dir);
       } else {
@@ -45487,11 +45487,11 @@ var require_ZipFileWorker = __commonJS({
       decToHex(streamInfo["uncompressedSize"], 4);
       return descriptor;
     };
-    function ZipFileWorker(streamFiles, comment, platform, encodeFileName) {
+    function ZipFileWorker(streamFiles, comment, platform2, encodeFileName) {
       GenericWorker.call(this, "ZipFileWorker");
       this.bytesWritten = 0;
       this.zipComment = comment;
-      this.zipPlatform = platform;
+      this.zipPlatform = platform2;
       this.encodeFileName = encodeFileName;
       this.streamFiles = streamFiles;
       this.accumulate = false;
@@ -46806,11 +46806,11 @@ var require_lib4 = __commonJS({
 
 // server/index.ts
 var import_node_crypto2 = require("node:crypto");
-var import_node_fs12 = require("node:fs");
+var import_node_fs13 = require("node:fs");
 var import_node_http3 = require("node:http");
 var import_node_https = require("node:https");
 var import_node_os5 = require("node:os");
-var import_node_path7 = require("node:path");
+var import_node_path8 = require("node:path");
 var import_node_url4 = require("node:url");
 
 // node_modules/zod/v3/helpers/util.js
@@ -78633,8 +78633,8 @@ function registryCommands(uncPath) {
     ["reg", ["add", REG_KEY, "/v", "Flags", "/t", "REG_DWORD", "/d", "1", "/f"]]
   ];
 }
-function harnessInstructions(entryCommand, platform, nodePath) {
-  const isMac = platform === "darwin";
+function harnessInstructions(entryCommand, platform2, nodePath) {
+  const isMac = platform2 === "darwin";
   const lines = [];
   lines.push("Done. Two steps left:");
   lines.push("");
@@ -80645,6 +80645,60 @@ function registerChartTools(server, pool2, getSessionId, getActiveSessionCount) 
   );
 }
 
+// server/tools/documents.ts
+var import_node_child_process3 = require("node:child_process");
+var import_node_fs6 = require("node:fs");
+var import_node_path6 = require("node:path");
+var import_node_process2 = require("node:process");
+var import_node_util = require("node:util");
+var execFileAsync = (0, import_node_util.promisify)(import_node_child_process3.execFile);
+var DOCUMENT_EXTENSIONS = /* @__PURE__ */ new Set([".pptx", ".ppt", ".docx", ".doc", ".xlsx", ".xls"]);
+function validateDocumentPath(inputPath) {
+  if (!inputPath || typeof inputPath !== "string") throw new Error("A file path is required.");
+  const ext = (0, import_node_path6.extname)(inputPath).toLowerCase();
+  if (!DOCUMENT_EXTENSIONS.has(ext)) {
+    throw new Error(
+      `Unsupported file type "${ext}". Expected a PowerPoint, Word or Excel document (.pptx/.ppt/.docx/.doc/.xlsx/.xls).`
+    );
+  }
+  if (!(0, import_node_fs6.existsSync)(inputPath)) {
+    throw new Error(`File not found: ${inputPath}. Generate the document first, then open it.`);
+  }
+  return { ext };
+}
+var defaultLauncher = async (filePath) => {
+  if (import_node_process2.platform === "darwin") {
+    await execFileAsync("open", [filePath]);
+    return;
+  }
+  if (import_node_process2.platform === "win32") {
+    await execFileAsync("cmd", ["/c", "start", "", filePath]);
+    return;
+  }
+  throw new Error(`Opening documents is not supported on platform "${import_node_process2.platform}".`);
+};
+function registerDocumentTools(server, _pool, _getSessionId, _getActiveSessionCount, launcher = defaultLauncher) {
+  server.tool(
+    "open_document",
+    'Open a document file (.pptx/.docx/.xlsx) in its Office app (PowerPoint, Word or Excel) on the machine where the bridge runs. Use this after generating a complete document offline: the taskpane auto-opens in the new document and connects to the bridge, after which the live tools can inspect and refine it. This is the intended route for "create a full presentation/document" requests \u2014 do not build complete decks live, slide by slide.',
+    {
+      path: external_exports.string().describe("Absolute path to the document file. It must already exist on this machine.")
+    },
+    withTool(async ({ path: filePath }) => {
+      validateDocumentPath(filePath);
+      await launcher(filePath);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Opened ${filePath} in its Office app. The taskpane auto-opens in the new document and connects to the bridge (this can take a few seconds). Then use list_presentations / list_documents / list_workbooks to confirm the connection before driving it with the live tools.`
+          }
+        ]
+      };
+    })
+  );
+}
+
 // server/tools/excel.ts
 async function execExcel(pool2, workbookId, args, body) {
   const target = pool2.resolveTarget(workbookId);
@@ -82340,7 +82394,7 @@ function registerGeometryTools(server, pool2, getSessionId, getActiveSessionCoun
 }
 
 // server/tools/inspect.ts
-var import_node_fs6 = require("node:fs");
+var import_node_fs7 = require("node:fs");
 var import_jszip2 = __toESM(require_lib4(), 1);
 function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
@@ -82458,7 +82512,7 @@ function registerInspectTools(server, pool2, getSessionId, getActiveSessionCount
       let layouts;
       try {
         const localPath = await getLocalCopyPath(pool2, target);
-        const fileData = (0, import_node_fs6.readFileSync)(localPath);
+        const fileData = (0, import_node_fs7.readFileSync)(localPath);
         const zip = await import_jszip2.default.loadAsync(fileData);
         layouts = await extractLayoutsFromZip(zip);
       } catch {
@@ -82772,11 +82826,11 @@ ${textParts.join("\n")}` : "\n(no text content)";
 }
 
 // server/tools/media.ts
-var import_node_fs8 = require("node:fs");
+var import_node_fs9 = require("node:fs");
 
 // server/icons.ts
-var import_node_fs7 = require("node:fs");
-var import_node_path6 = require("node:path");
+var import_node_fs8 = require("node:fs");
+var import_node_path7 = require("node:path");
 var import_node_url3 = require("node:url");
 var import_meta2 = {};
 var MANIFEST_URL = "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/fonts/FluentSystemIcons-Regular.json";
@@ -82813,8 +82867,8 @@ function buildIndexFromManifest(manifest) {
 }
 function loadStaticIndex() {
   try {
-    const dir = (0, import_node_path6.dirname)((0, import_node_url3.fileURLToPath)(import_meta2.url));
-    const raw = (0, import_node_fs7.readFileSync)((0, import_node_path6.join)(dir, "icon-index.json"), "utf-8");
+    const dir = (0, import_node_path7.dirname)((0, import_node_url3.fileURLToPath)(import_meta2.url));
+    const raw = (0, import_node_fs8.readFileSync)((0, import_node_path7.join)(dir, "icon-index.json"), "utf-8");
     const data = JSON.parse(raw);
     return data.map((e) => ({
       name: e.n,
@@ -82959,7 +83013,7 @@ function registerMediaTools(server, pool2, getSessionId, getActiveSessionCount) 
       const slideIndex = slide !== void 0 ? slide - 1 : void 0;
       let base64Data;
       if (sourceType === "file") {
-        base64Data = (0, import_node_fs8.readFileSync)(source).toString("base64");
+        base64Data = (0, import_node_fs9.readFileSync)(source).toString("base64");
       } else if (sourceType === "url") {
         const resp = await fetch(source);
         if (!resp.ok) {
@@ -83102,7 +83156,7 @@ return new Promise(function(resolve, reject) {
 }
 
 // server/tools/notes.ts
-var import_node_fs9 = require("node:fs");
+var import_node_fs10 = require("node:fs");
 var import_jszip3 = __toESM(require_lib4(), 1);
 
 // server/notes-helpers.ts
@@ -83322,7 +83376,7 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
     withTool(async ({ slideRange, presentationId }) => {
       const target = pool2.resolveTarget(presentationId);
       const localPath = await getLocalCopyPath(pool2, target);
-      const data = (0, import_node_fs9.readFileSync)(localPath);
+      const data = (0, import_node_fs10.readFileSync)(localPath);
       const zip = await import_jszip3.default.loadAsync(data);
       const indices = parseSlideRange(slideRange);
       const notesMap = await readNotesFromDeck(zip, indices);
@@ -83335,7 +83389,7 @@ function registerNotesTools(server, pool2, getSessionId, getActiveSessionCount) 
 }
 
 // server/tools/slides.ts
-var import_node_fs10 = require("node:fs");
+var import_node_fs11 = require("node:fs");
 var import_jszip4 = __toESM(require_lib4(), 1);
 function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
@@ -83396,7 +83450,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
       let preChecked = false;
       try {
         const localPath = await getLocalCopyPath(pool2, target);
-        const fileData = (0, import_node_fs10.readFileSync)(localPath);
+        const fileData = (0, import_node_fs11.readFileSync)(localPath);
         const zip = await import_jszip4.default.loadAsync(fileData);
         layouts = await extractLayoutsFromZip(zip);
         preChecked = true;
@@ -83671,7 +83725,7 @@ function registerSlideTools(server, pool2, getSessionId, getActiveSessionCount) 
 }
 
 // server/tools/text.ts
-var import_node_fs11 = require("node:fs");
+var import_node_fs12 = require("node:fs");
 function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
   server.tool(
     "edit_shape_paragraphs",
@@ -83741,7 +83795,7 @@ function registerTextTools(server, pool2, getSessionId, getActiveSessionCount) {
     withTool(async ({ slideRange, includeNotes, presentationId }) => {
       const target = pool2.resolveTarget(presentationId);
       const localPath = await getLocalCopyPath(pool2, target);
-      const zipBuffer = (0, import_node_fs11.readFileSync)(localPath);
+      const zipBuffer = (0, import_node_fs12.readFileSync)(localPath);
       const indices = slideRange ? parseSlideRange(slideRange) : null;
       const deckText = await extractDeckText(zipBuffer, indices, includeNotes === true);
       const result = deckText.map((s) => ({ ...s, slide: s.slide + 1 }));
@@ -84987,6 +85041,7 @@ function registerXmlTools(server, pool2, getSessionId, getActiveSessionCount) {
 // server/tools.ts
 function registerTools(server, pool2, getSessionId, getActiveSessionCount) {
   registerInspectTools(server, pool2, getSessionId, getActiveSessionCount);
+  registerDocumentTools(server, pool2, getSessionId, getActiveSessionCount);
   registerGeometryTools(server, pool2, getSessionId, getActiveSessionCount);
   registerSlideTools(server, pool2, getSessionId, getActiveSessionCount);
   registerTextTools(server, pool2, getSessionId, getActiveSessionCount);
@@ -85057,15 +85112,15 @@ var BRIDGE_DEFAULT_HTTP_PORT = 8790;
 var BRIDGE_DEFAULT_HTTPS_PORT = 8791;
 var MCP_HTTP_PORT = Number(process.env.MCP_PORT) || 8792;
 var MAX_HTTP_BODY_BYTES = 16 * 1024 * 1024;
-var SCRIPT_DIR2 = typeof __dirname !== "undefined" ? __dirname : (0, import_node_path7.dirname)((0, import_node_url4.fileURLToPath)(import_meta3.url));
-var PROJECT_ROOT2 = (0, import_node_path7.resolve)(SCRIPT_DIR2, "..");
-var BRIDGE_CERT_PATH = process.env.BRIDGE_CERT_PATH || (0, import_node_path7.resolve)(PROJECT_ROOT2, "certs", "localhost.pem");
-var BRIDGE_KEY_PATH = process.env.BRIDGE_KEY_PATH || (0, import_node_path7.resolve)(PROJECT_ROOT2, "certs", "localhost-key.pem");
-var ADDIN_STATIC_DIR = (0, import_node_path7.resolve)(PROJECT_ROOT2, "addin");
+var SCRIPT_DIR2 = typeof __dirname !== "undefined" ? __dirname : (0, import_node_path8.dirname)((0, import_node_url4.fileURLToPath)(import_meta3.url));
+var PROJECT_ROOT2 = (0, import_node_path8.resolve)(SCRIPT_DIR2, "..");
+var BRIDGE_CERT_PATH = process.env.BRIDGE_CERT_PATH || (0, import_node_path8.resolve)(PROJECT_ROOT2, "certs", "localhost.pem");
+var BRIDGE_KEY_PATH = process.env.BRIDGE_KEY_PATH || (0, import_node_path8.resolve)(PROJECT_ROOT2, "certs", "localhost-key.pem");
+var ADDIN_STATIC_DIR = (0, import_node_path8.resolve)(PROJECT_ROOT2, "addin");
 setManifestDir(ADDIN_STATIC_DIR);
 var PKG_VERSION = (() => {
   try {
-    return JSON.parse((0, import_node_fs12.readFileSync)((0, import_node_path7.resolve)(PROJECT_ROOT2, "package.json"), "utf8")).version;
+    return JSON.parse((0, import_node_fs13.readFileSync)((0, import_node_path8.resolve)(PROJECT_ROOT2, "package.json"), "utf8")).version;
   } catch {
     return "0.0.0";
   }
@@ -85115,7 +85170,7 @@ if (setupRequested) {
   });
 }
 var bridgeTls = process.env.BRIDGE_TLS === "1";
-if (bridgeActive && bridgeTls && (!(0, import_node_fs12.existsSync)(BRIDGE_CERT_PATH) || !(0, import_node_fs12.existsSync)(BRIDGE_KEY_PATH))) {
+if (bridgeActive && bridgeTls && (!(0, import_node_fs13.existsSync)(BRIDGE_CERT_PATH) || !(0, import_node_fs13.existsSync)(BRIDGE_KEY_PATH))) {
   console.error(
     `Error: BRIDGE_TLS=1 but TLS certificate files not found.
   Expected: ${BRIDGE_CERT_PATH} and ${BRIDGE_KEY_PATH}
@@ -85145,6 +85200,7 @@ function createMcpServer(getSessionId, getActiveSessionCount) {
     {
       instructions: [
         "This server drives LIVE Office documents (Word, Excel, PowerPoint) through an add-in taskpane; the user watches every change happen in real time.",
+        "CREATING A COMPLETE NEW DOCUMENT: do NOT build it live, slide by slide \u2014 the live tools are for refining existing documents and are too limited for authoring a full deck. Instead: (1) generate the complete file offline (e.g. python-pptx for .pptx, or OOXML directly), (2) call open_document with the file path to open it in the Office app, (3) wait a few seconds, confirm with list_presentations/list_documents/list_workbooks, then refine with the live tools while the user watches.",
         "View etiquette: the user wants to SEE edits as they happen. Before starting an edit burst on a slide, bring that slide into view first (PowerPoint: show_slide; Word/Excel: navigate to or select the target content), then make the changes.",
         "Slide edits: prefer the OOXML route (edit_slide_xml, edit_shape_paragraphs, edit_slide_zip, edit_slide_chart) \u2014 full fidelity, and the view automatically returns to the edited slide after the reimport. Use execute_officejs only for quick in-place tweaks or APIs the OOXML route cannot reach. BULK EDITS: apply ALL edits first, then verify with at most one screenshot at the end \u2014 never alternate screenshot and edit_slide_xml calls; rapid reimport cycles crash PowerPoint for Mac.",
         "When multiple documents are connected, always pass the explicit documentId/workbookId/presentationId from list_documents/list_workbooks/list_presentations.",
@@ -85165,7 +85221,7 @@ var MIME_TYPES = {
   ".xml": "application/xml; charset=UTF-8"
 };
 function getMimeType(filePath) {
-  const ext = (0, import_node_path7.extname)(filePath);
+  const ext = (0, import_node_path8.extname)(filePath);
   return MIME_TYPES[ext] ?? "application/octet-stream";
 }
 var RequestBodyTooLargeError = class extends Error {
@@ -85302,7 +85358,7 @@ function serveStatic(req, res) {
       res.end(resolved);
       return;
     }
-    (0, import_node_fs12.readFile)(resolved.filePath, (err, data) => {
+    (0, import_node_fs13.readFile)(resolved.filePath, (err, data) => {
       if (err) {
         res.writeHead(404, { "Content-Type": "text/plain" });
         res.end("file not found");
@@ -85357,21 +85413,21 @@ function serveStatic(req, res) {
   }
   const urlPath = rawUrl === "/" ? "/index.html" : rawUrl;
   console.error(`[bridge] GET ${rawUrl}`);
-  const filePath = (0, import_node_path7.resolve)((0, import_node_path7.join)(ADDIN_STATIC_DIR, urlPath));
-  const relToStaticDir = (0, import_node_path7.relative)(ADDIN_STATIC_DIR, filePath);
-  if (relToStaticDir.startsWith("..") || (0, import_node_path7.resolve)(ADDIN_STATIC_DIR, relToStaticDir) !== filePath) {
+  const filePath = (0, import_node_path8.resolve)((0, import_node_path8.join)(ADDIN_STATIC_DIR, urlPath));
+  const relToStaticDir = (0, import_node_path8.relative)(ADDIN_STATIC_DIR, filePath);
+  if (relToStaticDir.startsWith("..") || (0, import_node_path8.resolve)(ADDIN_STATIC_DIR, relToStaticDir) !== filePath) {
     res.writeHead(403, { "Content-Type": "text/plain" });
     res.end("403 Forbidden");
     return;
   }
-  if (!(0, import_node_fs12.existsSync)(filePath)) {
+  if (!(0, import_node_fs13.existsSync)(filePath)) {
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("404 Not Found");
     return;
   }
-  const raw = (0, import_node_fs12.readFileSync)(filePath);
+  const raw = (0, import_node_fs13.readFileSync)(filePath);
   const mimeType = getMimeType(filePath);
-  const content = (0, import_node_path7.extname)(filePath) === ".xml" ? substituteManifestPort(
+  const content = (0, import_node_path8.extname)(filePath) === ".xml" ? substituteManifestPort(
     raw.toString(),
     bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT,
     BRIDGE_PORT
@@ -85381,7 +85437,7 @@ function serveStatic(req, res) {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Private-Network": "true"
   };
-  const isAssetImage = relToStaticDir.startsWith(`assets${import_node_path7.sep}`);
+  const isAssetImage = relToStaticDir.startsWith(`assets${import_node_path8.sep}`);
   if (!isAssetImage) {
     headers["Cache-Control"] = "no-store";
   }
@@ -85391,8 +85447,8 @@ function serveStatic(req, res) {
 var wsSelfTest = null;
 function startBridgeServer(onListening) {
   autoSideloadManifest(bridgeTls, BRIDGE_PORT);
-  const useTls = bridgeTls && (0, import_node_fs12.existsSync)(BRIDGE_CERT_PATH) && (0, import_node_fs12.existsSync)(BRIDGE_KEY_PATH);
-  const bridgeServer = useTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs12.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs12.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http3.createServer)(serveStatic);
+  const useTls = bridgeTls && (0, import_node_fs13.existsSync)(BRIDGE_CERT_PATH) && (0, import_node_fs13.existsSync)(BRIDGE_KEY_PATH);
+  const bridgeServer = useTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs13.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs13.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http3.createServer)(serveStatic);
   const allowedOrigins = /* @__PURE__ */ new Set();
   for (const host of ["localhost", "127.0.0.1", (0, import_node_os5.hostname)()]) {
     allowedOrigins.add(`${useTls ? "https" : "http"}://${host.toLowerCase()}:${BRIDGE_PORT}`);

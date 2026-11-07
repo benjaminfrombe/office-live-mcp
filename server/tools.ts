@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ConnectionPool } from './bridge.ts'
 import { registerChartTools } from './tools/charts.ts'
+import { registerDocumentTools } from './tools/documents.ts'
 import { registerExcelTools } from './tools/excel.ts'
 import { registerExecTools } from './tools/exec.ts'
 import { registerGeometryTools } from './tools/geometry.ts'
@@ -37,6 +38,7 @@ export function registerTools(
   getActiveSessionCount: () => number,
 ): void {
   registerInspectTools(server, pool, getSessionId, getActiveSessionCount)
+  registerDocumentTools(server, pool, getSessionId, getActiveSessionCount)
   registerGeometryTools(server, pool, getSessionId, getActiveSessionCount)
   registerSlideTools(server, pool, getSessionId, getActiveSessionCount)
   registerTextTools(server, pool, getSessionId, getActiveSessionCount)

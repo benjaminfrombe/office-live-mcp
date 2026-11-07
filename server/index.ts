@@ -185,6 +185,7 @@ function createMcpServer(getSessionId: () => string | undefined, getActiveSessio
     {
       instructions: [
         'This server drives LIVE Office documents (Word, Excel, PowerPoint) through an add-in taskpane; the user watches every change happen in real time.',
+        'CREATING A COMPLETE NEW DOCUMENT: do NOT build it live, slide by slide — the live tools are for refining existing documents and are too limited for authoring a full deck. Instead: (1) generate the complete file offline (e.g. python-pptx for .pptx, or OOXML directly), (2) call open_document with the file path to open it in the Office app, (3) wait a few seconds, confirm with list_presentations/list_documents/list_workbooks, then refine with the live tools while the user watches.',
         'View etiquette: the user wants to SEE edits as they happen. Before starting an edit burst on a slide, bring that slide into view first (PowerPoint: show_slide; Word/Excel: navigate to or select the target content), then make the changes.',
         'Slide edits: prefer the OOXML route (edit_slide_xml, edit_shape_paragraphs, edit_slide_zip, edit_slide_chart) — full fidelity, and the view automatically returns to the edited slide after the reimport. Use execute_officejs only for quick in-place tweaks or APIs the OOXML route cannot reach. ' +
           'BULK EDITS: apply ALL edits first, then verify with at most one screenshot at the end — never alternate screenshot and edit_slide_xml calls; rapid reimport cycles crash PowerPoint for Mac.',

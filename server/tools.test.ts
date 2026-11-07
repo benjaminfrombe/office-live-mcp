@@ -100,7 +100,7 @@ describe('MCP Tools', () => {
     pool = new ConnectionPool(100)
   })
 
-  it('lists all 88 tools', async () => {
+  it('lists all 89 tools', async () => {
     const { client } = await setupMcpClient(pool)
     const result = await client.listTools()
     const names = result.tools.map((t) => t.name).sort()
@@ -155,6 +155,7 @@ describe('MCP Tools', () => {
       'list_documents',
       'list_presentations',
       'list_workbooks',
+      'open_document',
       'preview_deck',
       'read_comments',
       'read_deck_text',
