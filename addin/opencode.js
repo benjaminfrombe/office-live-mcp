@@ -161,6 +161,14 @@ var OpenCodeChat = (() => {
           if (!/^\.(png|jpe?g|gif|webp|svg)$/.test(ext)) return
           if (!candidate.startsWith('/') && !candidate.startsWith('~/')) return
           if (candidate.startsWith('/') && text[text.indexOf(candidate) - 1] === '.') return
+          // Template-literal fragments from code snippets (`${BRAND}/icons/x.svg`):
+          // the regex strips the ${BRAND} prefix, leaving a path that starts with
+          // a slash but exists nowhere on disk. Skip candidates whose preceding
+          // character or body marks them as code.
+          var at = text.indexOf(candidate)
+          var prev = at > 0 ? text[at - 1] : ''
+          if (prev === '$' || prev === '{' || prev === '/') return
+          if (candidate.indexOf('${') !== -1 || candidate.indexOf('<') !== -1) return
           if (candidates.some((other) => other !== candidate && other.endsWith(candidate))) return
           if (images.some((existing) => existing.src.indexOf(encodeURIComponent(candidate)) !== -1)) return
           images.push({
@@ -279,6 +287,10 @@ var OpenCodeChat = (() => {
     })
   }
 
+  function interruptSession(config, sessionID) {
+    return request(config, `/api/session/${sessionID}/interrupt`, { method: 'POST', body: '{}' })
+  }
+
   return {
     loadConfig: loadConfig,
     saveConfig: saveConfig,
@@ -293,6 +305,7 @@ var OpenCodeChat = (() => {
     listModels: listModels,
     defaultModel: defaultModel,
     setSessionModel: setSessionModel,
+    interruptSession: interruptSession,
     promptFiles: promptFiles,
     messageText: messageText,
     messageImages: messageImages,

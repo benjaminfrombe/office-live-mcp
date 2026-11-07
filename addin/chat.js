@@ -192,6 +192,9 @@ function initChat() {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       sendChatMessage()
+    } else if (event.key === 'Escape') {
+      event.preventDefault()
+      stopAgent()
     } else if (event.key === 'ArrowUp' && !event.shiftKey && !event.altKey && !event.metaKey && !event.ctrlKey) {
       event.preventDefault()
       historyMove(-1)
@@ -208,6 +211,7 @@ function initChat() {
     var live = strip.classList.contains('live')
     var expand = strip.dataset.expanded !== '1'
     strip.dataset.expanded = expand ? '1' : ''
+    strip.classList.toggle('expanded', expand)
     if (live) {
       // Live mode: expanding pauses the ticker and shows the full streaming
       // text (auto-scrolled to the tail); collapsing snaps the ticker back.
@@ -299,7 +303,7 @@ function initChat() {
     () => {
       showMode('chat')
       focusInput()
-      scrollMessages()
+      scrollMessages(true, true)
     },
     () => {
       /* OpenCode not reachable — keep the Bridge tab */
@@ -307,9 +311,25 @@ function initChat() {
   )
 }
 
+/* Layout shifts (reasoning strip / status row changing size) used to yank the
+   message scroller. Keep the scrollTop stable across any mutation: restore it
+   a frame later, whatever the CSS does. */
+function withStableScroll(mutate) {
+  var messages = document.getElementById('oc-messages')
+  var before = messages ? messages.scrollTop : null
+  mutate()
+  if (messages && before !== null) {
+    requestAnimationFrame(() => {
+      messages.scrollTop = before
+    })
+  }
+}
+
 function setChatStatus(text) {
-  var el = document.getElementById('oc-status')
-  if (el) el.textContent = text
+  withStableScroll(() => {
+    var el = document.getElementById('oc-status')
+    if (el) el.textContent = text
+  })
 }
 
 function chatError(err) {
@@ -508,6 +528,8 @@ function startEventStream() {
       renderStreaming()
       chatState.reasoningActive = false
       updateReasoningStrip()
+      chatState.busy = false
+      updateStopButton()
       setChatStatus('')
       scheduleRefetch(sessionID)
     }
@@ -519,6 +541,25 @@ function stopEventStream() {
     chatState.events.stop()
     chatState.events = null
   }
+}
+
+/* ---------- Stop ---------- */
+/* Interrupt the running agent. The Stop button shows while the session is
+   busy (send → execution terminal event); Escape triggers the same. */
+function updateStopButton() {
+  var btn = document.getElementById('oc-stop')
+  if (btn) btn.hidden = !chatState.busy
+}
+
+function stopAgent() {
+  if (!chatState.busy || !chatState.sessionID) return
+  chatState.busy = false
+  updateStopButton()
+  setChatStatus('Stopping...')
+  OpenCodeChat.interruptSession(chatState.config, chatState.sessionID).then(
+    () => setChatStatus('Stopped'),
+    () => setChatStatus(''),
+  )
 }
 
 function sendChatMessage() {
@@ -547,6 +588,7 @@ function sendChatMessage() {
     }
     const text = `${invisible}${context}${typed}`
     chatState.busy = true
+    updateStopButton()
     rememberInput(typed)
     chatState.historyIndex = -1
     chatState.draft = ''
@@ -575,6 +617,7 @@ function sendChatMessage() {
       },
       (err) => {
         chatState.busy = false
+        updateStopButton()
         chatError(err)
       },
     )
@@ -762,61 +805,66 @@ function stopTicker() {
 }
 
 function updateReasoningStrip() {
-  var strip = document.getElementById('oc-reasoning-strip')
-  if (!strip) return
-  var text = chatState.reasoningText
-  var body = document.getElementById('oc-reasoning-text')
-  var copies = body ? body.children : []
-  var label = null
-  var i
-  var delta
-  if (!text) {
-    strip.hidden = true
-    strip.dataset.expanded = ''
-    chatState.reasoningRendered = 0
-    tickerOffset = null
-    if (body) {
-      for (i = 0; i < copies.length; i++) copies[i].textContent = ''
+  withStableScroll(() => {
+    var strip = document.getElementById('oc-reasoning-strip')
+    if (!strip) return
+    var text = chatState.reasoningText
+    var body = document.getElementById('oc-reasoning-text')
+    var copies = body ? body.children : []
+    var label = null
+    var i
+    var delta
+    if (!text) {
+      strip.hidden = true
+      strip.dataset.expanded = ''
+      strip.classList.remove('expanded')
+      chatState.reasoningRendered = 0
+      tickerOffset = null
+      if (body) {
+        for (i = 0; i < copies.length; i++) copies[i].textContent = ''
+      }
+      return
     }
-    return
-  }
-  strip.hidden = false
-  label = document.getElementById('oc-reasoning-label')
-  var rendered = chatState.reasoningRendered || 0
-  if (text.length >= rendered && text.slice(0, rendered) === (copies[0] ? copies[0].textContent : '')) {
-    // Normal case: append only the new tail, to both ticker copies.
-    if (text.length > rendered) {
-      delta = document.createTextNode(text.slice(rendered))
-      for (i = 0; i < copies.length; i++) copies[i].appendChild(delta.cloneNode(false))
-    }
-  } else {
-    // Reset (new step): full rewrite is fine here, it happens once.
-    for (i = 0; i < copies.length; i++) copies[i].textContent = text
-    tickerOffset = null // new text: snap the band to its tail on the next frame
-  }
-  chatState.reasoningRendered = text.length
-  var expanded = false
-  var liveExpanded = strip.dataset.expanded === '1'
-  if (chatState.reasoningActive) {
-    strip.classList.add('live')
-    label.textContent = liveExpanded ? 'Reasoning… (click to collapse)' : 'Reasoning…'
-    body.classList.toggle('expanded', liveExpanded)
-    if (liveExpanded) {
-      // Expanded during streaming: full text, auto-scrolled to the tail;
-      // the ticker stays paused until the user collapses again.
-      stopTicker()
-      body.scrollTop = body.scrollHeight
+    strip.hidden = false
+    label = document.getElementById('oc-reasoning-label')
+    var rendered = chatState.reasoningRendered || 0
+    if (text.length >= rendered && text.slice(0, rendered) === (copies[0] ? copies[0].textContent : '')) {
+      // Normal case: append only the new tail, to both ticker copies.
+      if (text.length > rendered) {
+        delta = document.createTextNode(text.slice(rendered))
+        for (i = 0; i < copies.length; i++) copies[i].appendChild(delta.cloneNode(false))
+      }
     } else {
-      startTicker()
+      // Reset (new step): full rewrite is fine here, it happens once.
+      for (i = 0; i < copies.length; i++) copies[i].textContent = text
+      tickerOffset = null // new text: snap the band to its tail on the next frame
     }
-  } else {
-    strip.classList.remove('live')
-    stopTicker()
-    expanded = strip.dataset.expanded === '1'
-    label.textContent = `Reasoning · ${text.length} chars · click to ${expanded ? 'collapse' : 'expand'}`
-    body.classList.toggle('expanded', expanded)
-    if (expanded) body.scrollTop = body.scrollHeight
-  }
+    chatState.reasoningRendered = text.length
+    var expanded = false
+    var liveExpanded = strip.dataset.expanded === '1'
+    if (chatState.reasoningActive) {
+      strip.classList.add('live')
+      label.textContent = liveExpanded ? 'Reasoning… (click to collapse)' : 'Reasoning…'
+      strip.classList.toggle('expanded', liveExpanded)
+      body.classList.toggle('expanded', liveExpanded)
+      if (liveExpanded) {
+        // Expanded during streaming: full text, auto-scrolled to the tail;
+        // the ticker stays paused until the user collapses again.
+        stopTicker()
+        body.scrollTop = body.scrollHeight
+      } else {
+        startTicker()
+      }
+    } else {
+      strip.classList.remove('live')
+      stopTicker()
+      expanded = strip.dataset.expanded === '1'
+      label.textContent = `Reasoning · ${text.length} chars · click to ${expanded ? 'collapse' : 'expand'}`
+      strip.classList.toggle('expanded', expanded)
+      body.classList.toggle('expanded', expanded)
+      if (expanded) body.scrollTop = body.scrollHeight
+    }
+  })
 }
 
 /* Build the context blocks for all pending selections. Points are 1/72 inch. */
@@ -904,6 +952,14 @@ function renderFromRows(rows) {
 
   const streamingEl = messages.querySelector('.chat-message.streaming')
   let streamingReused = false
+  // The optimistic user bubble (added at send time, before the server id is
+  // known) breaks the window-shift arithmetic below: the trim would delete it
+  // and firstNew would skip its server row, so the user's own message vanished
+  // after every refetch. Drop it here — the server row re-renders it.
+  if (isAppend) {
+    const pending = messages.querySelector('.chat-message[data-pending="1"]')
+    if (pending) pending.remove()
+  }
   const firstNew = isAppend ? shift + rendered.length : 0
   for (let i = firstNew; i < visible.length; i++) {
     const row = visible[i]
@@ -938,7 +994,7 @@ function renderFromRows(rows) {
     chatState.renderedIds.push(row.id)
   }
   if (!chatState.streamingText) setChatStatus('')
-  scrollMessages(true)
+  scrollMessages(true, !isAppend)
 }
 
 function appendMessage(role, text, pending, images) {
@@ -959,6 +1015,11 @@ function fillMessageBubble(div, text, images) {
     img.className = 'chat-image'
     img.src = image.src
     img.alt = image.name
+    // Paths extracted from tool output can be code fragments (template
+    // literals like `${BRAND}/icons/x.svg`) that do not exist on disk — the
+    // /file endpoint then 404s. Drop the broken <img> instead of showing the
+    // browser's placeholder tile.
+    img.addEventListener('error', () => img.remove())
     div.appendChild(img)
   })
 }
@@ -978,14 +1039,20 @@ function renderStreaming() {
   scrollMessages()
 }
 
-function scrollMessages(smooth) {
+/* Stick-to-bottom: follow the newest content while it streams in, unless the
+   user actively scrolled up to read. Content growth does not fire a scroll
+   event, so the flag survives streaming; only real scrolls re-evaluate it. */
+var stickBottom = true
+
+function scrollMessages(smooth, force) {
   const messages = document.getElementById('oc-messages')
   if (!messages) return
-  // rAF: the browser needs a laid-out frame before scrollTop sticks. History
-  // loads glide to the bottom; streaming deltas follow instantly so the
-  // smooth animation never lags behind the text.
+  if (!force && !stickBottom) return
+  // rAF: the browser needs a laid-out frame before scrollTop sticks. Forced
+  // renders (session switch, history load) glide; streaming follows instantly
+  // so the smooth animation never lags behind the text.
   requestAnimationFrame(() => {
-    messages.scrollTo({ top: messages.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
+    messages.scrollTo({ top: messages.scrollHeight, behavior: force && smooth ? 'smooth' : 'auto' })
   })
 }
 
@@ -1008,6 +1075,6 @@ document.getElementById('tab-bridge').addEventListener('click', () => {
 document.getElementById('tab-chat').addEventListener('click', () => {
   showMode('chat')
   focusInput()
-  scrollMessages()
+  scrollMessages(true, true)
 })
 initChat()

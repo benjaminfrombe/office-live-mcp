@@ -362,12 +362,22 @@ select:hover {
   /* Explicit line-height: WKWebView font metrics otherwise make the label
      line box taller than the strip and the glyphs clip at the bottom. */
   line-height: 1.4;
+  /* Fixed height: the strip sits above the message scroller in a flex
+     column, so ANY height change resizes the chat viewport and pushes the
+     newest message out of view. Collapsed label + one ticker line fits in
+     44px; expanded (class below) switches to auto. */
+  height: 44px;
+}
+
+.reasoning-strip.expanded {
+  height: auto;
 }
 
 .reasoning-strip[hidden] {
-  /* Reserve the strip's space even when empty: toggling display:none would
-     shift the whole layout on every reasoning start/end, which made the
-     message scroller jump constantly. visibility keeps the layout stable. */
+  /* Reserve the strip's space even when empty. display:block is required —
+     the UA stylesheet keeps [hidden] at display:none, and visibility alone
+     would not stop the column from collapsing. */
+  display: block;
   visibility: hidden;
 }
 
@@ -483,6 +493,15 @@ select:hover {
   min-width: 0;
 }
 
+.chat-input-actions .stop {
+  color: #b3261e;
+  border-color: #b3261e;
+}
+
+.chat-input-actions .stop:hover {
+  background: #fdecea;
+}
+
 /* Model picker lives in the bottom action row, compact next to the buttons. */
 .chat-input-actions #oc-model {
   flex: 1 1 30%;
@@ -505,10 +524,10 @@ select:hover {
   margin-bottom: 4px;
 }
 
-/* Empty status row must not reserve space — it sat as a blank gap between
-   the session toolbar and the reasoning strip. */
+/* Empty status row still reserves its line: toggling it away and back made
+   the layout jump on every step start/end ("Assistant is working..."). */
 .chat-status:empty {
-  display: none;
+  visibility: hidden;
 }
 
 .chat-messages {

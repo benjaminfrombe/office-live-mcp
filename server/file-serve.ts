@@ -42,6 +42,12 @@ export function imagePathsInText(text: string): string[] {
     // Drop relative paths: "./out.jpg" matches with its "./" as the slash.
     const start = text.indexOf(candidate)
     if (candidate.startsWith('/') && text[start - 1] === '.') return
+    // Template-literal fragments from code snippets (`${BRAND}/icons/x.svg`):
+    // the regex strips the ${BRAND} prefix, leaving a path that starts with a
+    // slash but exists nowhere on disk. Skip code-marked candidates.
+    const prev = start > 0 ? text[start - 1] : ''
+    if (prev === '$' || prev === '{' || prev === '/') return
+    if (candidate.indexOf('${') !== -1 || candidate.indexOf('<') !== -1) return
     if (!seen.has(candidate)) {
       // A bare match can be the tail of an already-extracted <file> path
       // (the regex restarts after a space) — never push it as a second image.
