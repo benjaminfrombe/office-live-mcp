@@ -79000,8 +79000,37 @@ async function runSetup() {
     console.error(`[setup] Unsupported platform: ${process.platform}`);
     process.exit(1);
   }
+  configureOpenCodeMcp();
   const entry = process.argv[1] ?? "office-live-mcp";
   console.log(["", ...harnessInstructions(entry, process.platform, process.execPath)].join("\n"));
+}
+function configureOpenCodeMcp() {
+  const candidates = [
+    (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), ".config", "opencode", "opencode.jsonc"),
+    (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), ".config", "opencode", "opencode.json")
+  ];
+  const path = candidates.find((p) => (0, import_node_fs2.existsSync)(p));
+  const serverPath = (0, import_node_path2.resolve)(PROJECT_ROOT, "dist", "index.cjs");
+  const entry = { type: "local", command: [process.execPath, serverPath], enabled: true };
+  if (!path) {
+    console.log("[setup] No OpenCode config found \u2014 add the mcp entry manually (see README #connect-your-harness).");
+    return;
+  }
+  let json3;
+  try {
+    json3 = JSON.parse((0, import_node_fs2.readFileSync)(path, "utf8").replace(/^\uFEFF/, ""));
+  } catch {
+    console.log("[setup] OpenCode config is not plain JSON (comments?) \u2014 add the mcp entry manually (see README).");
+    return;
+  }
+  if (!json3.mcp || typeof json3.mcp !== "object") json3.mcp = {};
+  if (JSON.stringify(json3.mcp["office-live-mcp"]) === JSON.stringify(entry)) {
+    console.log("[setup] OpenCode: office-live-mcp already configured.");
+    return;
+  }
+  json3.mcp["office-live-mcp"] = entry;
+  (0, import_node_fs2.writeFileSync)(path, JSON.stringify(json3, null, 2) + "\n");
+  console.log(`[setup] OpenCode configured: ${path} \u2014 restart OpenCode to pick it up.`);
 }
 
 // server/sharepoint-catalog.ts

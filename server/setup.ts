@@ -650,7 +650,44 @@ export async function runSetup(): Promise<void> {
     console.error(`[setup] Unsupported platform: ${process.platform}`)
     process.exit(1)
   }
-
+  configureOpenCodeMcp()
   const entry = process.argv[1] ?? 'office-live-mcp'
   console.log(['', ...harnessInstructions(entry, process.platform, process.execPath)].join('\n'))
+}
+
+/**
+ * Register the MCP server in the user's OpenCode config when one exists and
+ * parses as plain JSON (JSONC with comments is left untouched with a hint —
+ * rewriting it would drop the comments). Idempotent: an identical entry is
+ * reported and left alone.
+ */
+export function configureOpenCodeMcp(): void {
+  const candidates = [
+    resolve(homedir(), '.config', 'opencode', 'opencode.jsonc'),
+    resolve(homedir(), '.config', 'opencode', 'opencode.json'),
+  ]
+  const path = candidates.find((p) => existsSync(p))
+  const serverPath = resolve(PROJECT_ROOT, 'dist', 'index.cjs')
+  const entry = { type: 'local', command: [process.execPath, serverPath], enabled: true }
+  if (!path) {
+    console.log('[setup] No OpenCode config found — add the mcp entry manually (see README #connect-your-harness).')
+    return
+  }
+  let json: {
+    mcp?: Record<string, unknown>
+  }
+  try {
+    json = JSON.parse(readFileSync(path, 'utf8').replace(/^\uFEFF/, ''))
+  } catch {
+    console.log('[setup] OpenCode config is not plain JSON (comments?) — add the mcp entry manually (see README).')
+    return
+  }
+  if (!json.mcp || typeof json.mcp !== 'object') json.mcp = {}
+  if (JSON.stringify(json.mcp['office-live-mcp']) === JSON.stringify(entry)) {
+    console.log('[setup] OpenCode: office-live-mcp already configured.')
+    return
+  }
+  json.mcp['office-live-mcp'] = entry
+  writeFileSync(path, JSON.stringify(json, null, 2) + '\n')
+  console.log(`[setup] OpenCode configured: ${path} — restart OpenCode to pick it up.`)
 }
