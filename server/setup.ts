@@ -650,18 +650,19 @@ export async function runSetup(): Promise<void> {
     console.error(`[setup] Unsupported platform: ${process.platform}`)
     process.exit(1)
   }
-  configureOpenCodeMcp()
+  await configureOpenCodeMcp()
   const entry = process.argv[1] ?? 'office-live-mcp'
   console.log(['', ...harnessInstructions(entry, process.platform, process.execPath)].join('\n'))
 }
 
 /**
- * Register the MCP server in the user's OpenCode config when one exists and
- * parses as plain JSON (JSONC with comments is left untouched with a hint —
- * rewriting it would drop the comments). Idempotent: an identical entry is
- * reported and left alone.
+ * Register the MCP server in the user's OpenCode config. When a config file
+ * exists and parses as plain JSON, setup asks for confirmation (interactive)
+ * and merges the office-live-mcp entry. JSONC files with comments are left
+ * untouched with a hint — rewriting them would drop the comments. An
+ * identical existing entry is reported as already configured.
  */
-export function configureOpenCodeMcp(): void {
+export async function configureOpenCodeMcp(): Promise<void> {
   const candidates = [
     resolve(homedir(), '.config', 'opencode', 'opencode.jsonc'),
     resolve(homedir(), '.config', 'opencode', 'opencode.json'),
@@ -686,6 +687,19 @@ export function configureOpenCodeMcp(): void {
   if (JSON.stringify(json.mcp['office-live-mcp']) === JSON.stringify(entry)) {
     console.log('[setup] OpenCode: office-live-mcp already configured.')
     return
+  }
+  if (process.stdin.isTTY && process.env.OLM_OPENCODE_AUTOCONFIG !== '1') {
+    const rl = createInterface({ input: process.stdin, output: process.stdout })
+    let answer: string
+    try {
+      answer = await rl.question(`Configure office-live-mcp in ${path}? [Y/n] `)
+    } finally {
+      rl.close()
+    }
+    if (!/^\s*(y(es)?)?\s*$/i.test(answer)) {
+      console.log('[setup] OpenCode config left unchanged — add the mcp entry manually (see README).')
+      return
+    }
   }
   json.mcp['office-live-mcp'] = entry
   writeFileSync(path, JSON.stringify(json, null, 2) + '\n')

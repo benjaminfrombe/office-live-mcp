@@ -79000,11 +79000,11 @@ async function runSetup() {
     console.error(`[setup] Unsupported platform: ${process.platform}`);
     process.exit(1);
   }
-  configureOpenCodeMcp();
+  await configureOpenCodeMcp();
   const entry = process.argv[1] ?? "office-live-mcp";
   console.log(["", ...harnessInstructions(entry, process.platform, process.execPath)].join("\n"));
 }
-function configureOpenCodeMcp() {
+async function configureOpenCodeMcp() {
   const candidates = [
     (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), ".config", "opencode", "opencode.jsonc"),
     (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), ".config", "opencode", "opencode.json")
@@ -79027,6 +79027,19 @@ function configureOpenCodeMcp() {
   if (JSON.stringify(json3.mcp["office-live-mcp"]) === JSON.stringify(entry)) {
     console.log("[setup] OpenCode: office-live-mcp already configured.");
     return;
+  }
+  if (process.stdin.isTTY && process.env.OLM_OPENCODE_AUTOCONFIG !== "1") {
+    const rl = (0, import_promises.createInterface)({ input: process.stdin, output: process.stdout });
+    let answer;
+    try {
+      answer = await rl.question(`Configure office-live-mcp in ${path}? [Y/n] `);
+    } finally {
+      rl.close();
+    }
+    if (!/^\s*(y(es)?)?\s*$/i.test(answer)) {
+      console.log("[setup] OpenCode config left unchanged \u2014 add the mcp entry manually (see README).");
+      return;
+    }
   }
   json3.mcp["office-live-mcp"] = entry;
   (0, import_node_fs2.writeFileSync)(path, JSON.stringify(json3, null, 2) + "\n");
