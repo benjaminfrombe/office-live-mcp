@@ -4,38 +4,45 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reasoning ticker mockup</title>
-  <link rel="stylesheet" href="../addin/style.css?v=mock2">
+  <link rel="stylesheet" href="../addin/style.css?v=mock6">
   <style>
-    /* Mockup-only chrome: centers the addin-sized taskpane on a neutral page */
-    body { display: flex; gap: 16px; align-items: flex-start; justify-content: center; padding: 24px; background: #f2f2f4; }
+    /* Mockup-only chrome: two columns, controls left and a taskpane sized
+       like the real Office one (about 350px wide, full window height). The
+       addin stylesheet makes body a column; override it to a row here. */
+    body {
+      flex-direction: row; flex-wrap: nowrap; align-items: stretch; justify-content: center;
+      gap: 20px; padding: 20px; height: 100vh; overflow: hidden; background: #e9ebe9;
+    }
     .mockup-controls {
+      flex: none; align-self: flex-start;
       width: 220px; padding: 12px; background: #fff; border: 1px solid #ddd; border-radius: 10px;
       font-size: 12px; display: flex; flex-direction: column; gap: 10px;
     }
     .mockup-controls h2 { font-size: 13px; margin: 0; }
     .mockup-controls label { display: flex; flex-direction: column; gap: 4px; }
     .mockup-controls button { cursor: pointer; }
+    /* Same box model as the real taskpane body (padding 38/16/12, canvas bg,
+       flex column) so .chat-messages is the only scroller, as in Office. */
     .taskpane {
-      width: 380px; height: 640px; background: #fff; border: 1px solid #ccc; border-radius: 12px;
-      padding: 12px; box-shadow: 0 8px 30px rgb(0 0 0 / 10%); overflow-y: auto;
+      flex: none; width: 350px; height: 100%; max-height: 900px;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 6px 16px 12px; background: var(--canvas); position: relative;
+      border: 1px solid #c8ccc8; border-radius: 6px; box-shadow: 0 8px 30px rgb(0 0 0 / 10%); overflow: hidden;
     }
-    .taskpane h1 { font-size: 15px; }
+    /* Stand-in for the macOS Office personality menu (34x32px, top-right). */
+    .personality-menu {
+      position: absolute; top: 0; right: 0; width: 34px; height: 32px;
+      border-left: 1px dashed #c8ccc8; border-bottom: 1px dashed #c8ccc8; color: #9aa79a;
+      font-size: 14px; display: flex; align-items: center; justify-content: center;
+    }
     .variant-note { color: #666; font-size: 11px; }
   </style>
 </head>
 <body>
   <div class="mockup-controls">
-    <h2>Ticker mockup</h2>
+    <h2>Reasoning strip mockup</h2>
     <label>
-      Ticker variant
-      <select id="mock-variant">
-        <option value="ticker">A — realtime: follows the stream</option>
-        <option value="tail">B — tail-follow (last line, no crawl)</option>
-        <option value="fade">C — fade-in tail, static</option>
-      </select>
-    </label>
-    <label>
-      Max follow speed <span class="variant-note">(variant A, px/s cap)</span>
+      Max follow speed <span class="variant-note">(px/s cap)</span>
       <input id="mock-speed" type="range" min="60" max="1200" value="600">
       <span id="mock-speed-value">600 px/s</span>
     </label>
@@ -44,23 +51,28 @@
   </div>
 
   <div class="taskpane">
-    <h1>Office Live MCP</h1>
+    <div class="personality-menu" title="Office personality menu (macOS)">⋯</div>
     <div class="mode-tabs">
       <button class="mode-tab" type="button">Bridge</button>
       <button class="mode-tab active" type="button">OpenCode Chat</button>
     </div>
     <div class="mode-panel">
+      <div class="chat-toolbar">
+        <select><option>Make the title on slide 1 bigger</option></select>
+        <button type="button">New session</button>
+      </div>
       <div id="oc-status" class="chat-status">mock session</div>
       <div id="oc-reasoning-strip" class="reasoning-strip" hidden>
-        <span id="oc-reasoning-label" class="reasoning-label">Reasoning…</span>
-        <pre id="oc-reasoning-text" class="reasoning-text"><span></span><span></span></pre>
+        <span class="reasoning-icon"></span>
+        <span id="oc-reasoning-label" class="reasoning-label">Reasoning</span>
+        <div class="reasoning-window"><pre id="oc-reasoning-text" class="reasoning-text"><span></span><span></span></pre></div>
       </div>
       <div id="oc-messages" class="chat-messages"></div>
       <div class="chat-input">
         <textarea rows="3" placeholder="Ask OpenCode..."></textarea>
         <div class="chat-input-actions">
           <button type="button">+ Selection</button>
-          <button type="button">Insert last reply</button>
+          <select><option>claude-opus-5-5</option></select>
           <span class="chat-input-spacer"></span>
           <button type="button" class="primary">Send</button>
         </div>
@@ -68,6 +80,6 @@
     </div>
   </div>
 
-  <script src="mock.js"></script>
+  <script src="mock.js?v=2"></script>
 </body>
 </html>

@@ -3,52 +3,43 @@
 // in addin/style.css can be evaluated here without a live session.
 (function () {
   var state = { reasoningText: '', reasoningActive: false, reasoningRendered: 0 }
-  var variant = 'ticker'
   var maxFollowSpeed = 600 // px/s cap — well above a normal stream so the band
   // tracks the tail at the real delta rate; only bursts get capped
   var timers = []
-  var ticker = { raf: 0, offset: 0, last: 0 }
+  var ticker = { raf: 0, offset: null, last: 0 }
 
   function el(id) { return document.getElementById(id) }
 
-  /* Realtime tail-follow ticker: the newest reasoning stays visible at the
-     right edge and the band moves left exactly as fast as text arrives —
-     the speed IS the streaming rate. A px/s cap keeps delta bursts from
-     teleporting the band; when no deltas arrive, the band stands still. */
+  /* Realtime tail-follow ticker — mirrors tickTicker in addin/chat.js: the
+     newest reasoning stays at the right edge of .reasoning-window and the
+     band moves left as fast as text arrives (capped at maxFollowSpeed). */
   function tickTicker(ts) {
+    var strip = el('oc-reasoning-strip')
     var body = el('oc-reasoning-text')
-    if (!body || variant !== 'ticker' || !el('oc-reasoning-strip').classList.contains('live')) {
+    if (!body || !strip.classList.contains('live') || strip.classList.contains('expanded')) {
       ticker.raf = 0
       return
     }
-    var strip = el('oc-reasoning-strip')
-    // The text element is width:max-content, so its own clientWidth never
-    // overflows; the viewport is the strip's content box. Follow the tail of
-    // the FIRST copy only — pinning the end of copy 2 would make the band
-    // travel double the distance and lag a full copy-width behind.
-    var cs = getComputedStyle(strip)
-    var viewport = strip.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+    var viewport = body.parentElement.clientWidth // .reasoning-window
     var copyWidth = body.children[0] ? body.children[0].getBoundingClientRect().width : 0
-    var target = viewport - copyWidth
-    if (target > 0) target = 0
+    var target = Math.min(0, viewport - copyWidth)
     if (ticker.offset === null || target > ticker.offset) {
-      // Fresh text (new step) or text that shrank: snap to the tail.
       ticker.offset = target
     } else if (ticker.last) {
       var dt = (ts - ticker.last) / 1000
-      var want = ticker.offset - target // positive distance still to travel
-      var step = Math.min(want, maxFollowSpeed * dt)
-      ticker.offset -= step
+      ticker.offset -= Math.min(ticker.offset - target, maxFollowSpeed * dt)
     }
     body.style.transform = 'translateX(' + ticker.offset + 'px)'
     ticker.last = ts
+    if (ticker.offset === target) {
+      ticker.raf = 0
+      ticker.last = 0
+      return
+    }
     ticker.raf = requestAnimationFrame(tickTicker)
   }
 
   function startTicker() {
-    var body = el('oc-reasoning-text')
-    if (!body) return
-    body.style.animation = 'none'
     if (!ticker.raf) {
       ticker.last = 0
       ticker.raf = requestAnimationFrame(tickTicker)
@@ -61,6 +52,7 @@
     ticker.last = 0
     var body = el('oc-reasoning-text')
     if (body) body.style.transform = ''
+    ticker.offset = null
   }
 
   // ---- message rendering (minimal, mirrors the real classes) ----
@@ -114,7 +106,7 @@
     tick()
   }
 
-  // ---- reasoning strip (copy of the real incremental renderer) ----
+  // ---- reasoning strip (mirrors updateReasoningStrip in addin/chat.js) ----
   function updateReasoningStrip() {
     var strip = el('oc-reasoning-strip')
     var text = state.reasoningText
@@ -123,12 +115,13 @@
     if (!text) {
       strip.hidden = true
       strip.dataset.expanded = ''
+      strip.classList.remove('expanded')
       state.reasoningRendered = 0
+      ticker.offset = null
       for (var i = 0; i < copies.length; i++) copies[i].textContent = ''
       return
     }
     strip.hidden = false
-    var label = el('oc-reasoning-label')
     var rendered = state.reasoningRendered || 0
     if (text.length >= rendered && text.slice(0, rendered) === (copies[0] ? copies[0].textContent : '')) {
       if (text.length > rendered) {
@@ -136,72 +129,31 @@
         for (var j = 0; j < copies.length; j++) copies[j].appendChild(delta.cloneNode(false))
       }
     } else {
-      // Reset (new step): full rewrite is fine here, it happens once.
       for (var k = 0; k < copies.length; k++) copies[k].textContent = text
-      ticker.offset = null // new text: snap the band to its tail on the next frame
+      ticker.offset = null
     }
     state.reasoningRendered = text.length
-    if (state.reasoningActive) {
-      strip.classList.add('live')
-      label.textContent = 'Reasoning…'
-      body.classList.remove('expanded')
+    var expanded = strip.dataset.expanded === '1'
+    strip.classList.toggle('live', state.reasoningActive)
+    strip.classList.toggle('expanded', expanded)
+    strip.title = expanded ? 'Click to collapse' : 'Click to expand (' + text.length + ' chars)'
+    if (expanded) {
+      stopTicker()
+      body.scrollTop = body.scrollHeight
+    } else if (state.reasoningActive) {
       startTicker()
     } else {
-      strip.classList.remove('live')
-      body.style.transform = ''
-      var expanded = strip.dataset.expanded === '1'
-      label.textContent = 'Reasoning · ' + text.length + ' chars · click to ' + (expanded ? 'collapse' : 'expand')
-      body.classList.toggle('expanded', expanded)
-      if (expanded) body.scrollTop = body.scrollHeight
+      stopTicker()
     }
   }
 
-  el('oc-reasoning-strip').addEventListener('click', function () {
+  el('oc-reasoning-strip').addEventListener('click', function (e) {
     var strip = el('oc-reasoning-strip')
-    if (strip.classList.contains('live')) return
+    if (strip.classList.contains('expanded') && e.target.closest('.reasoning-window')) return
     strip.dataset.expanded = strip.dataset.expanded === '1' ? '' : '1'
     updateReasoningStrip()
   })
 
-  // ---- variant plumbing (mockup-only CSS overrides) ----
-  function applyVariant() {
-    var body = el('oc-reasoning-text')
-    var style = el('mock-variant-style')
-    if (!style) {
-      style = document.createElement('style')
-      style.id = 'mock-variant-style'
-      document.head.appendChild(style)
-    }
-    body.classList.remove('variant-tail', 'variant-fade')
-    var css = ''
-    if (variant === 'tail') {
-      // B: no crawl — the box follows the tail like a terminal, one line tall.
-      css = '.reasoning-strip.live .reasoning-text{animation:none;white-space:pre-wrap;display:block;width:auto;' +
-        'max-height:1.5em;overflow:hidden;}' +
-        '.reasoning-strip.live .reasoning-text>span::after{content:"";}' +
-        '.reasoning-strip.live .reasoning-text.variant-tail>span:last-child{display:block;transform:translateY(-50%);}'
-      body.classList.add('variant-tail')
-    } else if (variant === 'fade') {
-      // C: static single line, newest characters highlighted as they arrive.
-      css = '.reasoning-strip.live .reasoning-text{animation:none;white-space:nowrap;display:block;width:auto;' +
-        'max-height:1.5em;overflow:hidden;direction:rtl;text-align:left;}' +
-        '.reasoning-strip.live .reasoning-text>span::after{content:"";}'
-      body.classList.add('variant-fade')
-    } else {
-      css = '' // variant A: JS rAF ticker drives the transform, no CSS animation
-    }
-    style.textContent = css
-    if (variant === 'ticker') startTicker()
-    else stopTicker()
-  }
-
-  el('mock-variant').addEventListener('change', function (e) {
-    variant = e.target.value
-    applyVariant()
-    // Re-render from scratch so the variant applies to full text.
-    state.reasoningRendered = 0
-    updateReasoningStrip()
-  })
   el('mock-speed').addEventListener('input', function (e) {
     maxFollowSpeed = Number(e.target.value)
     el('mock-speed-value').textContent = maxFollowSpeed + ' px/s'
@@ -244,7 +196,7 @@
     state.reasoningText = ''
     state.reasoningActive = false
     state.reasoningRendered = 0
-    ticker.offset = 0
+    stopTicker()
     updateReasoningStrip()
   }
 
@@ -383,6 +335,5 @@
       ])
     },
   }
-  applyVariant()
   runConversation('Make the title on slide 1 bigger.')
 })()

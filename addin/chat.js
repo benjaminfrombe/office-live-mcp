@@ -214,8 +214,10 @@ function initChat() {
   input.addEventListener('input', autoGrowInput)
   input.addEventListener('paste', onInputPaste)
 
-  document.getElementById('oc-reasoning-strip').addEventListener('click', () => {
+  document.getElementById('oc-reasoning-strip').addEventListener('click', (e) => {
     var strip = document.getElementById('oc-reasoning-strip')
+    // Expanded text is selectable: clicks inside it must not collapse.
+    if (strip.classList.contains('expanded') && e.target.closest('.reasoning-window')) return
     var live = strip.classList.contains('live')
     var expand = strip.dataset.expanded !== '1'
     strip.dataset.expanded = expand ? '1' : ''
@@ -764,8 +766,7 @@ function tickTicker(ts) {
     tickerRaf = 0
     return
   }
-  var style = window.getComputedStyle(strip)
-  var viewport = strip.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+  var viewport = body.parentElement.clientWidth // .reasoning-window
   var copyWidth = body.children[0] ? body.children[0].getBoundingClientRect().width : 0
   var target = Math.min(0, viewport - copyWidth)
   var dt
@@ -852,7 +853,8 @@ function updateReasoningStrip() {
     var liveExpanded = strip.dataset.expanded === '1'
     if (chatState.reasoningActive) {
       strip.classList.add('live')
-      label.textContent = liveExpanded ? 'Reasoning… (click to collapse)' : 'Reasoning…'
+      label.textContent = 'Reasoning'
+      strip.title = liveExpanded ? 'Click to collapse' : 'Click to show the full reasoning'
       strip.classList.toggle('expanded', liveExpanded)
       body.classList.toggle('expanded', liveExpanded)
       if (liveExpanded) {
@@ -867,7 +869,8 @@ function updateReasoningStrip() {
       strip.classList.remove('live')
       stopTicker()
       expanded = strip.dataset.expanded === '1'
-      label.textContent = `Reasoning · ${text.length} chars · click to ${expanded ? 'collapse' : 'expand'}`
+      label.textContent = 'Reasoning'
+      strip.title = expanded ? 'Click to collapse' : `Click to expand (${text.length} chars)`
       strip.classList.toggle('expanded', expanded)
       body.classList.toggle('expanded', expanded)
       if (expanded) body.scrollTop = body.scrollHeight
