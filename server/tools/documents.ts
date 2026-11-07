@@ -66,10 +66,9 @@ export function registerDocumentTools(
 ): void {
   server.tool(
     'open_document',
-    'Open a document file (.pptx/.docx/.xlsx) in its Office app (PowerPoint, Word or Excel) on the machine where the bridge runs. ' +
-      'Use this after generating a complete document offline: the taskpane auto-opens in the new document and connects to the bridge, ' +
-      'after which the live tools can inspect and refine it. This is the intended route for "create a full presentation/document" ' +
-      'requests — do not build complete decks live, slide by slide.',
+    'Open a document file (.pptx/.docx/.xlsx) as a NEW document in its Office app (PowerPoint, Word or Excel) on the machine where the bridge runs. ' +
+      'Only use this when the user explicitly wants a separate new document/window — it does NOT fill a presentation they already have open. ' +
+      "To deliver a built deck into the user's open presentation, use import_presentation_file instead.",
     {
       path: z.string().describe('Absolute path to the document file. It must already exist on this machine.'),
     },
