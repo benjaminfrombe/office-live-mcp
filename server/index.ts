@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createServer as createHttpServer } from 'node:http'
 import { createServer as createHttpsServer } from 'node:https'
 import { networkInterfaces as osNetworkInterfaces } from 'node:os'
-import { dirname, extname, join, relative, resolve } from 'node:path'
+import { dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -491,14 +491,24 @@ function serveStatic(req: IncomingMessage, res: ServerResponse): void {
           BRIDGE_PORT,
         )
       : raw
-  res.writeHead(200, {
+  const headers: Record<string, string> = {
     'Content-Type': mimeType,
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Private-Network': 'true',
+  }
+  // Image assets must NOT carry Cache-Control: Office substitutes the generic
+  // placeholder icon when the server sends no-cache/no-store directives
+  // (https://learn.microsoft.com/en-us/javascript/api/manifest/image —
+  // "These directives result in Office automatically substituting a generic
+  // or default image"). Verified live: Office fetches the icons but renders
+  // the fallback tile on Windows when no-store is present.
+  const isAssetImage = relToStaticDir.startsWith(`assets${sep}`)
+  if (!isAssetImage) {
     // Taskpane assets change between dev restarts; WKWebView caches
     // aggressively, so stale HTML/JS would silently run old chat code.
-    'Cache-Control': 'no-store',
-  })
+    headers['Cache-Control'] = 'no-store'
+  }
+  res.writeHead(200, headers)
   res.end(content)
 }
 

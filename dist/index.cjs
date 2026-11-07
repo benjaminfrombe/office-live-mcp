@@ -85299,14 +85299,16 @@ function serveStatic(req, res) {
     bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT,
     BRIDGE_PORT
   ) : raw;
-  res.writeHead(200, {
+  const headers = {
     "Content-Type": mimeType,
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Private-Network": "true",
-    // Taskpane assets change between dev restarts; WKWebView caches
-    // aggressively, so stale HTML/JS would silently run old chat code.
-    "Cache-Control": "no-store"
-  });
+    "Access-Control-Allow-Private-Network": "true"
+  };
+  const isAssetImage = relToStaticDir.startsWith(`assets${import_node_path7.sep}`);
+  if (!isAssetImage) {
+    headers["Cache-Control"] = "no-store";
+  }
+  res.writeHead(200, headers);
   res.end(content);
 }
 var wsSelfTest = null;
