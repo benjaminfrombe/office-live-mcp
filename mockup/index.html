@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reasoning ticker mockup</title>
-  <link rel="stylesheet" href="../addin/style.css?v=mock6">
+  <link rel="stylesheet" href="../addin/style.css?v=mock10">
   <style>
     /* Mockup-only chrome: two columns, controls left and a taskpane sized
        like the real Office one (about 350px wide, full window height). The
        addin stylesheet makes body a column; override it to a row here. */
-    body {
+    body:not(.win) { /* same specificity as the addin macOS rule, wins by order */
       flex-direction: row; flex-wrap: nowrap; align-items: stretch; justify-content: center;
       gap: 20px; padding: 20px; height: 100vh; overflow: hidden; background: #e9ebe9;
     }
@@ -26,7 +26,7 @@
     .taskpane {
       flex: none; width: 350px; height: 100%; max-height: 900px;
       display: flex; flex-direction: column; align-items: center;
-      padding: 6px 16px 12px; background: var(--canvas); position: relative;
+      padding: 3px 16px 8px; background: var(--canvas); position: relative;
       border: 1px solid #c8ccc8; border-radius: 6px; box-shadow: 0 8px 30px rgb(0 0 0 / 10%); overflow: hidden;
     }
     /* Stand-in for the macOS Office personality menu (34x32px, top-right). */
@@ -47,6 +47,10 @@
       <span id="mock-speed-value">600 px/s</span>
     </label>
     <button id="mock-replay" type="button">Replay conversation</button>
+    <button id="mock-form" type="button">Toggle form card</button>
+    <button id="mock-chip" type="button">Toggle selection chip</button>
+    <button id="mock-status-info" type="button">Status: info</button>
+    <button id="mock-status-error" type="button">Status: error</button>
     <p class="variant-note">Simulated session: reasoning streams live (ticker), a step starts (reset), a tool runs, the reply streams, then the strip collapses.</p>
   </div>
 
@@ -56,20 +60,23 @@
       <button class="mode-tab" type="button">Bridge</button>
       <button class="mode-tab active" type="button">OpenCode Chat</button>
     </div>
-    <div class="mode-panel">
+    <div id="mode-chat" class="mode-panel">
       <div class="chat-toolbar">
         <select><option>Make the title on slide 1 bigger</option></select>
         <button type="button">New session</button>
       </div>
-      <div id="oc-status" class="chat-status">mock session</div>
+      <div id="oc-status" class="chat-status"></div>
       <div id="oc-reasoning-strip" class="reasoning-strip" hidden>
         <span class="reasoning-icon"></span>
         <span id="oc-reasoning-label" class="reasoning-label">Reasoning</span>
         <div class="reasoning-window"><pre id="oc-reasoning-text" class="reasoning-text"><span></span><span></span></pre></div>
       </div>
       <div id="oc-messages" class="chat-messages"></div>
+      <div id="oc-form-cards" class="form-cards"></div>
+      <div id="oc-selection-chips" class="selection-chips"></div>
+      <div id="oc-attachment-chips" class="attachment-chips"></div>
       <div class="chat-input">
-        <textarea rows="3" placeholder="Ask OpenCode..."></textarea>
+        <textarea rows="2" placeholder="Ask OpenCode…"></textarea>
         <div class="chat-input-actions">
           <button type="button">+ Selection</button>
           <select><option>claude-opus-5-5</option></select>
@@ -80,6 +87,6 @@
     </div>
   </div>
 
-  <script src="mock.js?v=2"></script>
+  <script src="mock.js?v=4"></script>
 </body>
 </html>

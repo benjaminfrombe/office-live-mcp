@@ -14,6 +14,8 @@
   --shadow-md: 0 2px 8px rgb(20 40 20 / 8%);
   /* One height for every toolbar/action control (buttons and dropdowns). */
   --control-h: 30px;
+  /* One vertical rhythm between every block of the chat panel. */
+  --gap: 6px;
 }
 
 * {
@@ -36,7 +38,7 @@ body {
   /* macOS draws a personality menu (34x32px) in the top-right corner. The
      mode tabs sit beside it (right margin below) instead of under it, so the
      pane needs no extra top padding on either platform. */
-  padding: 6px 16px 12px;
+  padding: 6px 16px 8px;
   background: var(--canvas);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
@@ -140,18 +142,23 @@ h1 {
 .mode-tabs {
   display: flex;
   gap: 3px;
-  margin-bottom: 8px;
+  margin-bottom: var(--gap);
   padding: 3px;
   background: rgb(20 40 20 / 6%);
   border-radius: 999px;
   width: 100%;
 }
 
-/* macOS only: leave room for the personality menu in the top-right corner
-   (body.win is set on Windows, which has no such menu). */
+/* macOS only: the personality menu (34x32px) sits in the top-right corner.
+   The tabs keep an equal inset on both sides so they stay centred in the
+   pane, and the pane's 3px top padding lines their middle up with the
+   menu's (body.win is set on Windows, which has no such menu). */
+body:not(.win) {
+  padding-top: 3px;
+}
+
 body:not(.win) .mode-tabs {
-  width: calc(100% - 22px);
-  align-self: flex-start;
+  width: calc(100% - 44px);
 }
 
 .mode-tab {
@@ -198,6 +205,19 @@ body:not(.win) .mode-tabs {
    strip shut (overflow: hidden makes its flex minimum size zero). */
 .mode-panel > * {
   flex-shrink: 0;
+}
+
+/* Chat panel blocks are spaced by the column gap alone (no per-block
+   margins), so the rhythm stays even whichever blocks are present. */
+#mode-chat {
+  gap: var(--gap);
+}
+
+/* Empty containers take no row, so they add no stray gap either. */
+.form-cards:empty,
+.selection-chips:empty,
+.attachment-chips:empty {
+  display: none;
 }
 
 .mode-panel.hidden {
@@ -322,7 +342,6 @@ select {
   flex-direction: column;
   gap: 4px;
   width: 100%;
-  margin-bottom: 6px;
 }
 
 .selection-chip {
@@ -359,7 +378,6 @@ select {
   flex-wrap: wrap;
   gap: 4px;
   width: 100%;
-  margin-bottom: 6px;
 }
 
 .attachment-chip {
@@ -410,7 +428,6 @@ select {
   align-items: center;
   gap: 0 7px;
   width: 100%;
-  margin-bottom: 4px;
   padding: 0 9px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -561,9 +578,8 @@ select {
 .chat-input {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--gap);
   width: 100%;
-  margin-bottom: 8px;
 }
 
 .chat-input textarea {
@@ -573,7 +589,8 @@ select {
   padding: 6px 10px;
   border-radius: var(--radius);
   resize: none;
-  min-height: 52px;
+  /* Two lines tall (rows="2"); autoGrowInput grows it while typing. */
+  min-height: 0;
   overflow-y: hidden;
 }
 
@@ -588,7 +605,6 @@ select {
 }
 
 .chat-toolbar {
-  margin-bottom: 5px;
   align-items: center;
 }
 
@@ -621,17 +637,64 @@ select {
   min-width: 0;
 }
 
+/* Status line: icon + one line of text, fixed height. An empty status still
+   reserves its row: toggling it away and back made the layout jump on every
+   step start/end. data-kind (set by setChatStatus) picks icon and colour. */
 .chat-status {
-  font-size: 0.73rem;
-  color: #8a6d00;
-  min-height: 1.1em;
-  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 18px;
+  padding: 0 2px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Empty status row still reserves its line: toggling it away and back made
-   the layout jump on every step start/end ("Assistant is working..."). */
 .chat-status:empty {
   visibility: hidden;
+}
+
+.chat-status::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.6;
+}
+
+.chat-status[data-kind="busy"] {
+  color: var(--accent-strong);
+}
+
+.chat-status[data-kind="busy"]::before {
+  width: 10px;
+  height: 10px;
+  background: none;
+  opacity: 1;
+  border: 1.5px solid rgb(16 124 16 / 20%);
+  border-top-color: var(--accent);
+  animation: status-spin 0.8s linear infinite;
+}
+
+.chat-status[data-kind="error"] {
+  color: #b3261e;
+}
+
+.chat-status[data-kind="error"]::before {
+  background: #b3261e;
+  opacity: 1;
+}
+
+@keyframes status-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .chat-messages {
@@ -648,7 +711,6 @@ select {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 10px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -725,8 +787,7 @@ select {
 .form-cards {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 12px;
+  gap: var(--gap);
 }
 
 .form-card {

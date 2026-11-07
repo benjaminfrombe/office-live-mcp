@@ -185,6 +185,16 @@
     tick()
   }
 
+  // Mirrors setChatStatus in addin/chat.js (busy / info / error).
+  var statusTimer = null
+  function setStatus(text, kind) {
+    var node = el('oc-status')
+    node.textContent = text
+    node.dataset.kind = text ? kind || 'info' : ''
+    clearTimeout(statusTimer)
+    if (text && (kind || 'info') === 'info') statusTimer = setTimeout(function () { setStatus('') }, 4000)
+  }
+
   function clearTimers() {
     timers.forEach(clearTimeout)
     timers = []
@@ -268,7 +278,9 @@
   function runConversation(question) {
     reset()
     addMessage('user', question)
+    setStatus('Sending…', 'busy')
     timers.push(setTimeout(function () {
+      setStatus('Working…', 'busy')
       state.reasoningActive = true
       reasoningStream(REASONING_1, 40, function () {
         timers.push(setTimeout(function () {
@@ -281,6 +293,7 @@
               state.reasoningActive = false
               updateReasoningStrip()
               streamInto(addMessage('assistant', ''), 'Done — the title on slide 1 is now 50pt and stays inside the safe area.', 60, function (bubble) {
+                setStatus('')
                 // The model rendered a slide check image: file part in the reply.
                 fillMessageBubble(bubble, bubble.textContent, [{ src: MOCK_SLIDE_CHECK, name: 'slide-1-check.png' }])
               })
@@ -290,6 +303,65 @@
       })
     }, 500))
   }
+
+  // ---- spacing checks: a question form card and a selection chip, built
+  // with the same classes as addin/forms.js and renderSelectionChips ----
+  function node(tag, className, text) {
+    var n = document.createElement(tag)
+    if (className) n.className = className
+    if (text) n.textContent = text
+    return n
+  }
+
+  el('mock-form').addEventListener('click', function () {
+    var box = el('oc-form-cards')
+    if (box.firstChild) {
+      box.textContent = ''
+      return
+    }
+    var card = node('div', 'form-card')
+    var head = node('div', 'form-card-head')
+    head.appendChild(node('span', 'form-card-title', 'Which title size?'))
+    head.appendChild(node('span', 'form-card-session', 'ses_mock'))
+    head.appendChild(node('button', 'form-card-dismiss', '×'))
+    card.appendChild(head)
+    var field = node('div', 'form-field')
+    ;['44pt', '50pt', '56pt'].forEach(function (size, i) {
+      var row = node('label', 'form-option')
+      var input = node('input')
+      input.type = 'radio'
+      input.name = 'mock-size'
+      input.checked = i === 1
+      row.appendChild(input)
+      var text = node('span', 'form-option-text')
+      text.appendChild(node('span', 'form-option-label', size))
+      row.appendChild(text)
+      field.appendChild(row)
+    })
+    card.appendChild(field)
+    var foot = node('div', 'form-card-foot')
+    foot.appendChild(node('span', 'form-card-status'))
+    foot.appendChild(node('button', 'form-card-submit primary', 'Submit'))
+    card.appendChild(foot)
+    box.appendChild(card)
+  })
+
+  el('mock-chip').addEventListener('click', function () {
+    var box = el('oc-selection-chips')
+    if (box.firstChild) {
+      box.textContent = ''
+      return
+    }
+    var chip = node('div', 'selection-chip')
+    chip.appendChild(node('span', '', 'Selection · slide 1 · Title 1 · 24 chars · delaware'))
+    chip.appendChild(node('button', '', '✕'))
+    box.appendChild(chip)
+  })
+
+  el('mock-status-info').addEventListener('click', function () { setStatus('Model: claude-opus-5-5') })
+  el('mock-status-error').addEventListener('click', function () {
+    setStatus('OpenCode not reachable: is the server running?', 'error')
+  })
 
   el('mock-replay').addEventListener('click', function () { runConversation('Make the title on slide 1 bigger.') })
   // Debug hook for automated checks: jump straight to the collapsed state.

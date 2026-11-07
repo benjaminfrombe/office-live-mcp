@@ -335,16 +335,28 @@ function withStableScroll(mutate) {
   }
 }
 
-function setChatStatus(text) {
+/* Status line under the toolbar. kind picks the look: 'busy' (spinner, stays
+   until replaced), 'error' (red, stays), 'info' (muted, fades after a few
+   seconds unless something newer replaced it). */
+var STATUS_INFO_MS = 4000
+var statusTimer = null
+
+function setChatStatus(text, kind) {
   withStableScroll(() => {
     var el = document.getElementById('oc-status')
-    if (el) el.textContent = text
+    if (!el) return
+    el.textContent = text
+    el.dataset.kind = text ? kind || 'info' : ''
   })
+  clearTimeout(statusTimer)
+  if (text && (kind || 'info') === 'info') {
+    statusTimer = setTimeout(() => setChatStatus(''), STATUS_INFO_MS)
+  }
 }
 
 function chatError(err) {
   console.error('OpenCode chat error:', err)
-  setChatStatus(OpenCodeChat.friendlyError(err))
+  setChatStatus(OpenCodeChat.friendlyError(err), 'error')
 }
 
 function refreshSessions() {
@@ -353,21 +365,98 @@ function refreshSessions() {
     select.innerHTML = ''
     // Most recent activity first: the API order is not guaranteed.
     var updatedAt = (session) => session?.time?.updated ?? 0
-    sessions
-      .slice()
-      .sort((a, b) => updatedAt(b) - updatedAt(a))
-      .slice(0, 25)
-      .forEach((session) => {
-        var option = document.createElement('option')
-        option.value = session.id
-        option.textContent = session.title || session.id
-        select.appendChild(option)
-      })
-    if (chatState.sessionID) select.value = chatState.sessionID
+    var sorted = sessions.slice().sort((a, b) => updatedAt(b) - updatedAt(a))
+    var shown = sorted.slice(0, 25)
+    var addOption = (session) => {
+      var option = document.createElement('option')
+      option.value = session.id
+      option.textContent = session.title || session.id
+      select.appendChild(option)
+    }
+    shown.forEach(addOption)
+    if (chatState.sessionID) {
+      select.value = chatState.sessionID
+      return
+    }
     // Auto-select only when no session is active yet; re-selecting the
     // current session on every refresh would wipe and rebuild the bubbles.
-    if (select.value && !chatState.sessionID) selectSession(select.value)
+    // First choice is the session this document showed last (it survives an
+    // Office restart), then the most recently active one.
+    whenDocumentKnown(() => {
+      if (chatState.sessionID) return
+      var remembered = rememberedSession()
+      var match = remembered && sorted.find((s) => s.id === remembered)
+      if (match && !shown.includes(match)) addOption(match) // older than the top 25
+      if (match) select.value = match.id
+      if (select.value) selectSession(select.value)
+    })
   }, chatError)
+}
+
+/* ---------- Session memory ----------
+   The pane reopens in the session it showed last. Keyed per document URL,
+   so each presentation gets its own chat back after an Office restart; the
+   last session overall is the fallback for unsaved (URL-less) documents. */
+var SESSION_STORE_KEY = 'oc-last-session'
+var SESSION_STORE_MAX_DOCS = 50
+
+function documentKey() {
+  try {
+    return (window.Office && Office.context && Office.context.document && Office.context.document.url) || ''
+  } catch (_e) {
+    return ''
+  }
+}
+
+/* The document URL is only known after Office.onReady; initChat runs before
+   that. Standalone (browser) mode has no Office host, so a timeout falls
+   through to the global fallback. */
+function whenDocumentKnown(fn) {
+  var done = false
+  var run = () => {
+    if (done) return
+    done = true
+    fn()
+  }
+  if (window.Office && typeof Office.onReady === 'function') Office.onReady().then(run, run)
+  else run()
+  setTimeout(run, 3000)
+}
+
+function readSessionStore() {
+  var store
+  try {
+    store = JSON.parse(localStorage.getItem(SESSION_STORE_KEY) || '{}')
+  } catch (_e) {
+    store = {}
+  }
+  if (!store.byDoc || typeof store.byDoc !== 'object') store.byDoc = {}
+  return store
+}
+
+function rememberedSession() {
+  var store = readSessionStore()
+  var key = documentKey()
+  return (key && store.byDoc[key]) || store.last || null
+}
+
+function rememberSession(sessionID) {
+  var store = readSessionStore()
+  var key = documentKey()
+  store.last = sessionID
+  if (key) {
+    // Re-insert so the most recently used documents stay at the end, then
+    // drop the oldest beyond the cap.
+    delete store.byDoc[key]
+    store.byDoc[key] = sessionID
+    const keys = Object.keys(store.byDoc)
+    for (let i = 0; i < keys.length - SESSION_STORE_MAX_DOCS; i++) delete store.byDoc[keys[i]]
+  }
+  try {
+    localStorage.setItem(SESSION_STORE_KEY, JSON.stringify(store))
+  } catch (_e) {
+    /* storage full or blocked — the pane still works, it just forgets */
+  }
 }
 
 /* ---------- Model selection ---------- */
@@ -444,7 +533,8 @@ function onModelChange() {
   rememberModel(chatState.sessionID, model)
   OpenCodeChat.setSessionModel(chatState.config, chatState.sessionID, model).then(
     () => setChatStatus('Model: ' + (opt.textContent || model.id)),
-    (err) => setChatStatus('Model switch failed: ' + String(err && err.message ? err.message : err).slice(0, 120)),
+    (err) =>
+      setChatStatus('Model switch failed: ' + String(err && err.message ? err.message : err).slice(0, 120), 'error'),
   )
 }
 
@@ -458,9 +548,10 @@ function selectSession(sessionID) {
   chatState.reasoningActive = false
   updateReasoningStrip()
   document.getElementById('oc-session').value = sessionID
+  rememberSession(sessionID)
   applySessionModel(sessionID)
   renderFromRows([])
-  setChatStatus('Loading messages...')
+  setChatStatus('Loading messages…', 'busy')
   OpenCodeChat.getMessages(chatState.config, sessionID).then(renderFromRows, chatError)
   startEventStream()
 }
@@ -492,7 +583,7 @@ function startEventStream() {
         // Exponential backoff — an absent server must not cause a tight retry loop
         chatState.streamRetries = (chatState.streamRetries || 0) + 1
         const delay = Math.min(2000 * 2 ** (chatState.streamRetries - 1), 30000)
-        if (event.type === 'stream.error') setChatStatus(OpenCodeChat.friendlyError(event.error))
+        if (event.type === 'stream.error') setChatStatus(OpenCodeChat.friendlyError(event.error), 'error')
         setTimeout(startEventStream, delay)
       }
       return
@@ -526,7 +617,7 @@ function startEventStream() {
       chatState.reasoningText = ''
       chatState.reasoningActive = true
       updateReasoningStrip()
-      setChatStatus('Assistant is working...')
+      setChatStatus('Working…', 'busy')
     } else if (
       event.type === 'session.step.ended' ||
       event.type === 'session.step.failed' ||
@@ -565,7 +656,7 @@ function stopAgent() {
   if (!chatState.busy || !chatState.sessionID) return
   chatState.busy = false
   updateStopButton()
-  setChatStatus('Stopping...')
+  setChatStatus('Stopping…', 'busy')
   OpenCodeChat.interruptSession(chatState.config, chatState.sessionID).then(
     () => setChatStatus('Stopped'),
     () => setChatStatus(''),
@@ -606,7 +697,7 @@ function sendChatMessage() {
     chatState.pendingSelections = []
     renderSelectionChips()
     autoGrowInput()
-    setChatStatus('Sending...')
+    setChatStatus('Sending…', 'busy')
     appendMessage(
       'user',
       typed ||
@@ -701,7 +792,7 @@ function readAttachment(file) {
   reader.onload = () => {
     var dataUrl = String(reader.result || '')
     if (dataUrl.length > ATTACHMENT_MAX_BASE64_BYTES) {
-      setChatStatus(`Image too large — over 8 MB base64 (${file.name || 'pasted image'})`)
+      setChatStatus(`Image too large: over 8 MB base64 (${file.name || 'pasted image'})`, 'error')
       return
     }
     chatState.pendingAttachments.push({ dataUrl: dataUrl, name: file.name || 'pasted image', size: file.size || 0 })
@@ -709,7 +800,7 @@ function readAttachment(file) {
     setChatStatus('')
     focusInput()
   }
-  reader.onerror = () => setChatStatus('Could not read the pasted image')
+  reader.onerror = () => setChatStatus('Could not read the pasted image', 'error')
   reader.readAsDataURL(file)
 }
 
