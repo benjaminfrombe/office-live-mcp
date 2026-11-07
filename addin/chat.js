@@ -196,11 +196,19 @@ function initChat() {
       event.preventDefault()
       stopAgent()
     } else if (event.key === 'ArrowUp' && !event.shiftKey && !event.altKey && !event.metaKey && !event.ctrlKey) {
-      event.preventDefault()
-      historyMove(-1)
+      // Paseo-style: Up walks the history only from an empty input or with
+      // the caret at the very start of the text; otherwise it moves the caret.
+      const pos = input.selectionStart
+      if (input.value === '' || (pos === 0 && input.selectionEnd === 0)) {
+        event.preventDefault()
+        historyMove(-1)
+      }
     } else if (event.key === 'ArrowDown' && !event.shiftKey && !event.altKey && !event.metaKey && !event.ctrlKey) {
-      event.preventDefault()
-      historyMove(1)
+      const pos = input.selectionStart
+      if (input.value === '' || (pos === input.value.length && input.selectionEnd === input.value.length)) {
+        event.preventDefault()
+        historyMove(1)
+      }
     }
   })
   input.addEventListener('input', autoGrowInput)
