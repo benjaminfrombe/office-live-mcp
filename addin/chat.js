@@ -1073,7 +1073,7 @@ function renderFromRows(rows) {
     const row = visible[i]
     const text = stripContextPreamble(OpenCodeChat.messageText(row))
     const images = OpenCodeChat.messageImages(row)
-    if (!text && !images.length) {
+    if (!text.trim() && !images.length) {
       chatState.renderedIds.push(row.id)
       continue
     }
@@ -1118,16 +1118,23 @@ function appendMessage(role, text, pending, images) {
 /* Text plus any model-rendered images (file parts) inside one bubble. */
 function fillMessageBubble(div, text, images) {
   setBubbleText(div, text)
+  var imageCount = 0
   ;(images || []).forEach((image) => {
     var img = document.createElement('img')
     img.className = 'chat-image'
     img.src = image.src
     img.alt = image.name
     // Paths extracted from tool output can be code fragments (template
-    // literals like `${BRAND}/icons/x.svg`) that do not exist on disk — the
-    // /file endpoint then 404s. Drop the broken <img> instead of showing the
-    // browser's placeholder tile.
-    img.addEventListener('error', () => img.remove())
+    // literals like `${BRAND}/icons/x.svg`) or stale build artifacts that do
+    // not exist on disk — the /file endpoint then 404s. Drop the broken <img>
+    // instead of showing the browser's placeholder tile, and when that was the
+    // bubble's ONLY content, drop the now-empty bubble itself.
+    img.addEventListener('error', () => {
+      img.remove()
+      imageCount--
+      if (imageCount <= 0 && !div.textContent.trim()) div.remove()
+    })
+    imageCount++
     div.appendChild(img)
   })
 }
