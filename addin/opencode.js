@@ -92,6 +92,26 @@ var OpenCodeChat = (() => {
     }).then((res) => res.data)
   }
 
+  /* Pending question forms (the `question` tool surfaces as a Form).
+     The global list covers every session, so a question asked by another
+     OpenCode window is visible here too. */
+  function listForms(config) {
+    return request(config, '/api/form').then((res) => res.data || [])
+  }
+
+  function replyForm(config, sessionID, formID, answer) {
+    return request(config, `/api/session/${sessionID}/form/${formID}/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ answer: answer }),
+    })
+  }
+
+  function cancelForm(config, sessionID, formID, message) {
+    return request(config, `/api/session/${sessionID}/form/${formID}?message=${encodeURIComponent(message || '')}`, {
+      method: 'DELETE',
+    })
+  }
+
   /* Extract displayable text from a message row returned by GET .../message.
      Assistant rows carry a `content` array of typed parts; user rows carry `text`. */
   function messageText(message) {
@@ -248,6 +268,9 @@ var OpenCodeChat = (() => {
     listSessions: listSessions,
     getMessages: getMessages,
     sendPrompt: sendPrompt,
+    listForms: listForms,
+    replyForm: replyForm,
+    cancelForm: cancelForm,
     promptFiles: promptFiles,
     messageText: messageText,
     messageImages: messageImages,

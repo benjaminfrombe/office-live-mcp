@@ -291,6 +291,16 @@ function initChat() {
   refreshSessions()
   autoGrowInput()
 
+  // Pending question forms: poll the global list so questions from ANY
+  // OpenCode session (this pane's own, or another window) surface here.
+  // Answering one for the current session triggers a message refetch so the
+  // question tool part shows its answer in the transcript.
+  OpenCodeForms.start(() => chatState.config, {
+    onReplied: (sessionID) => {
+      if (sessionID === chatState.sessionID) scheduleRefetch(sessionID)
+    },
+  })
+
   // Auto-open the chat tab when OpenCode is reachable; stay on Bridge otherwise
   OpenCodeChat.request(chatState.config, '/api/info', { signal: AbortSignal.timeout(3000) }).then(
     () => {
