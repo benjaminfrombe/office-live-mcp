@@ -85349,6 +85349,35 @@ async function handleMcpPost(req, res) {
       const mcpServer = createMcpHttpSession(transport);
       await mcpServer.connect(transport);
       await transport.handleRequest(req, res, body);
+    } else if (sessionId && !isInitializeRequest(body)) {
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => sessionId,
+        enableDnsRebindingProtection: true,
+        allowedHosts: [
+          `127.0.0.1:${MCP_HTTP_PORT}`,
+          `localhost:${MCP_HTTP_PORT}`,
+          `127.0.0.1:${BRIDGE_PORT}`,
+          `localhost:${BRIDGE_PORT}`
+        ],
+        onsessioninitialized: (sid) => {
+          mcpHttpTransports.set(sid, transport);
+        }
+      });
+      transport.onclose = () => {
+        const sid = transport.sessionId;
+        if (sid) {
+          mcpHttpTransports.delete(sid);
+          clearSessionWarnings(sid);
+        }
+      };
+      const mcpServer = createMcpHttpSession(transport);
+      await mcpServer.connect(transport);
+      const inner = transport._webStandardTransport;
+      inner.sessionId = sessionId;
+      inner._initialized = true;
+      mcpHttpTransports.set(sessionId, transport);
+      console.error(`MCP HTTP session auto-revived after restart: ${sessionId}`);
+      await transport.handleRequest(req, res, body);
     } else {
       res.writeHead(400, { "Content-Type": "application/json" });
       res.end(

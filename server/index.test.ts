@@ -428,3 +428,54 @@ describe('bounded MCP HTTP request bodies', () => {
     expect(result.statusCode).toBe(400)
   })
 })
+
+describe('MCP session auto-revive after restart', () => {
+  async function revivePost(sessionId: string, method: string, id: number): Promise<HttpResult> {
+    const body = JSON.stringify({ jsonrpc: '2.0', method, params: {}, id })
+    const { promise, resolve: resolveResult, reject: rejectResult } = Promise.withResolvers<HttpResult>()
+    const req = httpRequest(
+      {
+        hostname: '127.0.0.1',
+        port: mcpPort,
+        path: '/mcp',
+        method: 'POST',
+        headers: {
+          Accept: 'application/json, text/event-stream',
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body),
+          'mcp-session-id': sessionId,
+          'Mcp-Protocol-Version': '2025-06-18',
+        },
+      },
+      (res) => {
+        const chunks: Buffer[] = []
+        res.on('data', (chunk: Buffer) => chunks.push(chunk))
+        res.on('end', () => {
+          resolveResult({ statusCode: res.statusCode ?? 0, body: Buffer.concat(chunks).toString('utf8') })
+        })
+      },
+    )
+    req.on('error', rejectResult)
+    req.end(body)
+    return promise
+  }
+
+  it('revives an unknown session id instead of rejecting it', async () => {
+    // Simulates a client that initialized against a previous daemon process:
+    // its session id is unknown here, but its next request must just work.
+    const first = await revivePost('revive-test-session', 'tools/list', 1)
+    expect(first.statusCode).toBe(200)
+    expect(first.body).toContain('"tools"')
+
+    // The revived session is registered: a second request reuses it.
+    const second = await revivePost('revive-test-session', 'tools/list', 2)
+    expect(second.statusCode).toBe(200)
+    expect(second.body).toContain('"tools"')
+  })
+
+  it('still rejects a non-initialize POST without any session id', async () => {
+    const result = await postBody(JSON.stringify({ jsonrpc: '2.0', method: 'tools/list', params: {}, id: 3 }))
+    expect(result.statusCode).toBe(400)
+    expect(result.body).toContain('no valid session')
+  })
+})

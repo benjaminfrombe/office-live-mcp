@@ -321,6 +321,45 @@ async function handleMcpPost(req: IncomingMessage, res: ServerResponse): Promise
       const mcpServer = createMcpHttpSession(transport)
       await mcpServer.connect(transport)
       await transport.handleRequest(req, res, body)
+    } else if (sessionId && !isInitializeRequest(body)) {
+      // Auto-revive: a daemon restart wipes the in-memory session map, but
+      // MCP clients (OpenCode) do not re-initialize on their own — they kept
+      // hammering a dead session id until a manual /connect. Revive the
+      // session under the CLIENT's id so the next request just works: the
+      // transport is marked initialized (exactly what the SDK's initialize
+      // path does) and registered in the map.
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => sessionId,
+        enableDnsRebindingProtection: true,
+        allowedHosts: [
+          `127.0.0.1:${MCP_HTTP_PORT}`,
+          `localhost:${MCP_HTTP_PORT}`,
+          `127.0.0.1:${BRIDGE_PORT}`,
+          `localhost:${BRIDGE_PORT}`,
+        ],
+        onsessioninitialized: (sid) => {
+          mcpHttpTransports.set(sid, transport)
+        },
+      })
+      transport.onclose = () => {
+        const sid = transport.sessionId
+        if (sid) {
+          mcpHttpTransports.delete(sid)
+          clearSessionWarnings(sid)
+        }
+      }
+      const mcpServer = createMcpHttpSession(transport)
+      await mcpServer.connect(transport)
+      // Replicate the SDK's initialize side effects on the INNER web-standard
+      // transport (the outer wrapper's sessionId is a getter-only delegate):
+      // sessionId = sessionIdGenerator(); _initialized = true.
+      const inner = (transport as unknown as { _webStandardTransport: { sessionId: string | undefined; _initialized: boolean } })
+        ._webStandardTransport
+      inner.sessionId = sessionId
+      inner._initialized = true
+      mcpHttpTransports.set(sessionId, transport)
+      console.error(`MCP HTTP session auto-revived after restart: ${sessionId}`)
+      await transport.handleRequest(req, res, body)
     } else {
       res.writeHead(400, { 'Content-Type': 'application/json' })
       res.end(
