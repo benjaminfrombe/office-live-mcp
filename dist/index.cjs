@@ -78552,6 +78552,7 @@ var import_node_child_process = require("node:child_process");
 var import_node_fs2 = require("node:fs");
 var import_node_os2 = require("node:os");
 var import_node_path2 = require("node:path");
+var import_promises = require("node:readline/promises");
 var import_node_url = require("node:url");
 var import_selfsigned = __toESM(require_selfsigned(), 1);
 var import_meta = {};
@@ -78812,13 +78813,7 @@ function writeDaemonTlsEnv() {
 }
 async function setupWindowsHttpsCatalog() {
   if (!await ensureLocalhostCert()) return false;
-  const userStore = (0, import_node_child_process.spawnSync)("certutil", ["-user", "-addstore", "Root", CERT_PATH()], { stdio: "pipe" });
-  let trusted = userStore.status === 0;
-  if (!trusted) {
-    const machineStore = (0, import_node_child_process.spawnSync)("certutil", ["-addstore", "Root", CERT_PATH()], { stdio: "pipe" });
-    trusted = machineStore.status === 0;
-  }
-  if (!trusted) {
+  if (!trustCertWindows(CERT_PATH())) {
     console.error(
       "[setup] Could not trust the certificate in the Windows Root store (certutil failed or was cancelled)."
     );
@@ -78836,6 +78831,58 @@ async function setupWindowsHttpsCatalog() {
   }
   console.log(`[setup] Trusted add-in catalog registered: ${HTTPS_CATALOG_URL} (registry, current user only)`);
   return true;
+}
+function trustCertWindows(certPath) {
+  const userStore = (0, import_node_child_process.spawnSync)("certutil", ["-user", "-addstore", "Root", certPath], { stdio: "pipe" });
+  if (userStore.status === 0) return true;
+  const machineStore = (0, import_node_child_process.spawnSync)("certutil", ["-addstore", "Root", certPath], { stdio: "pipe" });
+  return machineStore.status === 0;
+}
+function mergeDaemonEnvLine(content, key, value) {
+  const pattern = new RegExp(`^${key}=.*$`, "m");
+  if (pattern.test(content)) return content.replace(pattern, `${key}=${value}`);
+  const lines = content.split("\n").filter((l) => l.trim());
+  lines.push(`${key}=${value}`);
+  return `${lines.join("\n")}
+`;
+}
+function writeDaemonEnvLine(key, value) {
+  const envFile = (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), ".office-live-mcp", "daemon.env");
+  let content = "";
+  try {
+    content = (0, import_node_fs2.readFileSync)(envFile, "utf8");
+  } catch {
+  }
+  const merged = mergeDaemonEnvLine(content, key, value);
+  if (merged !== content) {
+    (0, import_node_fs2.mkdirSync)((0, import_node_path2.dirname)(envFile), { recursive: true });
+    (0, import_node_fs2.writeFileSync)(envFile, merged);
+  }
+}
+async function enableWindowsIconHttps() {
+  if (!await ensureLocalhostCert()) {
+    console.error("[setup] Certificate generation failed \u2014 staying on plain HTTP (generic ribbon icon).");
+    return;
+  }
+  if (!trustCertWindows(CERT_PATH())) {
+    console.error("[setup] Could not trust the certificate (dialog cancelled?) \u2014 staying on plain HTTP.");
+    return;
+  }
+  writeDaemonTlsEnv();
+  writeDaemonEnvLine("BRIDGE_HOST", "0.0.0.0");
+  rewriteHttpsManifestsForHostname();
+  console.log("[setup] Icon HTTPS enabled: TLS bridge on https://<hostname>:8791, certificate trusted.");
+}
+function rewriteHttpsManifestsForHostname() {
+  const addinDir = (0, import_node_path2.resolve)(PROJECT_ROOT, "addin");
+  const local = "https://localhost:8791";
+  const host = `https://${(0, import_node_os2.hostname)()}:8791`;
+  for (const file2 of (0, import_node_fs2.readdirSync)(addinDir)) {
+    if (!file2.endsWith(".xml") || !file2.includes("-https")) continue;
+    const path = (0, import_node_path2.resolve)(addinDir, file2);
+    const content = (0, import_node_fs2.readFileSync)(path, "utf8");
+    if (content.includes(local)) (0, import_node_fs2.writeFileSync)(path, content.replaceAll(local, host));
+  }
 }
 function setupWindowsUncCatalog() {
   const installDir = process.env.OLM_INSTALL_DIR || (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), "AppData", "Local", "office-live-mcp");
@@ -78919,7 +78966,29 @@ async function setupWindows() {
     setupWindowsUncCatalog();
     return;
   }
+  if (await iconHttpsRequested()) {
+    console.log("[setup] Icon HTTPS requested \u2014 Windows may show a certificate trust dialog: choose Yes.");
+    await enableWindowsIconHttps();
+  }
   setupWindowsUncCatalog();
+}
+async function iconHttpsRequested() {
+  const override = process.env.OLM_ICON_HTTPS;
+  if (override === "1") return true;
+  if (override === "0") return false;
+  if (!process.stdin.isTTY) {
+    console.log("[setup] Non-interactive session: skipping the HTTPS icon option (set OLM_ICON_HTTPS=1 to enable it).");
+    return false;
+  }
+  const rl = (0, import_promises.createInterface)({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await rl.question(
+      "Show the real ribbon icon? Serves the bridge over HTTPS with a locally generated certificate\n(Windows will show a one-time trust dialog \u2014 choose Yes). [y/N] "
+    );
+    return /^\s*y(es)?\s*$/i.test(answer);
+  } finally {
+    rl.close();
+  }
 }
 async function runSetup() {
   console.log(`office-live-mcp setup (${process.platform})`);

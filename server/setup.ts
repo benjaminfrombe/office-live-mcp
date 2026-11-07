@@ -14,6 +14,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir, hostname } from 'node:os'
 import { dirname, resolve } from 'node:path'
+import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
 import selfsigned from 'selfsigned'
 import { substituteManifestPort } from './manifest.ts'
@@ -399,13 +400,7 @@ async function setupWindowsHttpsCatalog(): Promise<boolean> {
   // first (no elevation; Windows shows a one-time confirmation dialog). If
   // that fails (e.g. running as SYSTEM, or the user cancelled), try the
   // local-machine store, which works silently from elevated contexts.
-  const userStore = spawnSync('certutil', ['-user', '-addstore', 'Root', CERT_PATH()], { stdio: 'pipe' })
-  let trusted = userStore.status === 0
-  if (!trusted) {
-    const machineStore = spawnSync('certutil', ['-addstore', 'Root', CERT_PATH()], { stdio: 'pipe' })
-    trusted = machineStore.status === 0
-  }
-  if (!trusted) {
+  if (!trustCertWindows(CERT_PATH())) {
     console.error(
       '[setup] Could not trust the certificate in the Windows Root store (certutil failed or was cancelled).',
     )
@@ -425,6 +420,86 @@ async function setupWindowsHttpsCatalog(): Promise<boolean> {
   }
   console.log(`[setup] Trusted add-in catalog registered: ${HTTPS_CATALOG_URL} (registry, current user only)`)
   return true
+}
+
+/**
+ * Trust the certificate in the Windows Root store. Try the current-user store
+ * first (no elevation; Windows shows a one-time confirmation dialog). If
+ * that fails (e.g. running as SYSTEM, or the user cancelled), try the
+ * local-machine store, which works silently from elevated contexts.
+ */
+function trustCertWindows(certPath: string): boolean {
+  const userStore = spawnSync('certutil', ['-user', '-addstore', 'Root', certPath], { stdio: 'pipe' })
+  if (userStore.status === 0) return true
+  const machineStore = spawnSync('certutil', ['-addstore', 'Root', certPath], { stdio: 'pipe' })
+  return machineStore.status === 0
+}
+
+/** Merge a KEY=VALUE line into the daemon env file (pure). */
+export function mergeDaemonEnvLine(content: string, key: string, value: string): string {
+  const pattern = new RegExp(`^${key}=.*$`, 'm')
+  if (pattern.test(content)) return content.replace(pattern, `${key}=${value}`)
+  const lines = content.split('\n').filter((l) => l.trim())
+  lines.push(`${key}=${value}`)
+  return `${lines.join('\n')}\n`
+}
+
+function writeDaemonEnvLine(key: string, value: string): void {
+  const envFile = resolve(homedir(), '.office-live-mcp', 'daemon.env')
+  let content = ''
+  try {
+    content = readFileSync(envFile, 'utf8')
+  } catch {
+    // no file yet
+  }
+  const merged = mergeDaemonEnvLine(content, key, value)
+  if (merged !== content) {
+    mkdirSync(dirname(envFile), { recursive: true })
+    writeFileSync(envFile, merged)
+  }
+}
+
+/**
+ * Optional Windows add-on for the real ribbon icon: generate a localhost +
+ * hostname TLS certificate, trust it, and run the daemon bridge over HTTPS.
+ * Office on Windows refuses to render manifest icons over plain HTTP even
+ * with correct headers; over HTTPS (with a trusted cert) the real icon
+ * shows. Requires OLM_ICON_HTTPS=1 because the certutil trust step pops a
+ * one-time Windows confirmation dialog the user must accept.
+ */
+async function enableWindowsIconHttps(): Promise<void> {
+  if (!(await ensureLocalhostCert())) {
+    console.error('[setup] Certificate generation failed — staying on plain HTTP (generic ribbon icon).')
+    return
+  }
+  if (!trustCertWindows(CERT_PATH())) {
+    console.error('[setup] Could not trust the certificate (dialog cancelled?) — staying on plain HTTP.')
+    return
+  }
+  writeDaemonTlsEnv()
+  // The HTTPS manifests point icon/taskpane URLs at the machine hostname so
+  // Office accepts them (it refuses localhost-hosted icon resources), and the
+  // bridge must therefore listen on all interfaces, not just 127.0.0.1.
+  writeDaemonEnvLine('BRIDGE_HOST', '0.0.0.0')
+  rewriteHttpsManifestsForHostname()
+  console.log('[setup] Icon HTTPS enabled: TLS bridge on https://<hostname>:8791, certificate trusted.')
+}
+
+/**
+ * Rewrite the packaged HTTPS manifests so resource URLs use the machine
+ * hostname instead of localhost (Office on Windows refuses localhost-hosted
+ * icon resources). ensureLocalhostCert includes the hostname in the SAN.
+ */
+function rewriteHttpsManifestsForHostname(): void {
+  const addinDir = resolve(PROJECT_ROOT, 'addin')
+  const local = 'https://localhost:8791'
+  const host = `https://${hostname()}:8791`
+  for (const file of readdirSync(addinDir)) {
+    if (!file.endsWith('.xml') || !file.includes('-https')) continue
+    const path = resolve(addinDir, file)
+    const content = readFileSync(path, 'utf8')
+    if (content.includes(local)) writeFileSync(path, content.replaceAll(local, host))
+  }
 }
 
 /** Fallback Windows route: shared folder catalog (UNC path, as Office documents). */
@@ -529,7 +604,36 @@ async function setupWindows(): Promise<void> {
     setupWindowsUncCatalog()
     return
   }
+  // Ask whether the user wants the real ribbon icon (HTTPS bridge + trusted
+  // certificate). OLM_ICON_HTTPS=1 forces yes (automation), =0 forces no;
+  // interactively we ask with No as the default so scripted installs are
+  // unaffected.
+  if (await iconHttpsRequested()) {
+    console.log('[setup] Icon HTTPS requested — Windows may show a certificate trust dialog: choose Yes.')
+    await enableWindowsIconHttps()
+  }
   setupWindowsUncCatalog()
+}
+
+/** Decide whether to enable the HTTPS icon flow (prompt / env override). */
+async function iconHttpsRequested(): Promise<boolean> {
+  const override = process.env.OLM_ICON_HTTPS
+  if (override === '1') return true
+  if (override === '0') return false
+  if (!process.stdin.isTTY) {
+    console.log('[setup] Non-interactive session: skipping the HTTPS icon option (set OLM_ICON_HTTPS=1 to enable it).')
+    return false
+  }
+  const rl = createInterface({ input: process.stdin, output: process.stdout })
+  try {
+    const answer = await rl.question(
+      'Show the real ribbon icon? Serves the bridge over HTTPS with a locally generated certificate\n' +
+        '(Windows will show a one-time trust dialog — choose Yes). [y/N] ',
+    )
+    return /^\s*y(es)?\s*$/i.test(answer)
+  } finally {
+    rl.close()
+  }
 }
 
 // ---------------------------------------------------------------------------
