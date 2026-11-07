@@ -33,6 +33,7 @@ if [ -f "$SKILL_FILE" ]; then
 fi
 
 # Stage the updated files so they're included in npm version's auto-commit
-git add "$REPO_DIR/manifest.json" "$REPO_DIR/.claude-plugin/plugin.json" "$SKILL_FILE"
+git add "$REPO_DIR/manifest.json" "$REPO_DIR/.claude-plugin/plugin.json"
+if [ -f "$SKILL_FILE" ]; then git add "$SKILL_FILE"; fi
 
 echo "[sync-version] Done: all version files set to $VERSION"
