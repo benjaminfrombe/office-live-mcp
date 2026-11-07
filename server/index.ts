@@ -3,7 +3,7 @@ import { existsSync, readFile, readFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createServer as createHttpServer } from 'node:http'
 import { createServer as createHttpsServer } from 'node:https'
-import { networkInterfaces as osNetworkInterfaces } from 'node:os'
+import { hostname, networkInterfaces as osNetworkInterfaces } from 'node:os'
 import { dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
@@ -550,7 +550,7 @@ function startBridgeServer(onListening?: () => void): void {
   // ever send `ready` and register in the pool. This is an origin policy,
   // not authentication (see README "Security" — MCP auth remains deferred).
   const allowedOrigins = new Set<string>()
-  for (const host of ['localhost', '127.0.0.1']) {
+  for (const host of ['localhost', '127.0.0.1', hostname()]) {
     allowedOrigins.add(`${useTls ? 'https' : 'http'}://${host}:${BRIDGE_PORT}`)
   }
   for (const ifaces of Object.values(osNetworkInterfaces())) {

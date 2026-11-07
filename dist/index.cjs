@@ -53271,9 +53271,9 @@ var asciiTabOrNewline = /[\t\n\r]/g;
 function stripTabAndNewline(value) {
   return value.replace(asciiTabOrNewline, "");
 }
-function urlHostnameOk(url2, hostname4) {
-  hostname4.lastIndex = 0;
-  return hostname4.test(url2.hostname);
+function urlHostnameOk(url2, hostname5) {
+  hostname5.lastIndex = 0;
+  return hostname5.test(url2.hostname);
 }
 function urlProtocolOk(url2, protocol) {
   protocol.lastIndex = 0;
@@ -85386,7 +85386,7 @@ function startBridgeServer(onListening) {
   const useTls = bridgeTls && (0, import_node_fs12.existsSync)(BRIDGE_CERT_PATH) && (0, import_node_fs12.existsSync)(BRIDGE_KEY_PATH);
   const bridgeServer = useTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs12.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs12.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http3.createServer)(serveStatic);
   const allowedOrigins = /* @__PURE__ */ new Set();
-  for (const host of ["localhost", "127.0.0.1"]) {
+  for (const host of ["localhost", "127.0.0.1", (0, import_node_os5.hostname)()]) {
     allowedOrigins.add(`${useTls ? "https" : "http"}://${host}:${BRIDGE_PORT}`);
   }
   for (const ifaces of Object.values((0, import_node_os5.networkInterfaces)())) {
