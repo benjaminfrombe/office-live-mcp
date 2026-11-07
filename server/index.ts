@@ -353,8 +353,9 @@ async function handleMcpPost(req: IncomingMessage, res: ServerResponse): Promise
       // Replicate the SDK's initialize side effects on the INNER web-standard
       // transport (the outer wrapper's sessionId is a getter-only delegate):
       // sessionId = sessionIdGenerator(); _initialized = true.
-      const inner = (transport as unknown as { _webStandardTransport: { sessionId: string | undefined; _initialized: boolean } })
-        ._webStandardTransport
+      const inner = (
+        transport as unknown as { _webStandardTransport: { sessionId: string | undefined; _initialized: boolean } }
+      )._webStandardTransport
       inner.sessionId = sessionId
       inner._initialized = true
       mcpHttpTransports.set(sessionId, transport)
