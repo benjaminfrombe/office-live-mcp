@@ -551,7 +551,7 @@ function startBridgeServer(onListening?: () => void): void {
   // not authentication (see README "Security" — MCP auth remains deferred).
   const allowedOrigins = new Set<string>()
   for (const host of ['localhost', '127.0.0.1', hostname()]) {
-    allowedOrigins.add(`${useTls ? 'https' : 'http'}://${host}:${BRIDGE_PORT}`)
+    allowedOrigins.add(`${useTls ? 'https' : 'http'}://${host.toLowerCase()}:${BRIDGE_PORT}`)
   }
   for (const ifaces of Object.values(osNetworkInterfaces())) {
     for (const iface of ifaces ?? []) {
@@ -564,7 +564,8 @@ function startBridgeServer(onListening?: () => void): void {
   const wss = new WebSocketServer({
     server: bridgeServer,
     verifyClient: (info, callback) => {
-      if (info.origin && allowedOrigins.has(info.origin)) {
+      const origin = (info.origin || '').toLowerCase()
+      if (origin && allowedOrigins.has(origin)) {
         callback(true)
         return
       }

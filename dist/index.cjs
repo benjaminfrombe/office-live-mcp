@@ -85387,7 +85387,7 @@ function startBridgeServer(onListening) {
   const bridgeServer = useTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs12.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs12.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http3.createServer)(serveStatic);
   const allowedOrigins = /* @__PURE__ */ new Set();
   for (const host of ["localhost", "127.0.0.1", (0, import_node_os5.hostname)()]) {
-    allowedOrigins.add(`${useTls ? "https" : "http"}://${host}:${BRIDGE_PORT}`);
+    allowedOrigins.add(`${useTls ? "https" : "http"}://${host.toLowerCase()}:${BRIDGE_PORT}`);
   }
   for (const ifaces of Object.values((0, import_node_os5.networkInterfaces)())) {
     for (const iface of ifaces ?? []) {
@@ -85399,7 +85399,8 @@ function startBridgeServer(onListening) {
   const wss = new import_websocket_server.default({
     server: bridgeServer,
     verifyClient: (info, callback) => {
-      if (info.origin && allowedOrigins.has(info.origin)) {
+      const origin = (info.origin || "").toLowerCase();
+      if (origin && allowedOrigins.has(origin)) {
         callback(true);
         return;
       }
