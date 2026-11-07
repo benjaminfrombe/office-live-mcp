@@ -1,11 +1,13 @@
 import { execFile } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import { extname } from 'node:path'
 import { platform } from 'node:process'
 import { promisify } from 'node:util'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import { withTool } from '../tool-helpers.ts'
+import type { ConnectionPool } from '../bridge.ts'
+import { errorMessage, withTool } from '../tool-helpers.ts'
+import { buildInsertOptions, getConcurrentWarning } from './shared.ts'
 
 const execFileAsync = promisify(execFile)
 
@@ -57,9 +59,9 @@ export const defaultLauncher: Launcher = async (filePath: string) => {
 
 export function registerDocumentTools(
   server: McpServer,
-  _pool: unknown,
-  _getSessionId: () => string | undefined,
-  _getActiveSessionCount: () => number,
+  pool: ConnectionPool,
+  getSessionId: () => string | undefined,
+  getActiveSessionCount: () => number,
   launcher: Launcher = defaultLauncher,
 ): void {
   server.tool(
@@ -86,5 +88,71 @@ export function registerDocumentTools(
         ],
       }
     }),
+  )
+
+  server.tool(
+    'import_presentation_file',
+    'Import ALL slides from a .pptx file on disk into a connected live PowerPoint presentation, in one atomic operation. ' +
+      'The file is read server-side (its Base64 never enters the model context) and inserted via insertSlidesFromBase64 — ' +
+      'the slides appear live in the open presentation while the user watches. ' +
+      'This is the route for "build me a full presentation INTO this open deck": generate the complete .pptx offline ' +
+      '(e.g. python-pptx), then import it into the connected presentation. No second pane or ribbon click needed.',
+    {
+      path: z.string().describe('Absolute path to the source .pptx file. It must already exist on this machine.'),
+      presentationId: z
+        .string()
+        .optional()
+        .describe(
+          'Destination presentation ID from list_presentations. Optional when only one presentation is connected.',
+        ),
+      formatting: z
+        .enum(['KeepSourceFormatting', 'UseDestinationTheme'])
+        .optional()
+        .describe('Formatting mode for the inserted slides. Default: KeepSourceFormatting.'),
+    },
+    withTool(
+      async ({
+        path: filePath,
+        presentationId,
+        formatting,
+      }: {
+        path: string
+        presentationId?: string
+        formatting?: 'KeepSourceFormatting' | 'UseDestinationTheme'
+      }) => {
+        if (!filePath || typeof filePath !== 'string') throw new Error('A file path is required.')
+        if (extname(filePath).toLowerCase() !== '.pptx') {
+          throw new Error(`Unsupported file type "${extname(filePath)}". Only .pptx can be imported.`)
+        }
+        if (!existsSync(filePath)) {
+          throw new Error(`File not found: ${filePath}. Generate the presentation first, then import it.`)
+        }
+        const size = statSync(filePath).size
+        if (size > 200 * 1024 * 1024) {
+          throw new Error(`File too large to import: ${Math.round(size / 1024 / 1024)} MB (max 200 MB).`)
+        }
+        const base64 = readFileSync(filePath).toString('base64')
+
+        const dest = pool.resolveTarget(presentationId)
+        const optionsArg = buildInsertOptions(formatting)
+        const insertCode = `
+          context.presentation.insertSlidesFromBase64("${base64}"${optionsArg});
+          await context.sync();
+          var slides = context.presentation.slides;
+          slides.load("items");
+          await context.sync();
+          return { slideCount: slides.items.length };
+        `
+        const inserted = (await pool.sendCommand('executeCode', { code: insertCode }, dest.ws)) as {
+          slideCount: number
+        }
+
+        const warning = getConcurrentWarning(getSessionId(), dest.presentationId, getActiveSessionCount())
+        const text =
+          `Imported ${filePath} into the connected presentation — it now has ${inserted.slideCount} slides (the user saw them appear live).` +
+          (warning ?? '')
+        return { content: [{ type: 'text' as const, text }] }
+      },
+    ),
   )
 }

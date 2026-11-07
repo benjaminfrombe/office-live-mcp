@@ -47200,15 +47200,15 @@ var makeIssue = (params) => {
       message: issueData.message
     };
   }
-  let errorMessage2 = "";
+  let errorMessage3 = "";
   const maps = errorMaps.filter((m) => !!m).slice().reverse();
   for (const map2 of maps) {
-    errorMessage2 = map2(fullIssue, { data, defaultError: errorMessage2 }).message;
+    errorMessage3 = map2(fullIssue, { data, defaultError: errorMessage3 }).message;
   }
   return {
     ...issueData,
     path: fullPath,
-    message: errorMessage2
+    message: errorMessage3
   };
 };
 function addIssueToContext(ctx, issueData) {
@@ -72245,19 +72245,19 @@ var getRefs = (options) => {
 };
 
 // node_modules/zod-to-json-schema/dist/esm/errorMessages.js
-function addErrorMessage(res, key, errorMessage2, refs) {
+function addErrorMessage(res, key, errorMessage3, refs) {
   if (!refs?.errorMessages)
     return;
-  if (errorMessage2) {
+  if (errorMessage3) {
     res.errorMessage = {
       ...res.errorMessage,
-      [key]: errorMessage2
+      [key]: errorMessage3
     };
   }
 }
-function setResponseValueAndErrors(res, key, value, errorMessage2, refs) {
+function setResponseValueAndErrors(res, key, value, errorMessage3, refs) {
   res[key] = value;
-  addErrorMessage(res, key, errorMessage2, refs);
+  addErrorMessage(res, key, errorMessage3, refs);
 }
 
 // node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
@@ -73571,8 +73571,8 @@ var Protocol = class {
                   if (queuedMessage.type === "response") {
                     resolver(message);
                   } else {
-                    const errorMessage2 = message;
-                    const error62 = new McpError(errorMessage2.error.code, errorMessage2.error.message, errorMessage2.error.data);
+                    const errorMessage3 = message;
+                    const error62 = new McpError(errorMessage3.error.code, errorMessage3.error.message, errorMessage3.error.data);
                     resolver(error62);
                   }
                 } else {
@@ -74883,23 +74883,23 @@ var Server = class extends Protocol {
       const wrappedHandler = async (request, extra) => {
         const validatedRequest = safeParse2(CallToolRequestSchema, request);
         if (!validatedRequest.success) {
-          const errorMessage2 = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call request: ${errorMessage2}`);
+          const errorMessage3 = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call request: ${errorMessage3}`);
         }
         const { params } = validatedRequest.data;
         const result = await Promise.resolve(handler(request, extra));
         if (params.task) {
           const taskValidationResult = safeParse2(CreateTaskResultSchema, result);
           if (!taskValidationResult.success) {
-            const errorMessage2 = taskValidationResult.error instanceof Error ? taskValidationResult.error.message : String(taskValidationResult.error);
-            throw new McpError(ErrorCode.InvalidParams, `Invalid task creation result: ${errorMessage2}`);
+            const errorMessage3 = taskValidationResult.error instanceof Error ? taskValidationResult.error.message : String(taskValidationResult.error);
+            throw new McpError(ErrorCode.InvalidParams, `Invalid task creation result: ${errorMessage3}`);
           }
           return taskValidationResult.data;
         }
         const validationResult = safeParse2(CallToolResultSchema, result);
         if (!validationResult.success) {
-          const errorMessage2 = validationResult.error instanceof Error ? validationResult.error.message : String(validationResult.error);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call result: ${errorMessage2}`);
+          const errorMessage3 = validationResult.error instanceof Error ? validationResult.error.message : String(validationResult.error);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call result: ${errorMessage3}`);
         }
         return validationResult.data;
       };
@@ -75430,12 +75430,12 @@ var McpServer = class {
    * @param errorMessage - The error message.
    * @returns The tool error result.
    */
-  createToolError(errorMessage2) {
+  createToolError(errorMessage3) {
     return {
       content: [
         {
           type: "text",
-          text: errorMessage2
+          text: errorMessage3
         }
       ],
       isError: true
@@ -75456,8 +75456,8 @@ var McpServer = class {
     const parseResult = await safeParseAsync2(schemaToParse, args ?? {});
     if (!parseResult.success) {
       const error62 = "error" in parseResult ? parseResult.error : "Unknown error";
-      const errorMessage2 = getParseErrorMessage(error62);
-      throw new McpError(ErrorCode.InvalidParams, `Input validation error: Invalid arguments for tool ${toolName}: ${errorMessage2}`);
+      const errorMessage3 = getParseErrorMessage(error62);
+      throw new McpError(ErrorCode.InvalidParams, `Input validation error: Invalid arguments for tool ${toolName}: ${errorMessage3}`);
     }
     return parseResult.data;
   }
@@ -75481,8 +75481,8 @@ var McpServer = class {
     const parseResult = await safeParseAsync2(outputObj, result.structuredContent);
     if (!parseResult.success) {
       const error62 = "error" in parseResult ? parseResult.error : "Unknown error";
-      const errorMessage2 = getParseErrorMessage(error62);
-      throw new McpError(ErrorCode.InvalidParams, `Output validation error: Invalid structured content for tool ${toolName}: ${errorMessage2}`);
+      const errorMessage3 = getParseErrorMessage(error62);
+      throw new McpError(ErrorCode.InvalidParams, `Output validation error: Invalid structured content for tool ${toolName}: ${errorMessage3}`);
     }
   }
   /**
@@ -75694,8 +75694,8 @@ var McpServer = class {
         const parseResult = await safeParseAsync2(argsObj, request.params.arguments ?? {});
         if (!parseResult.success) {
           const error62 = "error" in parseResult ? parseResult.error : "Unknown error";
-          const errorMessage2 = getParseErrorMessage(error62);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for prompt ${request.params.name}: ${errorMessage2}`);
+          const errorMessage3 = getParseErrorMessage(error62);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for prompt ${request.params.name}: ${errorMessage3}`);
         }
         const args = parseResult.data;
         const cb = prompt.callback;
@@ -78274,7 +78274,7 @@ var ConnectionPool = class {
     this.queues.delete(ws);
   }
   /** Handle an incoming response/error from the add-in. */
-  handleResponse(id, type, data, errorMessage2) {
+  handleResponse(id, type, data, errorMessage3) {
     const pending = this.pendingRequests.get(id);
     if (pending) {
       clearTimeout(pending.timer);
@@ -78283,7 +78283,7 @@ var ConnectionPool = class {
       if (type === "response") {
         pending.resolve(data);
       } else {
-        pending.reject(new Error(errorMessage2 || "Command failed"));
+        pending.reject(new Error(errorMessage3 || "Command failed"));
       }
       this.advanceQueue(pending.ws);
       return;
@@ -80677,7 +80677,7 @@ var defaultLauncher = async (filePath) => {
   }
   throw new Error(`Opening documents is not supported on platform "${import_node_process2.platform}".`);
 };
-function registerDocumentTools(server, _pool, _getSessionId, _getActiveSessionCount, launcher = defaultLauncher) {
+function registerDocumentTools(server, pool2, getSessionId, getActiveSessionCount, launcher = defaultLauncher) {
   server.tool(
     "open_document",
     'Open a document file (.pptx/.docx/.xlsx) in its Office app (PowerPoint, Word or Excel) on the machine where the bridge runs. Use this after generating a complete document offline: the taskpane auto-opens in the new document and connects to the bridge, after which the live tools can inspect and refine it. This is the intended route for "create a full presentation/document" requests \u2014 do not build complete decks live, slide by slide.',
@@ -80696,6 +80696,51 @@ function registerDocumentTools(server, _pool, _getSessionId, _getActiveSessionCo
         ]
       };
     })
+  );
+  server.tool(
+    "import_presentation_file",
+    'Import ALL slides from a .pptx file on disk into a connected live PowerPoint presentation, in one atomic operation. The file is read server-side (its Base64 never enters the model context) and inserted via insertSlidesFromBase64 \u2014 the slides appear live in the open presentation while the user watches. This is the route for "build me a full presentation INTO this open deck": generate the complete .pptx offline (e.g. python-pptx), then import it into the connected presentation. No second pane or ribbon click needed.',
+    {
+      path: external_exports.string().describe("Absolute path to the source .pptx file. It must already exist on this machine."),
+      presentationId: external_exports.string().optional().describe(
+        "Destination presentation ID from list_presentations. Optional when only one presentation is connected."
+      ),
+      formatting: external_exports.enum(["KeepSourceFormatting", "UseDestinationTheme"]).optional().describe("Formatting mode for the inserted slides. Default: KeepSourceFormatting.")
+    },
+    withTool(
+      async ({
+        path: filePath,
+        presentationId,
+        formatting
+      }) => {
+        if (!filePath || typeof filePath !== "string") throw new Error("A file path is required.");
+        if ((0, import_node_path6.extname)(filePath).toLowerCase() !== ".pptx") {
+          throw new Error(`Unsupported file type "${(0, import_node_path6.extname)(filePath)}". Only .pptx can be imported.`);
+        }
+        if (!(0, import_node_fs6.existsSync)(filePath)) {
+          throw new Error(`File not found: ${filePath}. Generate the presentation first, then import it.`);
+        }
+        const size = (0, import_node_fs6.statSync)(filePath).size;
+        if (size > 200 * 1024 * 1024) {
+          throw new Error(`File too large to import: ${Math.round(size / 1024 / 1024)} MB (max 200 MB).`);
+        }
+        const base643 = (0, import_node_fs6.readFileSync)(filePath).toString("base64");
+        const dest = pool2.resolveTarget(presentationId);
+        const optionsArg = buildInsertOptions(formatting);
+        const insertCode = `
+          context.presentation.insertSlidesFromBase64("${base643}"${optionsArg});
+          await context.sync();
+          var slides = context.presentation.slides;
+          slides.load("items");
+          await context.sync();
+          return { slideCount: slides.items.length };
+        `;
+        const inserted = await pool2.sendCommand("executeCode", { code: insertCode }, dest.ws);
+        const warning = getConcurrentWarning(getSessionId(), dest.presentationId, getActiveSessionCount());
+        const text = `Imported ${filePath} into the connected presentation \u2014 it now has ${inserted.slideCount} slides (the user saw them appear live).` + (warning ?? "");
+        return { content: [{ type: "text", text }] };
+      }
+    )
   );
 }
 
@@ -85200,7 +85245,7 @@ function createMcpServer(getSessionId, getActiveSessionCount) {
     {
       instructions: [
         "This server drives LIVE Office documents (Word, Excel, PowerPoint) through an add-in taskpane; the user watches every change happen in real time.",
-        "CREATING A COMPLETE NEW DOCUMENT: do NOT build it live, slide by slide \u2014 the live tools are for refining existing documents and are too limited for authoring a full deck. Instead: (1) generate the complete file offline (e.g. python-pptx for .pptx, or OOXML directly), (2) call open_document with the file path to open it in the Office app, (3) wait a few seconds, confirm with list_presentations/list_documents/list_workbooks, then refine with the live tools while the user watches.",
+        "CREATING A COMPLETE NEW DOCUMENT: do NOT build it live, slide by slide \u2014 the live tools are for refining existing documents and are too limited for authoring a full deck. Instead: (1) generate the complete file offline (e.g. python-pptx for .pptx, or OOXML directly), (2a) to fill the presentation the user already has open: import_presentation_file(path, presentationId) \u2014 all slides appear live in that open deck in one atomic operation; or (2b) to open it as a new document: open_document(path), wait a few seconds and confirm with list_presentations/list_documents/list_workbooks. In both cases, refine with the live tools while the user watches.",
         "View etiquette: the user wants to SEE edits as they happen. Before starting an edit burst on a slide, bring that slide into view first (PowerPoint: show_slide; Word/Excel: navigate to or select the target content), then make the changes.",
         "Slide edits: prefer the OOXML route (edit_slide_xml, edit_shape_paragraphs, edit_slide_zip, edit_slide_chart) \u2014 full fidelity, and the view automatically returns to the edited slide after the reimport. Use execute_officejs only for quick in-place tweaks or APIs the OOXML route cannot reach. BULK EDITS: apply ALL edits first, then verify with at most one screenshot at the end \u2014 never alternate screenshot and edit_slide_xml calls; rapid reimport cycles crash PowerPoint for Mac.",
         "When multiple documents are connected, always pass the explicit documentId/workbookId/presentationId from list_documents/list_workbooks/list_presentations.",
