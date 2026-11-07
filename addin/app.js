@@ -232,3 +232,7 @@ function sendError(id, error) {
     ws.send(JSON.stringify({ type: 'error', id: id, error: error }))
   }
 }
+
+/* Windows (WebView2) has no macOS personality menu above the pane — use the
+   full height instead of the 38px top padding that macOS needs. */
+if (typeof navigator !== 'undefined' && /Windows/i.test(navigator.userAgent)) document.body.classList.add('win')

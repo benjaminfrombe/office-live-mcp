@@ -184,6 +184,8 @@ function initChat() {
   document.getElementById('oc-session').addEventListener('change', (event) => {
     if (event.target.value) selectSession(event.target.value)
   })
+  document.getElementById('oc-model').addEventListener('change', onModelChange)
+  loadModels()
   loadInputHistory()
   const input = document.getElementById('oc-input')
   input.addEventListener('keydown', (event) => {
@@ -203,7 +205,15 @@ function initChat() {
 
   document.getElementById('oc-reasoning-strip').addEventListener('click', () => {
     var strip = document.getElementById('oc-reasoning-strip')
-    strip.dataset.expanded = strip.dataset.expanded === '1' ? '' : '1'
+    var live = strip.classList.contains('live')
+    var expand = strip.dataset.expanded !== '1'
+    strip.dataset.expanded = expand ? '1' : ''
+    if (live) {
+      // Live mode: expanding pauses the ticker and shows the full streaming
+      // text (auto-scrolled to the tail); collapsing snaps the ticker back.
+      if (expand) stopTicker()
+      else startTicker()
+    }
     updateReasoningStrip()
   })
 
@@ -271,23 +281,6 @@ function initChat() {
     }, chatError)
   })
 
-  document.getElementById('oc-insert-reply').addEventListener('click', () => {
-    var text = lastAssistantText()
-    if (!text) {
-      setChatStatus('No assistant reply to insert yet')
-      focusInput()
-      return
-    }
-    Office.context.document.setSelectedDataAsync(text, { coercionType: Office.CoercionType.Text }, (result) => {
-      if (result.status === Office.AsyncResultStatus.Failed) {
-        setChatStatus(`Insert failed: ${result.error ? result.error.message : 'unknown'}`)
-      } else {
-        setChatStatus('Reply inserted at selection')
-      }
-      focusInput()
-    })
-  })
-
   refreshSessions()
   autoGrowInput()
 
@@ -347,6 +340,84 @@ function refreshSessions() {
   }, chatError)
 }
 
+/* ---------- Model selection ---------- */
+/* Per-session model choice, remembered in localStorage. The server default
+   applies to sessions without a stored choice. */
+var MODEL_STORE_KEY = 'oc-model-per-session'
+
+function storedModel(sessionID) {
+  var all
+  try {
+    all = JSON.parse(localStorage.getItem(MODEL_STORE_KEY) || '{}')
+  } catch (_e) {
+    all = {}
+  }
+  return all[sessionID] || null
+}
+
+function rememberModel(sessionID, model) {
+  var all
+  try {
+    all = JSON.parse(localStorage.getItem(MODEL_STORE_KEY) || '{}')
+  } catch (_e) {
+    all = {}
+  }
+  all[sessionID] = model
+  localStorage.setItem(MODEL_STORE_KEY, JSON.stringify(all))
+}
+
+function loadModels() {
+  OpenCodeChat.listModels(chatState.config).then(
+    (models) => {
+      var select = document.getElementById('oc-model')
+      select.innerHTML = ''
+      models.forEach((m) => {
+        var option = document.createElement('option')
+        option.value = m.providerID + '|' + m.id
+        option.textContent = m.name || m.id
+        option.dataset.provider = m.providerID
+        option.dataset.model = m.id
+        select.appendChild(option)
+      })
+      applySessionModel(chatState.sessionID)
+    },
+    () => {
+      /* model list unavailable — hide the picker instead of an empty box */
+      var select = document.getElementById('oc-model')
+      if (select && !select.options.length) select.style.display = 'none'
+    },
+  )
+}
+
+function applySessionModel(sessionID) {
+  var select = document.getElementById('oc-model')
+  if (!select || !select.options.length || !sessionID) return
+  var chosen = storedModel(sessionID)
+  if (chosen) {
+    select.value = chosen.providerID + '|' + chosen.id
+    return
+  }
+  // No stored choice: show the server default without forcing it.
+  OpenCodeChat.defaultModel(chatState.config).then(
+    (def) => {
+      if (def) select.value = def.providerID + '|' + def.id
+    },
+    () => {},
+  )
+}
+
+function onModelChange() {
+  var select = document.getElementById('oc-model')
+  var opt = select.selectedOptions[0]
+  if (!opt || !chatState.sessionID) return
+  var model = { id: opt.dataset.model, providerID: opt.dataset.provider }
+  rememberModel(chatState.sessionID, model)
+  OpenCodeChat.setSessionModel(chatState.config, chatState.sessionID, model).then(
+    () => setChatStatus('Model: ' + (opt.textContent || model.id)),
+    (err) => setChatStatus('Model switch failed: ' + String(err && err.message ? err.message : err).slice(0, 120)),
+  )
+}
+
 function selectSession(sessionID) {
   stopEventStream()
   chatState.sessionID = sessionID
@@ -357,6 +428,7 @@ function selectSession(sessionID) {
   chatState.reasoningActive = false
   updateReasoningStrip()
   document.getElementById('oc-session').value = sessionID
+  applySessionModel(sessionID)
   renderFromRows([])
   setChatStatus('Loading messages...')
   OpenCodeChat.getMessages(chatState.config, sessionID).then(renderFromRows, chatError)
@@ -724,11 +796,19 @@ function updateReasoningStrip() {
   }
   chatState.reasoningRendered = text.length
   var expanded = false
+  var liveExpanded = strip.dataset.expanded === '1'
   if (chatState.reasoningActive) {
     strip.classList.add('live')
-    label.textContent = 'Reasoning…'
-    body.classList.remove('expanded')
-    startTicker()
+    label.textContent = liveExpanded ? 'Reasoning… (click to collapse)' : 'Reasoning…'
+    body.classList.toggle('expanded', liveExpanded)
+    if (liveExpanded) {
+      // Expanded during streaming: full text, auto-scrolled to the tail;
+      // the ticker stays paused until the user collapses again.
+      stopTicker()
+      body.scrollTop = body.scrollHeight
+    } else {
+      startTicker()
+    }
   } else {
     strip.classList.remove('live')
     stopTicker()

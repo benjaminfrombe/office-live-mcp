@@ -148,8 +148,9 @@ What it gives you:
 - **Chat with live context** — the first prompt of a session carries an invisible preamble (open document, live-MCP instructions) and every prompt carries the active slide + selected shapes, so "this slide" just works.
 - **+ Selection** — paste the current document selection into the input as context.
 - **Image paste** — paste screenshots into the input as inline attachments.
-- **Reasoning strip** — live streaming of the model's reasoning while it works.
-- **Insert last reply at selection** — write the reply into the document at the cursor.
+- **Reasoning strip** — live streaming of the model's reasoning while it works; click it mid-stream to expand the full text, click again to collapse.
+- **Question forms** — when the agent calls the `question` tool, the pending form surfaces as an answerable card in the pane (works across sessions: a question asked in another OpenCode window shows up here too; answering or dismissing settles it everywhere).
+- **Model picker** — switch the session's model from the action row under the input; the choice is remembered per session.
 
 Full details (SSE handling, session model, testing): [docs/opencode-mode.md](docs/opencode-mode.md).
 
@@ -166,7 +167,7 @@ office-live-mcp setup                    # re-run: switches everything to HTTPS
 
 If mkcert is not installed, setup prints these commands as a hint and keeps running over HTTP. To undo, remove the `BRIDGE_TLS=1` line from `~/.office-live-mcp/daemon.env` and rerun setup.
 
-On **Windows** no certificate is needed: the supported install route is a shared-folder catalog over plain HTTP (see below), and the ribbon icon stays a placeholder unless you opt into the legacy HTTPS catalog route with `OLM_HTTPS_CATALOG=1` (which generates and trusts a self-signed certificate automatically — but modern Office ignores that catalog anyway).
+On **Windows**, setup asks whether you want the real ribbon icon. Answering **yes** generates a localhost + hostname TLS certificate, trusts it via `certutil` (Windows shows a one-time confirmation dialog — choose **Yes**), flips `BRIDGE_TLS=1` in the daemon env, and installs the HTTPS manifests. Plain HTTP never shows the real icon on Windows — verified across every combination of headers, hosts and cache states on Office 16.0.20527 — so the question is the only supported path to the icon. To undo, remove the `BRIDGE_TLS=1` line from `%USERPROFILE%\.office-live-mcp\daemon.env` and rerun setup.
 
 ## Windows installation
 
@@ -188,11 +189,13 @@ What it does:
 
 1. Copies `dist/` and `addin/` to `%LOCALAPPDATA%\office-live-mcp`, keeping only the manifest variants that match the daemon transport (HTTPS or plain) so the catalog lists exactly one add-in per Office app.
 2. Registers a trusted add-in catalog in the registry (HKCU, no elevation needed) pointing at that folder through a UNC path. Office only trusts network paths for custom add-ins — that is a Microsoft requirement. In practice no share has to be created: setup uses, in order, an `OLM_CATALOG_UNC` override → a dedicated `OfficeLiveMCP` share (created automatically in an elevated terminal) → the built-in admin share (`\\localhost\C$`), which exists by default on admin machines.
-3. Prints your server path and node executable, plus the link with copy-paste MCP client examples for every harness.
+3. Asks whether you want the **real ribbon icon**: HTTPS bridge + trusted certificate (one-time Windows trust dialog). Plain HTTP always renders the generic placeholder icon on Windows, so this is the only way to get the real one.
+4. Offers to register the MCP server in your **OpenCode** config (`~/.config/opencode/opencode.json(c)`) when one is detected — plain-JSON files are merged, JSONC files with comments are left untouched with a manual hint.
+5. Prints your server path and node executable, plus the link with copy-paste MCP client examples for every harness.
 
 Then the one step no installer can do, because Office requires it:
 
-4. **Close and reopen the Office app** → **Home → Add-ins → Advanced...** → **SHARED FOLDER** tab → select *Office Live MCP* → **Add**.
+6. **Close and reopen the Office app** → **Home → Add-ins → Advanced...** → **SHARED FOLDER** tab → select *Office Live MCP* → **Add**.
 
 > **Why not an HTTPS catalog (no UNC at all)?** The bridge can emulate a SharePoint app catalog over `https://localhost:8791` (`OLM_HTTPS_CATALOG=1`, see `server/sharepoint-catalog.ts`), and Office would then list the add-in under MY ORGANIZATION. This worked on Office builds up to 16.0.20430, but Microsoft fully retired SharePoint add-in catalogs on April 2, 2026 — current builds still probe the catalog yet discard the results, so the route is dead on modern Office. The UNC route above is the only supported one.
 
@@ -200,7 +203,7 @@ Notes:
 
 - The daemon's environment file lives at `%USERPROFILE%\.office-live-mcp\daemon.env`, its log at `%USERPROFILE%\.office-live-mcp\daemon.log`.
 - Use `manifest.xml` for PowerPoint, `manifest.word.xml` for Word, `manifest.excel.xml` for Excel. All point the taskpane at `http://localhost:8790`.
-- As on macOS, the ribbon icon stays a placeholder unless the bridge runs over HTTPS (see "Optional: the ribbon icon" above) and the manifests point at `https://localhost:8791`.
+- As on macOS, the ribbon icon stays a placeholder unless the bridge runs over HTTPS and the manifests point at `https://localhost:8791` — on Windows, setup's icon question arranges all of that for you (see "Optional: the ribbon icon" above). Verified: over plain HTTP the icon never renders on Windows, whatever the response headers say.
 - If a build refuses plain-HTTP catalogs, the bridge can also emulate a SharePoint-style HTTPS catalog (`server/sharepoint-catalog.ts`, enabled with `BRIDGE_TLS=1`): Office enumerates `https://<host>:8791` as a corporate catalog and the same manifests are served from there.
 
 ## How it is tested

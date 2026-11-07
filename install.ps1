@@ -6,7 +6,8 @@
 #   1. Finds Node.js + npm (PATH, C:\node\*, Program Files, nvm-windows, volta)
 #      — or offers to install Node LTS via winget when nothing is found
 #   2. Installs the office-live-mcp package globally (npm registry, GitHub fallback)
-#   3. Runs `office-live-mcp setup` (TLS cert, trusted catalog, registry)
+#   3. Runs `office-live-mcp setup` (trusted catalog, registry; optionally a
+#      TLS certificate for the real ribbon icon — setup asks)
 #   4. Prints the one remaining manual step (Office requires it)
 
 $ErrorActionPreference = 'Stop'

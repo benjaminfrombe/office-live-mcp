@@ -435,30 +435,6 @@ function trustCertWindows(certPath: string): boolean {
   return machineStore.status === 0
 }
 
-/** Merge a KEY=VALUE line into the daemon env file (pure). */
-export function mergeDaemonEnvLine(content: string, key: string, value: string): string {
-  const pattern = new RegExp(`^${key}=.*$`, 'm')
-  if (pattern.test(content)) return content.replace(pattern, `${key}=${value}`)
-  const lines = content.split('\n').filter((l) => l.trim())
-  lines.push(`${key}=${value}`)
-  return `${lines.join('\n')}\n`
-}
-
-function writeDaemonEnvLine(key: string, value: string): void {
-  const envFile = resolve(homedir(), '.office-live-mcp', 'daemon.env')
-  let content = ''
-  try {
-    content = readFileSync(envFile, 'utf8')
-  } catch {
-    // no file yet
-  }
-  const merged = mergeDaemonEnvLine(content, key, value)
-  if (merged !== content) {
-    mkdirSync(dirname(envFile), { recursive: true })
-    writeFileSync(envFile, merged)
-  }
-}
-
 /**
  * Optional Windows add-on for the real ribbon icon: generate a localhost +
  * hostname TLS certificate, trust it, and run the daemon bridge over HTTPS.
@@ -477,29 +453,7 @@ async function enableWindowsIconHttps(): Promise<void> {
     return
   }
   writeDaemonTlsEnv()
-  // The HTTPS manifests point icon/taskpane URLs at the machine hostname so
-  // Office accepts them (it refuses localhost-hosted icon resources), and the
-  // bridge must therefore listen on all interfaces, not just 127.0.0.1.
-  writeDaemonEnvLine('BRIDGE_HOST', '0.0.0.0')
-  rewriteHttpsManifestsForHostname()
-  console.log('[setup] Icon HTTPS enabled: TLS bridge on https://<hostname>:8791, certificate trusted.')
-}
-
-/**
- * Rewrite the packaged HTTPS manifests so resource URLs use the machine
- * hostname instead of localhost (Office on Windows refuses localhost-hosted
- * icon resources). ensureLocalhostCert includes the hostname in the SAN.
- */
-function rewriteHttpsManifestsForHostname(): void {
-  const addinDir = resolve(PROJECT_ROOT, 'addin')
-  const local = 'https://localhost:8791'
-  const host = `https://${hostname()}:8791`
-  for (const file of readdirSync(addinDir)) {
-    if (!file.endsWith('.xml') || !file.includes('-https')) continue
-    const path = resolve(addinDir, file)
-    const content = readFileSync(path, 'utf8')
-    if (content.includes(local)) writeFileSync(path, content.replaceAll(local, host))
-  }
+  console.log('[setup] Icon HTTPS enabled: TLS bridge on https://localhost:8791, certificate trusted.')
 }
 
 /** Fallback Windows route: shared folder catalog (UNC path, as Office documents). */

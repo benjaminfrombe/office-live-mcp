@@ -55,7 +55,10 @@ var OpenCodeChat = (() => {
           throw new Error(`OpenCode ${res.status}: ${body.slice(0, 300)}`)
         })
       }
-      return res.json()
+      // 204 No Content (form cancel) and other empty bodies have nothing to
+      // parse — res.json() would throw SyntaxError on the empty string.
+      if (res.status === 204) return null
+      return res.text().then((body) => (body ? JSON.parse(body) : null))
     })
   }
 
@@ -260,6 +263,22 @@ var OpenCodeChat = (() => {
     }
   }
 
+  /* Model selection — list available models and switch the session model. */
+  function listModels(config) {
+    return request(config, '/api/model').then((res) => res.data || [])
+  }
+
+  function defaultModel(config) {
+    return request(config, '/api/model/default').then((res) => res.data)
+  }
+
+  function setSessionModel(config, sessionID, model) {
+    return request(config, `/api/session/${sessionID}/model`, {
+      method: 'POST',
+      body: JSON.stringify({ model: model }),
+    })
+  }
+
   return {
     loadConfig: loadConfig,
     saveConfig: saveConfig,
@@ -271,6 +290,9 @@ var OpenCodeChat = (() => {
     listForms: listForms,
     replyForm: replyForm,
     cancelForm: cancelForm,
+    listModels: listModels,
+    defaultModel: defaultModel,
+    setSessionModel: setSessionModel,
     promptFiles: promptFiles,
     messageText: messageText,
     messageImages: messageImages,

@@ -32,6 +32,10 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 38px 16px 12px; /* top padding avoids macOS personality menu (34x32px) */
+  /* Windows (WebView2) has no personality menu — reclaim ~28px of vertical space. */
+  &.win {
+    padding-top: 10px;
+  }
   background: var(--canvas);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
@@ -41,10 +45,11 @@ body {
 }
 
 h1 {
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: -0.01em;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
+  color: var(--text-muted);
 }
 
 /* ---------- Bridge mode ---------- */
@@ -134,7 +139,7 @@ h1 {
 .mode-tabs {
   display: flex;
   gap: 3px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   padding: 3px;
   background: rgb(20 40 20 / 6%);
   border-radius: 999px;
@@ -143,7 +148,7 @@ h1 {
 
 .mode-tab {
   flex: 1;
-  padding: 6px 10px;
+  padding: 4px 10px;
   font-size: 0.78rem;
   font-weight: 500;
   border: none;
@@ -344,8 +349,8 @@ select:hover {
 /* Reasoning strip — live reasoning ticker pinned above the messages */
 .reasoning-strip {
   width: 100%;
-  margin-bottom: 6px;
-  padding: 5px 8px;
+  margin-bottom: 4px;
+  padding: 3px 8px;
   background: rgb(20 40 20 / 4%);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -360,7 +365,10 @@ select:hover {
 }
 
 .reasoning-strip[hidden] {
-  display: none;
+  /* Reserve the strip's space even when empty: toggling display:none would
+     shift the whole layout on every reasoning start/end, which made the
+     message scroller jump constantly. visibility keeps the layout stable. */
+  visibility: hidden;
 }
 
 .reasoning-label {
@@ -406,6 +414,22 @@ select:hover {
   content: " · ";
 }
 
+/* Expanded while live: the user clicked the strip mid-stream — show the full
+   text (block, wrapped, scrollable, pinned to the tail by chat.js) instead of
+   the ticker. Only the first copy renders; the second is ticker-only. */
+.reasoning-strip.live .reasoning-text.expanded {
+  display: block;
+  white-space: pre-wrap;
+  width: auto;
+  max-height: 120px;
+  overflow-y: auto;
+  transform: none !important;
+}
+
+.reasoning-strip.live .reasoning-text.expanded > span:nth-child(2) {
+  display: none;
+}
+
 /* Collapsed after the step: reasoning text fully hidden, label only */
 .reasoning-strip:not(.live) .reasoning-text {
   max-height: 0;
@@ -449,8 +473,22 @@ select:hover {
 }
 
 .chat-toolbar {
-  margin-bottom: 8px;
+  margin-bottom: 5px;
   align-items: center;
+}
+
+/* Two selects share the toolbar row: session gets the wider share. */
+.chat-toolbar #oc-session {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+/* Model picker lives in the bottom action row, compact next to the buttons. */
+.chat-input-actions #oc-model {
+  flex: 1 1 30%;
+  min-width: 0;
+  font-size: 0.68rem;
+  padding: 3px 4px;
 }
 
 .chat-toolbar select {
@@ -465,6 +503,12 @@ select:hover {
   color: #8a6d00;
   min-height: 1.1em;
   margin-bottom: 4px;
+}
+
+/* Empty status row must not reserve space — it sat as a blank gap between
+   the session toolbar and the reasoning strip. */
+.chat-status:empty {
+  display: none;
 }
 
 .chat-messages {
@@ -568,6 +612,11 @@ select:hover {
   border-radius: var(--radius);
   padding: 10px 12px;
   box-shadow: var(--shadow-sm);
+  /* Long forms must scroll inside their card: the card sits above the
+     composer, outside the message scroller, so an unbounded card would
+     overflow the pane with no way to reach the bottom fields. */
+  max-height: 45vh;
+  overflow-y: auto;
   animation: form-card-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

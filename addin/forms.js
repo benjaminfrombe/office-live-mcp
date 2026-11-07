@@ -121,7 +121,14 @@ var OpenCodeForms = (() => {
 
   function refresh(form) {
     var card = rendered.get(form.id)
-    if (card) card.replaceWith(renderCard(form))
+    var next
+    if (card) {
+      next = renderCard(form)
+      card.replaceWith(next)
+      // Keep the map pointing at the LIVE node: removeCard() must remove the
+      // card the user actually sees, not a detached node left behind here.
+      rendered.set(form.id, next)
+    }
   }
 
   function renderCard(form) {
@@ -315,6 +322,9 @@ var OpenCodeForms = (() => {
   }
 
   var pendingIds = new Set()
+  /* Forms settled from this pane (reply accepted, or dismiss answered with
+     OpenCode 409 FormAlreadySettled). render() never re-adds these. */
+  var settledIds = new Set()
 
   function render(forms) {
     pendingIds = new Set((forms || []).map((f) => f.id))
@@ -322,6 +332,11 @@ var OpenCodeForms = (() => {
     var box = container()
     if (!box) return
     for (const form of forms || []) {
+      // Forms we settled ourselves (submitted or dismissed) can linger in the
+      // server's form list for a while; re-rendering them would resurrect a
+      // card the user just got rid of (observed live: OpenCode 409
+      // FormAlreadySettled on the next dismiss).
+      if (settledIds.has(form.id)) continue
       if (rendered.has(form.id)) continue
       const card = renderCard(form)
       rendered.set(form.id, card)
@@ -336,12 +351,14 @@ var OpenCodeForms = (() => {
     var answer = buildAnswer(form.fields || [], s)
     OpenCodeChat.replyForm(getConfig(), form.sessionID, form.id, answer).then(
       () => {
+        settledIds.add(form.id)
         removeCard(form.id)
         if (hooks.onReplied) hooks.onReplied(form.sessionID)
       },
       (err) => {
         // Already answered or cancelled elsewhere → the card is stale anyway.
         if (/409|FormAlreadySettled|FormNotFound/.test(String(err))) {
+          settledIds.add(form.id)
           removeCard(form.id)
           return
         }
@@ -355,19 +372,63 @@ var OpenCodeForms = (() => {
   }
 
   function dismissForm(form) {
-    OpenCodeChat.cancelForm(getConfig(), form.sessionID, form.id, 'Dismissed from the Office taskpane').then(
-      () => removeCard(form.id),
-      () => removeCard(form.id),
+    var cfg
+    try {
+      cfg = getConfig() || OpenCodeChat.loadConfig()
+    } catch (_e) {
+      cfg = OpenCodeChat.loadConfig()
+    }
+    var p
+    try {
+      p = OpenCodeChat.cancelForm(cfg, form.sessionID, form.id, 'Dismissed from the Office taskpane')
+    } catch (_e) {
+      removeCard(form.id)
+      return
+    }
+    p.then(
+      () => {
+        settledIds.add(form.id)
+        removeCard(form.id)
+      },
+      (err) => {
+        if (/409|FormAlreadySettled|FormNotFound/.test(String(err))) settledIds.add(form.id)
+        removeCard(form.id)
+      },
     )
   }
+
+  /* Defensive polling: an exception inside getConfig/listForms/render used to
+     leave the `polling` flag stuck at true, which froze the whole form list —
+     cards then never disappeared (observed live). Every step now resets the
+     flag and swallows its own errors. */
 
   function poll() {
     if (polling || !getConfig) return
     polling = true
-    OpenCodeChat.listForms(getConfig()).then(
+    var cfg
+    try {
+      cfg = getConfig()
+    } catch (_e) {
+      polling = false
+      return
+    }
+    var p
+    try {
+      p = OpenCodeChat.listForms(cfg)
+    } catch (_e) {
+      polling = false
+      return
+    }
+    p.then(
       (forms) => {
         polling = false
-        render(forms)
+        // A render error must never wedge the polling flag: the next tick
+        // has to keep running or settled cards would linger forever.
+        try {
+          render(forms)
+        } catch (_e) {
+          /* skip this tick */
+        }
       },
       () => {
         // OpenCode unreachable — keep existing cards, retry on the next tick.

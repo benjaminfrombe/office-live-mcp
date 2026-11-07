@@ -78838,27 +78838,6 @@ function trustCertWindows(certPath) {
   const machineStore = (0, import_node_child_process.spawnSync)("certutil", ["-addstore", "Root", certPath], { stdio: "pipe" });
   return machineStore.status === 0;
 }
-function mergeDaemonEnvLine(content, key, value) {
-  const pattern = new RegExp(`^${key}=.*$`, "m");
-  if (pattern.test(content)) return content.replace(pattern, `${key}=${value}`);
-  const lines = content.split("\n").filter((l) => l.trim());
-  lines.push(`${key}=${value}`);
-  return `${lines.join("\n")}
-`;
-}
-function writeDaemonEnvLine(key, value) {
-  const envFile = (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), ".office-live-mcp", "daemon.env");
-  let content = "";
-  try {
-    content = (0, import_node_fs2.readFileSync)(envFile, "utf8");
-  } catch {
-  }
-  const merged = mergeDaemonEnvLine(content, key, value);
-  if (merged !== content) {
-    (0, import_node_fs2.mkdirSync)((0, import_node_path2.dirname)(envFile), { recursive: true });
-    (0, import_node_fs2.writeFileSync)(envFile, merged);
-  }
-}
 async function enableWindowsIconHttps() {
   if (!await ensureLocalhostCert()) {
     console.error("[setup] Certificate generation failed \u2014 staying on plain HTTP (generic ribbon icon).");
@@ -78869,20 +78848,7 @@ async function enableWindowsIconHttps() {
     return;
   }
   writeDaemonTlsEnv();
-  writeDaemonEnvLine("BRIDGE_HOST", "0.0.0.0");
-  rewriteHttpsManifestsForHostname();
-  console.log("[setup] Icon HTTPS enabled: TLS bridge on https://<hostname>:8791, certificate trusted.");
-}
-function rewriteHttpsManifestsForHostname() {
-  const addinDir = (0, import_node_path2.resolve)(PROJECT_ROOT, "addin");
-  const local = "https://localhost:8791";
-  const host = `https://${(0, import_node_os2.hostname)()}:8791`;
-  for (const file2 of (0, import_node_fs2.readdirSync)(addinDir)) {
-    if (!file2.endsWith(".xml") || !file2.includes("-https")) continue;
-    const path = (0, import_node_path2.resolve)(addinDir, file2);
-    const content = (0, import_node_fs2.readFileSync)(path, "utf8");
-    if (content.includes(local)) (0, import_node_fs2.writeFileSync)(path, content.replaceAll(local, host));
-  }
+  console.log("[setup] Icon HTTPS enabled: TLS bridge on https://localhost:8791, certificate trusted.");
 }
 function setupWindowsUncCatalog() {
   const installDir = process.env.OLM_INSTALL_DIR || (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), "AppData", "Local", "office-live-mcp");
