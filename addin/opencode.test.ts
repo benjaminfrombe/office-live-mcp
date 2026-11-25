@@ -99,6 +99,44 @@ describe('opencode.js config', () => {
 })
 
 describe('opencode.js requests', () => {
+  it('appends the bridge token to same-origin proxy requests', async () => {
+    const h = harness()
+    h.context.window = { __BRIDGE_TOKEN__: 'tok-abc' }
+    const client = h.context.OpenCodeChat as {
+      createSession: (c: unknown, title: string) => Promise<{ id: string }>
+    }
+    const pending = client.createSession({ url: '/opencode', password: '' }, 'test')
+    h.respond(200, { data: { id: 's1' } })
+    await pending
+    expect(h.fetchCalls[0].url).toBe('/opencode/api/session?token=tok-abc')
+  })
+
+  it('merges the token into URLs that already carry a query string', async () => {
+    const h = harness()
+    h.context.window = { __BRIDGE_TOKEN__: 'tok-abc' }
+    const client = h.context.OpenCodeChat as {
+      subscribeEvents: (c: unknown, types: string[], onEvent: (e: unknown) => void) => unknown
+    }
+    const controller = client.subscribeEvents({ url: '/opencode', password: '' }, ['a'], () => {})
+    // The subscription fetch carries its own types= params before the token.
+    expect(h.fetchCalls[0].url).toBe('/opencode/api/event?types=a&token=tok-abc')
+    // Stop the live-only stream so the fake timers do not leak a retry loop.
+    const stop = (controller as { stop?: () => void }).stop
+    if (stop) stop.call(controller)
+  })
+
+  it('does not append the token to absolute (direct) URLs', async () => {
+    const h = harness()
+    h.context.window = { __BRIDGE_TOKEN__: 'tok-abc' }
+    const client = h.context.OpenCodeChat as {
+      createSession: (c: unknown, title: string) => Promise<{ id: string }>
+    }
+    const pending = client.createSession({ url: 'http://127.0.0.1:4096', password: '' }, 'test')
+    h.respond(200, { data: { id: 's1' } })
+    await pending
+    expect(h.fetchCalls[0].url).toBe('http://127.0.0.1:4096/api/session')
+  })
+
   it('sends basic auth and unwraps the data envelope on createSession', async () => {
     const h = harness()
     const client = h.context.OpenCodeChat as {

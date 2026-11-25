@@ -12,6 +12,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import { WebSocket, WebSocketServer } from 'ws'
 import { ConnectionPool, startHeartbeat } from './bridge.ts'
+import { currentBridgeToken, issueToken, requestHasValidToken } from './bridge-token.ts'
 import { resolveImageFileRequest } from './file-serve.ts'
 import { hasLocalHostHeader } from './host-check.ts'
 import { substituteManifestPort } from './manifest.ts'
@@ -423,6 +424,17 @@ function serveStatic(req: IncomingMessage, res: ServerResponse): void {
 
   const rawUrl = (req.url ?? '/').split('?')[0]
 
+  // Token gate for the sensitive routes (defense in depth, see bridge-token.ts):
+  // /opencode drives the OpenCode proxy with the injected service password and
+  // /file serves local images. The taskpane carries the token from its served
+  // entry page; everything else is rejected. Static assets, /health, /mcp and
+  // the WS upgrade stay open (external MCP clients cannot know the token).
+  if ((rawUrl === '/opencode' || rawUrl.startsWith('/opencode/') || rawUrl === '/file') && !requestHasValidToken(req)) {
+    res.writeHead(401, { 'Content-Type': 'text/plain' })
+    res.end('missing or invalid bridge token')
+    return
+  }
+
   // OpenCode reverse proxy — same-origin route for the taskpane chat mode.
   if (handleOpenCodeProxy(req, res, req.url ?? '/')) {
     return
@@ -535,14 +547,24 @@ function serveStatic(req: IncomingMessage, res: ServerResponse): void {
   const mimeType = getMimeType(filePath)
   // For XML manifests served over the bridge, substitute the default port with
   // the actual running port so the taskpane SourceLocation URLs are correct.
-  const content =
-    extname(filePath) === '.xml'
-      ? substituteManifestPort(
-          raw.toString(),
-          bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT,
-          BRIDGE_PORT,
-        )
-      : raw
+  // For the taskpane entry page, inject the bridge token (see bridge-token.ts)
+  // so the add-in can gate its /opencode and /file calls.
+  let content: string | Buffer = raw
+  if (extname(filePath) === '.xml') {
+    content = substituteManifestPort(
+      raw.toString(),
+      bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT,
+      BRIDGE_PORT,
+    )
+  } else if (urlPath === '/index.html' || urlPath.endsWith('/index.html')) {
+    const issued = currentBridgeToken() ?? ''
+    content = raw
+      .toString()
+      .replace(
+        /<head(\s[^>]*)?>/i,
+        (head) => `${head}\n  <script>window.__BRIDGE_TOKEN__=${JSON.stringify(issued)};</script>`,
+      )
+  }
   const headers: Record<string, string> = {
     'Content-Type': mimeType,
     'Access-Control-Allow-Origin': '*',
@@ -736,6 +758,10 @@ function startBridgeServer(onListening?: () => void): void {
       })
       .catch(() => process.exit(1))
   })
+
+  // One random token per bridge run, injected into the served taskpane entry
+  // page and required on /opencode and /file (see bridge-token.ts).
+  issueToken()
 
   bridgeServer.listen(BRIDGE_PORT, process.env.BRIDGE_HOST || '127.0.0.1', () => {
     console.error('Bridge server running')
