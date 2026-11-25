@@ -44,12 +44,26 @@ var OpenCodeChat = (() => {
     return url.replace(/\/$/, '')
   }
 
+  /* The bridge gates /opencode and /file with a per-run token that it injected
+     into this page as window.__BRIDGE_TOKEN__. Append it as a query param —
+     img tags cannot send headers, so /file must accept it there. Same-origin
+     paths only: an absolute OpenCode URL talks to OpenCode directly. */
+  function withToken(url) {
+    var token = (typeof window !== 'undefined' && window.__BRIDGE_TOKEN__) || ''
+    if (!token) return url
+    return url + (url.indexOf('?') === -1 ? '?' : '&') + 'token=' + encodeURIComponent(token)
+  }
+
   function request(config, path, options) {
     var headers = { 'Content-Type': 'application/json' }
     if (config.password) {
       headers.Authorization = `Basic ${btoa(`opencode:${config.password}`)}`
     }
-    return fetch(base(config) + path, Object.assign({ headers: headers }, options || {})).then((res) => {
+    var url = base(config) + path
+    // Only same-origin paths go through the bridge proxy; absolute URLs
+    // (direct OpenCode connections) do not need the bridge token.
+    if (url.charAt(0) === '/') url = withToken(url)
+    return fetch(url, Object.assign({ headers: headers }, options || {})).then((res) => {
       if (!res.ok) {
         return res.text().then((body) => {
           throw new Error(`OpenCode ${res.status}: ${body.slice(0, 300)}`)
@@ -174,7 +188,7 @@ var OpenCodeChat = (() => {
           images.push({
             mime: 'image/*',
             name: candidate.split('/').pop() || candidate,
-            src: `${origin}/file?path=${encodeURIComponent(candidate)}`,
+            src: withToken(`${origin}/file?path=${encodeURIComponent(candidate)}`),
           })
         })
       })
@@ -251,7 +265,7 @@ var OpenCodeChat = (() => {
       return pump()
     }
 
-    fetch(`${base(config)}/api/event?${query}`, {
+    fetch(withToken(`${base(config)}/api/event?${query}`), {
       headers: headers,
       signal: controller.signal,
     })

@@ -347,6 +347,37 @@ describe('DNS-rebinding Host header policy', () => {
   })
 })
 
+describe('per-session bridge token', () => {
+  it('rejects /file and /opencode without a token', async () => {
+    const noToken = await rawRequest(bridgePort, '/file?path=/tmp/x.png')
+    expect(noToken.status).toBe(401)
+    const proxy = await rawRequest(bridgePort, '/opencode/api/session', { method: 'POST' })
+    expect(proxy.status).toBe(401)
+  })
+
+  it('rejects a wrong token', async () => {
+    const res = await rawRequest(bridgePort, '/file?path=/tmp/x.png&token=wrong')
+    expect(res.status).toBe(401)
+  })
+
+  it('injects the token into the served taskpane entry page', async () => {
+    const res = await rawRequest(bridgePort, '/index.html')
+    expect(res.status).toBe(200)
+    const match = res.body.match(/window\.__BRIDGE_TOKEN__="([^"]+)"/)
+    expect(match).not.toBeNull()
+    // The issued token actually opens the gated routes.
+    const file = await rawRequest(bridgePort, `/file?path=/nonexistent-${Date.now()}.png&token=${match![1]}`)
+    expect(file.status).toBe(404) // passed the token gate, file simply does not exist
+    const proxy = await rawRequest(bridgePort, `/opencode/api/session?token=${match![1]}`, { method: 'POST' })
+    expect(proxy.status).not.toBe(401) // passed the gate; 503 without a service file is fine
+  })
+
+  it('does not gate static assets, /health or /mcp', async () => {
+    expect((await rawRequest(bridgePort, '/health')).status).toBe(200)
+    expect((await rawRequest(bridgePort, '/app.js')).status).toBe(200)
+  })
+})
+
 describe('bridge WebSocket origin policy', () => {
   it('registers the manifest localhost origin and rejects a foreign origin before ready', async () => {
     const allowed = await openWebSocket(bridgePort, {

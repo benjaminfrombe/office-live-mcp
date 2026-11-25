@@ -3256,10 +3256,10 @@ var require_utils = __commonJS({
         isIPV6: true
       };
     }
-    function findToken(str, token) {
+    function findToken(str, token2) {
       let ind = 0;
       for (let i = 0; i < str.length; i++) {
-        if (str[i] === token) ind++;
+        if (str[i] === token2) ind++;
       }
       return ind;
     }
@@ -9565,16 +9565,16 @@ var require_extension = __commonJS({
         throw new SyntaxError("Unexpected end of input");
       }
       if (end === -1) end = i;
-      const token = header.slice(start, end);
+      const token2 = header.slice(start, end);
       if (extensionName === void 0) {
-        push(offers, token, params);
+        push(offers, token2, params);
       } else {
         if (paramName === void 0) {
-          push(params, token, true);
+          push(params, token2, true);
         } else if (mustUnescape) {
-          push(params, paramName, token.replace(/\\/g, ""));
+          push(params, paramName, token2.replace(/\\/g, ""));
         } else {
-          push(params, paramName, token);
+          push(params, paramName, token2);
         }
         push(offers, extensionName, params);
       }
@@ -9608,7 +9608,7 @@ var require_websocket = __commonJS({
     var http = require("http");
     var net = require("net");
     var tls = require("tls");
-    var { randomBytes, createHash } = require("crypto");
+    var { randomBytes: randomBytes2, createHash } = require("crypto");
     var { Duplex, Readable: Readable2 } = require("stream");
     var { URL: URL2 } = require("url");
     var PerMessageDeflate2 = require_permessage_deflate();
@@ -10146,7 +10146,7 @@ var require_websocket = __commonJS({
         }
       }
       const defaultPort = isSecure ? 443 : 80;
-      const key = randomBytes(16).toString("base64");
+      const key = randomBytes2(16).toString("base64");
       const request = isSecure ? https.request : http.request;
       const protocolSet = /* @__PURE__ */ new Set();
       let perMessageDeflate;
@@ -25109,8 +25109,8 @@ var require_injection_token = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.isConstructorToken = exports2.isTransformDescriptor = exports2.isTokenDescriptor = exports2.isNormalToken = void 0;
     var lazy_helpers_1 = require_lazy_helpers();
-    function isNormalToken(token) {
-      return typeof token === "string" || typeof token === "symbol";
+    function isNormalToken(token2) {
+      return typeof token2 === "string" || typeof token2 === "symbol";
     }
     exports2.isNormalToken = isNormalToken;
     function isTokenDescriptor(descriptor) {
@@ -25121,8 +25121,8 @@ var require_injection_token = __commonJS({
       return typeof descriptor === "object" && "token" in descriptor && "transform" in descriptor;
     }
     exports2.isTransformDescriptor = isTransformDescriptor;
-    function isConstructorToken(token) {
-      return typeof token === "function" || token instanceof lazy_helpers_1.DelayedConstructor;
+    function isConstructorToken(token2) {
+      return typeof token2 === "function" || token2 instanceof lazy_helpers_1.DelayedConstructor;
     }
     exports2.isConstructorToken = isConstructorToken;
   }
@@ -25363,7 +25363,7 @@ var require_dependency_container = __commonJS({
         this.disposed = false;
         this.disposables = /* @__PURE__ */ new Set();
       }
-      register(token, providerOrConstructor, options = { lifecycle: lifecycle_1.default.Transient }) {
+      register(token2, providerOrConstructor, options = { lifecycle: lifecycle_1.default.Transient }) {
         this.ensureNotDisposed();
         let provider;
         if (!provider_1.isProvider(providerOrConstructor)) {
@@ -25372,7 +25372,7 @@ var require_dependency_container = __commonJS({
           provider = providerOrConstructor;
         }
         if (providers_1.isTokenProvider(provider)) {
-          const path = [token];
+          const path = [token2];
           let tokenProvider = provider;
           while (tokenProvider != null) {
             const currentToken = tokenProvider.useToken;
@@ -25393,7 +25393,7 @@ var require_dependency_container = __commonJS({
             throw new Error(`Cannot use lifecycle "${lifecycle_1.default[options.lifecycle]}" with ValueProviders or FactoryProviders`);
           }
         }
-        this._registry.set(token, { provider, options });
+        this._registry.set(token2, { provider, options });
         return this;
       }
       registerType(from, to) {
@@ -25407,9 +25407,9 @@ var require_dependency_container = __commonJS({
           useClass: to
         });
       }
-      registerInstance(token, instance) {
+      registerInstance(token2, instance) {
         this.ensureNotDisposed();
-        return this.register(token, {
+        return this.register(token2, {
           useValue: instance
         });
       }
@@ -25435,50 +25435,50 @@ var require_dependency_container = __commonJS({
           useClass
         }, { lifecycle: lifecycle_1.default.Singleton });
       }
-      resolve(token, context = new resolution_context_1.default(), isOptional = false) {
+      resolve(token2, context = new resolution_context_1.default(), isOptional = false) {
         this.ensureNotDisposed();
-        const registration = this.getRegistration(token);
-        if (!registration && providers_1.isNormalToken(token)) {
+        const registration = this.getRegistration(token2);
+        if (!registration && providers_1.isNormalToken(token2)) {
           if (isOptional) {
             return void 0;
           }
-          throw new Error(`Attempted to resolve unregistered dependency token: "${token.toString()}"`);
+          throw new Error(`Attempted to resolve unregistered dependency token: "${token2.toString()}"`);
         }
-        this.executePreResolutionInterceptor(token, "Single");
+        this.executePreResolutionInterceptor(token2, "Single");
         if (registration) {
           const result = this.resolveRegistration(registration, context);
-          this.executePostResolutionInterceptor(token, result, "Single");
+          this.executePostResolutionInterceptor(token2, result, "Single");
           return result;
         }
-        if (injection_token_1.isConstructorToken(token)) {
-          const result = this.construct(token, context);
-          this.executePostResolutionInterceptor(token, result, "Single");
+        if (injection_token_1.isConstructorToken(token2)) {
+          const result = this.construct(token2, context);
+          this.executePostResolutionInterceptor(token2, result, "Single");
           return result;
         }
         throw new Error("Attempted to construct an undefined constructor. Could mean a circular dependency problem. Try using `delay` function.");
       }
-      executePreResolutionInterceptor(token, resolutionType) {
-        if (this.interceptors.preResolution.has(token)) {
+      executePreResolutionInterceptor(token2, resolutionType) {
+        if (this.interceptors.preResolution.has(token2)) {
           const remainingInterceptors = [];
-          for (const interceptor of this.interceptors.preResolution.getAll(token)) {
+          for (const interceptor of this.interceptors.preResolution.getAll(token2)) {
             if (interceptor.options.frequency != "Once") {
               remainingInterceptors.push(interceptor);
             }
-            interceptor.callback(token, resolutionType);
+            interceptor.callback(token2, resolutionType);
           }
-          this.interceptors.preResolution.setAll(token, remainingInterceptors);
+          this.interceptors.preResolution.setAll(token2, remainingInterceptors);
         }
       }
-      executePostResolutionInterceptor(token, result, resolutionType) {
-        if (this.interceptors.postResolution.has(token)) {
+      executePostResolutionInterceptor(token2, result, resolutionType) {
+        if (this.interceptors.postResolution.has(token2)) {
           const remainingInterceptors = [];
-          for (const interceptor of this.interceptors.postResolution.getAll(token)) {
+          for (const interceptor of this.interceptors.postResolution.getAll(token2)) {
             if (interceptor.options.frequency != "Once") {
               remainingInterceptors.push(interceptor);
             }
-            interceptor.callback(token, result, resolutionType);
+            interceptor.callback(token2, result, resolutionType);
           }
-          this.interceptors.postResolution.setAll(token, remainingInterceptors);
+          this.interceptors.postResolution.setAll(token2, remainingInterceptors);
         }
       }
       resolveRegistration(registration, context) {
@@ -25506,28 +25506,28 @@ var require_dependency_container = __commonJS({
         }
         return resolved;
       }
-      resolveAll(token, context = new resolution_context_1.default(), isOptional = false) {
+      resolveAll(token2, context = new resolution_context_1.default(), isOptional = false) {
         this.ensureNotDisposed();
-        const registrations = this.getAllRegistrations(token);
-        if (!registrations && providers_1.isNormalToken(token)) {
+        const registrations = this.getAllRegistrations(token2);
+        if (!registrations && providers_1.isNormalToken(token2)) {
           if (isOptional) {
             return [];
           }
-          throw new Error(`Attempted to resolve unregistered dependency token: "${token.toString()}"`);
+          throw new Error(`Attempted to resolve unregistered dependency token: "${token2.toString()}"`);
         }
-        this.executePreResolutionInterceptor(token, "All");
+        this.executePreResolutionInterceptor(token2, "All");
         if (registrations) {
           const result2 = registrations.map((item) => this.resolveRegistration(item, context));
-          this.executePostResolutionInterceptor(token, result2, "All");
+          this.executePostResolutionInterceptor(token2, result2, "All");
           return result2;
         }
-        const result = [this.construct(token, context)];
-        this.executePostResolutionInterceptor(token, result, "All");
+        const result = [this.construct(token2, context)];
+        this.executePostResolutionInterceptor(token2, result, "All");
         return result;
       }
-      isRegistered(token, recursive2 = false) {
+      isRegistered(token2, recursive2 = false) {
         this.ensureNotDisposed();
-        return this._registry.has(token) || recursive2 && (this.parent || false) && this.parent.isRegistered(token, true);
+        return this._registry.has(token2) || recursive2 && (this.parent || false) && this.parent.isRegistered(token2, true);
       }
       reset() {
         this.ensureNotDisposed();
@@ -25537,8 +25537,8 @@ var require_dependency_container = __commonJS({
       }
       clearInstances() {
         this.ensureNotDisposed();
-        for (const [token, registrations] of this._registry.entries()) {
-          this._registry.setAll(token, registrations.filter((registration) => !providers_1.isValueProvider(registration.provider)).map((registration) => {
+        for (const [token2, registrations] of this._registry.entries()) {
+          this._registry.setAll(token2, registrations.filter((registration) => !providers_1.isValueProvider(registration.provider)).map((registration) => {
             registration.instance = void 0;
             return registration;
           }));
@@ -25547,9 +25547,9 @@ var require_dependency_container = __commonJS({
       createChildContainer() {
         this.ensureNotDisposed();
         const childContainer = new _InternalDependencyContainer(this);
-        for (const [token, registrations] of this._registry.entries()) {
+        for (const [token2, registrations] of this._registry.entries()) {
           if (registrations.some(({ options }) => options.lifecycle === lifecycle_1.default.ContainerScoped)) {
-            childContainer._registry.setAll(token, registrations.map((registration) => {
+            childContainer._registry.setAll(token2, registrations.map((registration) => {
               if (registration.options.lifecycle === lifecycle_1.default.ContainerScoped) {
                 return {
                   provider: registration.provider,
@@ -25562,14 +25562,14 @@ var require_dependency_container = __commonJS({
         }
         return childContainer;
       }
-      beforeResolution(token, callback, options = { frequency: "Always" }) {
-        this.interceptors.preResolution.set(token, {
+      beforeResolution(token2, callback, options = { frequency: "Always" }) {
+        this.interceptors.preResolution.set(token2, {
           callback,
           options
         });
       }
-      afterResolution(token, callback, options = { frequency: "Always" }) {
-        this.interceptors.postResolution.set(token, {
+      afterResolution(token2, callback, options = { frequency: "Always" }) {
+        this.interceptors.postResolution.set(token2, {
           callback,
           options
         });
@@ -25587,21 +25587,21 @@ var require_dependency_container = __commonJS({
           yield Promise.all(promises);
         });
       }
-      getRegistration(token) {
-        if (this.isRegistered(token)) {
-          return this._registry.get(token);
+      getRegistration(token2) {
+        if (this.isRegistered(token2)) {
+          return this._registry.get(token2);
         }
         if (this.parent) {
-          return this.parent.getRegistration(token);
+          return this.parent.getRegistration(token2);
         }
         return null;
       }
-      getAllRegistrations(token) {
-        if (this.isRegistered(token)) {
-          return this._registry.getAll(token);
+      getAllRegistrations(token2) {
+        if (this.isRegistered(token2)) {
+          return this._registry.getAll(token2);
         }
         if (this.parent) {
-          return this.parent.getAllRegistrations(token);
+          return this.parent.getAllRegistrations(token2);
         }
         return null;
       }
@@ -25700,9 +25700,9 @@ var require_inject = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     var reflection_helpers_1 = require_reflection_helpers();
-    function inject(token, options) {
+    function inject(token2, options) {
       const data = {
-        token,
+        token: token2,
         multiple: false,
         isOptional: options && options.isOptional
       };
@@ -25727,8 +25727,8 @@ var require_injectable = __commonJS({
           if (!Array.isArray(options.token)) {
             dependency_container_2.instance.register(options.token, target);
           } else {
-            options.token.forEach((token) => {
-              dependency_container_2.instance.register(token, target);
+            options.token.forEach((token2) => {
+              dependency_container_2.instance.register(token2, target);
             });
           }
         }
@@ -25748,8 +25748,8 @@ var require_registry3 = __commonJS({
     function registry2(registrations = []) {
       return function(target) {
         registrations.forEach((_a3) => {
-          var { token, options } = _a3, provider = tslib_1.__rest(_a3, ["token", "options"]);
-          return dependency_container_1.instance.register(token, provider, options);
+          var { token: token2, options } = _a3, provider = tslib_1.__rest(_a3, ["token", "options"]);
+          return dependency_container_1.instance.register(token2, provider, options);
         });
         return target;
       };
@@ -25781,9 +25781,9 @@ var require_inject_all = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     var reflection_helpers_1 = require_reflection_helpers();
-    function injectAll(token, options) {
+    function injectAll(token2, options) {
       const data = {
-        token,
+        token: token2,
         multiple: true,
         isOptional: options && options.isOptional
       };
@@ -25799,9 +25799,9 @@ var require_inject_all_with_transform = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     var reflection_helpers_1 = require_reflection_helpers();
-    function injectAllWithTransform(token, transformer, ...args) {
+    function injectAllWithTransform(token2, transformer, ...args) {
       const data = {
-        token,
+        token: token2,
         multiple: true,
         transform: transformer,
         transformArgs: args
@@ -25818,8 +25818,8 @@ var require_inject_with_transform = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     var reflection_helpers_1 = require_reflection_helpers();
-    function injectWithTransform(token, transformer, ...args) {
-      return reflection_helpers_1.defineInjectionTokenMetadata(token, {
+    function injectWithTransform(token2, transformer, ...args) {
+      return reflection_helpers_1.defineInjectionTokenMetadata(token2, {
         transformToken: transformer,
         args
       });
@@ -25835,10 +25835,10 @@ var require_scoped = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     var injectable_1 = require_injectable();
     var dependency_container_1 = require_dependency_container();
-    function scoped(lifecycle, token) {
+    function scoped(lifecycle, token2) {
       return function(target) {
         injectable_1.default()(target);
-        dependency_container_1.instance.register(token || target, target, {
+        dependency_container_1.instance.register(token2 || target, target, {
           lifecycle
         });
       };
@@ -46805,7 +46805,7 @@ var require_lib4 = __commonJS({
 });
 
 // server/index.ts
-var import_node_crypto2 = require("node:crypto");
+var import_node_crypto3 = require("node:crypto");
 var import_node_fs13 = require("node:fs");
 var import_node_http3 = require("node:http");
 var import_node_https = require("node:https");
@@ -53575,9 +53575,9 @@ var $ZodIBAN = /* @__PURE__ */ $constructor("$ZodIBAN", (inst, def) => {
     });
   };
 });
-function isValidJWT2(token, algorithm = null) {
+function isValidJWT2(token2, algorithm = null) {
   try {
-    const tokensParts = token.split(".");
+    const tokensParts = token2.split(".");
     if (tokensParts.length !== 3)
       return false;
     const [header] = tokensParts;
@@ -78442,6 +78442,35 @@ var ConnectionPool = class {
   }
 };
 
+// server/bridge-token.ts
+var import_node_crypto2 = require("node:crypto");
+var token = null;
+function issueToken() {
+  token = (0, import_node_crypto2.randomBytes)(32).toString("base64url");
+  return token;
+}
+function currentBridgeToken() {
+  return token;
+}
+function tokensEqual(a, b) {
+  if (!a || !b) return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return (0, import_node_crypto2.timingSafeEqual)(bufA, bufB);
+}
+function requestHasValidToken(req) {
+  if (!token) return false;
+  let provided = null;
+  const header = req.headers["x-bridge-token"];
+  if (typeof header === "string" && header) provided = header;
+  if (!provided && req.url) {
+    const query = new URL(req.url, "http://localhost").searchParams.get("token");
+    if (query) provided = query;
+  }
+  return tokensEqual(provided, token);
+}
+
 // server/file-serve.ts
 var IMAGE_MIME_BY_EXTENSION = {
   ".png": "image/png",
@@ -85327,7 +85356,7 @@ async function handleMcpPost(req, res) {
       await mcpHttpTransports.get(sessionId).handleRequest(req, res, body);
     } else if (!sessionId && isInitializeRequest(body)) {
       const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => (0, import_node_crypto2.randomUUID)(),
+        sessionIdGenerator: () => (0, import_node_crypto3.randomUUID)(),
         enableDnsRebindingProtection: true,
         // The same transport serves both the dedicated MCP HTTP port and
         // MCP-on-the-bridge, so allow both ports (plain + TLS) on both hosts.
@@ -85430,6 +85459,11 @@ function serveStatic(req, res) {
     return;
   }
   const rawUrl = (req.url ?? "/").split("?")[0];
+  if ((rawUrl === "/opencode" || rawUrl.startsWith("/opencode/") || rawUrl === "/file") && !requestHasValidToken(req)) {
+    res.writeHead(401, { "Content-Type": "text/plain" });
+    res.end("missing or invalid bridge token");
+    return;
+  }
   if (handleOpenCodeProxy(req, res, req.url ?? "/")) {
     return;
   }
@@ -85510,11 +85544,21 @@ function serveStatic(req, res) {
   }
   const raw = (0, import_node_fs13.readFileSync)(filePath);
   const mimeType = getMimeType(filePath);
-  const content = (0, import_node_path8.extname)(filePath) === ".xml" ? substituteManifestPort(
-    raw.toString(),
-    bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT,
-    BRIDGE_PORT
-  ) : raw;
+  let content = raw;
+  if ((0, import_node_path8.extname)(filePath) === ".xml") {
+    content = substituteManifestPort(
+      raw.toString(),
+      bridgeTls ? BRIDGE_DEFAULT_HTTPS_PORT : BRIDGE_DEFAULT_HTTP_PORT,
+      BRIDGE_PORT
+    );
+  } else if (urlPath === "/index.html" || urlPath.endsWith("/index.html")) {
+    const issued = currentBridgeToken() ?? "";
+    content = raw.toString().replace(
+      /<head(\s[^>]*)?>/i,
+      (head) => `${head}
+  <script>window.__BRIDGE_TOKEN__=${JSON.stringify(issued)};</script>`
+    );
+  }
   const headers = {
     "Content-Type": mimeType,
     "Access-Control-Allow-Origin": "*",
@@ -85633,6 +85677,7 @@ function startBridgeServer(onListening) {
       });
     }).catch(() => process.exit(1));
   });
+  issueToken();
   bridgeServer.listen(BRIDGE_PORT, process.env.BRIDGE_HOST || "127.0.0.1", () => {
     console.error("Bridge server running");
     console.error(`  ${bridgeScheme.toUpperCase()}: ${bridgeScheme}://localhost:${BRIDGE_PORT}`);
