@@ -75,7 +75,7 @@ jobs:
         id: artifact
         run: |
           VERSION=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('package.json','utf8')).version)")
-          MCPB_FILE="powerpoint-mcp-v${VERSION}.mcpb"
+          MCPB_FILE="office-live-mcp-v${VERSION}.mcpb"
 
           PACKED=$(ls dist/mcpb-stage/*.mcpb 2>/dev/null | head -1)
           if [ -z "$PACKED" ]; then
@@ -100,8 +100,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Idempotent: if the release already exists (e.g. created manually
+          # during an API outage), upload the asset to it instead of failing.
           gh release create "${{ steps.tag.outputs.tag }}" \
             "${{ steps.artifact.outputs.mcpb_file }}" \
-            --title "PowerPoint MCP ${{ steps.tag.outputs.tag }}" \
+            --title "office-live-mcp ${{ steps.tag.outputs.tag }}" \
             --generate-notes \
-            --latest
+            --latest \
+          || gh release upload "${{ steps.tag.outputs.tag }}" \
+            "${{ steps.artifact.outputs.mcpb_file }}" --clobber
