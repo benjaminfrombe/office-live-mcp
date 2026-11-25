@@ -13,6 +13,7 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import { WebSocket, WebSocketServer } from 'ws'
 import { ConnectionPool, startHeartbeat } from './bridge.ts'
 import { resolveImageFileRequest } from './file-serve.ts'
+import { hasLocalHostHeader } from './host-check.ts'
 import { substituteManifestPort } from './manifest.ts'
 import { handleOpenCodeProxy } from './opencode-proxy.ts'
 import { runSetup, syncMacManifests } from './setup.ts'
@@ -410,6 +411,16 @@ async function handleMcpDelete(req: IncomingMessage, res: ServerResponse): Promi
 // ---------------------------------------------------------------------------
 
 function serveStatic(req: IncomingMessage, res: ServerResponse): void {
+  // DNS-rebinding guard: the server binds 127.0.0.1, but a rebinding page
+  // reaches it with the attacker's hostname in the Host header. Every route
+  // below (proxy, /file, static assets, WS upgrade) is for this machine's own
+  // clients, so a foreign Host is rejected outright.
+  if (!hasLocalHostHeader(req)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' })
+    res.end('forbidden host')
+    return
+  }
+
   const rawUrl = (req.url ?? '/').split('?')[0]
 
   // OpenCode reverse proxy — same-origin route for the taskpane chat mode.
@@ -785,6 +796,14 @@ function startBridgeServer(onListening?: () => void): void {
 
 function startMcpHttpServer(): void {
   function handleMcpHttpRequest(req: IncomingMessage, res: ServerResponse): void {
+    // DNS-rebinding guard, same as the bridge: /mcp is already protected by
+    // the SDK transport, but /health and /shutdown are not.
+    if (!hasLocalHostHeader(req)) {
+      res.writeHead(403, { 'Content-Type': 'text/plain' })
+      res.end('forbidden host')
+      return
+    }
+
     const url = (req.url ?? '/').split('?')[0]
 
     if (url === '/health' && req.method === 'GET') {

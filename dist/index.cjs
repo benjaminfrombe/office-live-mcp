@@ -46809,7 +46809,7 @@ var import_node_crypto2 = require("node:crypto");
 var import_node_fs13 = require("node:fs");
 var import_node_http3 = require("node:http");
 var import_node_https = require("node:https");
-var import_node_os5 = require("node:os");
+var import_node_os6 = require("node:os");
 var import_node_path8 = require("node:path");
 var import_node_url4 = require("node:url");
 
@@ -53271,9 +53271,9 @@ var asciiTabOrNewline = /[\t\n\r]/g;
 function stripTabAndNewline(value) {
   return value.replace(asciiTabOrNewline, "");
 }
-function urlHostnameOk(url2, hostname5) {
-  hostname5.lastIndex = 0;
-  return hostname5.test(url2.hostname);
+function urlHostnameOk(url2, hostname6) {
+  hostname6.lastIndex = 0;
+  return hostname6.test(url2.hostname);
 }
 function urlProtocolOk(url2, protocol) {
   protocol.lastIndex = 0;
@@ -78461,6 +78461,29 @@ function resolveImageFileRequest(rawPath) {
   return { filePath: rawPath, mime };
 }
 
+// server/host-check.ts
+var import_node_os = require("node:os");
+var allowedHosts = null;
+function allowedHostSet() {
+  if (allowedHosts) return allowedHosts;
+  const set2 = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", "[::1]", (0, import_node_os.hostname)().toLowerCase()]);
+  for (const ifaces of Object.values((0, import_node_os.networkInterfaces)())) {
+    for (const iface of ifaces ?? []) {
+      const addr = iface.address;
+      set2.add(addr);
+      if (iface.family === "IPv6") set2.add(`[${addr}]`);
+    }
+  }
+  allowedHosts = set2;
+  return set2;
+}
+function hasLocalHostHeader(req) {
+  const raw = req.headers.host;
+  if (typeof raw !== "string" || raw.length === 0) return false;
+  const host = raw.startsWith("[") ? raw.slice(0, raw.indexOf("]") + 1) : raw.split(":")[0] ?? raw;
+  return allowedHostSet().has(host.toLowerCase());
+}
+
 // server/manifest.ts
 function substituteManifestPort(content, defaultPort, targetPort) {
   if (defaultPort === targetPort) return content;
@@ -78470,13 +78493,13 @@ function substituteManifestPort(content, defaultPort, targetPort) {
 // server/opencode-proxy.ts
 var import_node_fs = require("node:fs");
 var import_node_http = require("node:http");
-var import_node_os = require("node:os");
+var import_node_os2 = require("node:os");
 var import_node_path = require("node:path");
 var MOUNT_PATH = "/opencode";
 var cached2 = null;
 var lastRead = 0;
 function serviceFilePath() {
-  return process.env.OPENCODE_SERVICE_FILE || (0, import_node_path.join)((0, import_node_os.homedir)(), ".local/state/opencode/service.json");
+  return process.env.OPENCODE_SERVICE_FILE || (0, import_node_path.join)((0, import_node_os2.homedir)(), ".local/state/opencode/service.json");
 }
 function service() {
   if (cached2 && Date.now() - lastRead < 2e3) return cached2;
@@ -78484,14 +78507,6 @@ function service() {
   cached2 = { target: new URL(info.url), password: info.password };
   lastRead = Date.now();
   return cached2;
-}
-function corsHeaders(req) {
-  const origin = req.headers.origin;
-  if (!origin) return {};
-  return {
-    "access-control-allow-origin": origin,
-    "access-control-allow-credentials": "true"
-  };
 }
 function pipe2(req, res, target, password, forwardPath) {
   const upstream = (0, import_node_http.request)(
@@ -78508,14 +78523,13 @@ function pipe2(req, res, target, password, forwardPath) {
       }
     },
     (upstreamRes) => {
-      const headers = { ...upstreamRes.headers, ...corsHeaders(req) };
-      res.writeHead(upstreamRes.statusCode || 502, headers);
+      res.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
       upstreamRes.pipe(res);
     }
   );
   upstream.on("error", (err) => {
     if (!res.headersSent) {
-      res.writeHead(502, { "Content-Type": "application/json", ...corsHeaders(req) });
+      res.writeHead(502, { "Content-Type": "application/json" });
     }
     res.end(JSON.stringify({ proxyError: String(err.message) }));
   });
@@ -78526,22 +78540,12 @@ function handleOpenCodeProxy(req, res, rawUrl) {
   if (pathOnly !== MOUNT_PATH && !pathOnly.startsWith(`${MOUNT_PATH}/`)) {
     return false;
   }
-  if (req.method === "OPTIONS") {
-    res.writeHead(204, {
-      "access-control-allow-origin": req.headers.origin || "*",
-      "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-      "access-control-allow-headers": "authorization, content-type",
-      "access-control-max-age": "86400"
-    });
-    res.end();
-    return true;
-  }
   const forwardPath = rawUrl.slice(MOUNT_PATH.length) || "/";
   try {
     const { target, password } = service();
     pipe2(req, res, target, password, forwardPath);
   } catch (err) {
-    res.writeHead(503, { "Content-Type": "application/json", ...corsHeaders(req) });
+    res.writeHead(503, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ proxyError: `OpenCode service file unreadable: ${String(err)}` }));
   }
   return true;
@@ -78550,7 +78554,7 @@ function handleOpenCodeProxy(req, res, rawUrl) {
 // server/setup.ts
 var import_node_child_process = require("node:child_process");
 var import_node_fs2 = require("node:fs");
-var import_node_os2 = require("node:os");
+var import_node_os3 = require("node:os");
 var import_node_path2 = require("node:path");
 var import_promises = require("node:readline/promises");
 var import_node_url = require("node:url");
@@ -78572,7 +78576,7 @@ function manifestNameFor(manifest, tls) {
   return tls ? manifest.replace(".xml", "-https.xml") : manifest;
 }
 function syncMacManifests(tls, port, dirs = {}) {
-  const home = dirs.homeDir ?? (0, import_node_os2.homedir)();
+  const home = dirs.homeDir ?? (0, import_node_os3.homedir)();
   const addin = dirs.addinDir ?? (0, import_node_path2.resolve)(PROJECT_ROOT, "addin");
   const defaultPort = tls ? 8791 : 8790;
   const results = [];
@@ -78616,7 +78620,7 @@ function catalogUncCandidates(installDir, packageRoot) {
   const candidates = [];
   if (process.env.OLM_CATALOG_UNC) candidates.push(process.env.OLM_CATALOG_UNC);
   if (packageRoot.startsWith("\\\\Mac\\Home\\")) candidates.push(`${packageRoot}\\addin`);
-  candidates.push(`\\\\${(0, import_node_os2.hostname)()}\\OfficeLiveMCP`);
+  candidates.push(`\\\\${(0, import_node_os3.hostname)()}\\OfficeLiveMCP`);
   const drive = installDir.charAt(0);
   if (installDir.startsWith("C:\\Users\\")) {
     candidates.push(`\\\\localhost\\${drive}$\\${installDir.slice(3)}\\addin`);
@@ -78656,7 +78660,7 @@ function harnessInstructions(entryCommand, platform2, nodePath) {
 }
 function daemonTlsEnabled() {
   try {
-    const envFile = (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), ".office-live-mcp", "daemon.env");
+    const envFile = (0, import_node_path2.resolve)((0, import_node_os3.homedir)(), ".office-live-mcp", "daemon.env");
     return /^BRIDGE_TLS=1\b/m.test((0, import_node_fs2.readFileSync)(envFile, "utf8"));
   } catch {
     return false;
@@ -78717,7 +78721,7 @@ function setupMac() {
   let installed = 0;
   let found = 0;
   for (const [key, app] of Object.entries(MAC_APPS)) {
-    const containerDir = (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), `Library/Containers/${app.container}`);
+    const containerDir = (0, import_node_path2.resolve)((0, import_node_os3.homedir)(), `Library/Containers/${app.container}`);
     if (!(0, import_node_fs2.existsSync)(containerDir)) {
       console.log(`[setup] ${app.label}: not installed, skipped`);
       continue;
@@ -78770,7 +78774,7 @@ async function ensureLocalhostCert() {
           altNames: [
             { type: 2, value: "localhost" },
             // DNS
-            { type: 2, value: (0, import_node_os2.hostname)().toLowerCase() },
+            { type: 2, value: (0, import_node_os3.hostname)().toLowerCase() },
             // machine name — Office may
             // refuse loopback as a SharePoint-style catalog site
             { type: 7, ip: "127.0.0.1" },
@@ -78798,7 +78802,7 @@ function mergeDaemonTls(content) {
 `;
 }
 function writeDaemonTlsEnv() {
-  const envFile = (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), ".office-live-mcp", "daemon.env");
+  const envFile = (0, import_node_path2.resolve)((0, import_node_os3.homedir)(), ".office-live-mcp", "daemon.env");
   let content = "";
   try {
     content = (0, import_node_fs2.readFileSync)(envFile, "utf8");
@@ -78851,7 +78855,7 @@ async function enableWindowsIconHttps() {
   console.log("[setup] Icon HTTPS enabled: TLS bridge on https://localhost:8791, certificate trusted.");
 }
 function setupWindowsUncCatalog() {
-  const installDir = process.env.OLM_INSTALL_DIR || (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), "AppData", "Local", "office-live-mcp");
+  const installDir = process.env.OLM_INSTALL_DIR || (0, import_node_path2.resolve)((0, import_node_os3.homedir)(), "AppData", "Local", "office-live-mcp");
   for (const folder of ["dist", "addin"]) {
     const src = (0, import_node_path2.resolve)(PROJECT_ROOT, folder);
     if (!(0, import_node_fs2.existsSync)(src)) {
@@ -78887,8 +78891,8 @@ function setupWindowsUncCatalog() {
     const result = (0, import_node_child_process.spawnSync)("net", ["share", `OfficeLiveMCP=${addinDir}`, "/GRANT:Everyone:READ"], {
       stdio: "pipe"
     });
-    if (result.status === 0 && (0, import_node_fs2.existsSync)(`\\\\${(0, import_node_os2.hostname)()}\\OfficeLiveMCP`)) {
-      unc = `\\\\${(0, import_node_os2.hostname)()}\\OfficeLiveMCP`;
+    if (result.status === 0 && (0, import_node_fs2.existsSync)(`\\\\${(0, import_node_os3.hostname)()}\\OfficeLiveMCP`)) {
+      unc = `\\\\${(0, import_node_os3.hostname)()}\\OfficeLiveMCP`;
     }
   }
   if (!unc) {
@@ -78972,8 +78976,8 @@ async function runSetup() {
 }
 async function configureOpenCodeMcp() {
   const candidates = [
-    (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), ".config", "opencode", "opencode.jsonc"),
-    (0, import_node_path2.resolve)((0, import_node_os2.homedir)(), ".config", "opencode", "opencode.json")
+    (0, import_node_path2.resolve)((0, import_node_os3.homedir)(), ".config", "opencode", "opencode.jsonc"),
+    (0, import_node_path2.resolve)((0, import_node_os3.homedir)(), ".config", "opencode", "opencode.json")
   ];
   const path = candidates.find((p) => (0, import_node_fs2.existsSync)(p));
   const serverPath = (0, import_node_path2.resolve)(PROJECT_ROOT, "dist", "index.cjs");
@@ -79263,7 +79267,7 @@ function handleSharePointCatalog(req, res, rawUrl) {
 // server/stdio-proxy.ts
 var import_node_child_process2 = require("node:child_process");
 var import_node_fs4 = require("node:fs");
-var import_node_os3 = require("node:os");
+var import_node_os4 = require("node:os");
 var import_node_path4 = require("node:path");
 var HEALTH_TIMEOUT_MS = 1e3;
 var DAEMON_START_TIMEOUT_MS = 15e3;
@@ -79276,7 +79280,7 @@ function mcpHttpBase() {
 function bridgeHttpBase() {
   return `http://127.0.0.1:${Number(process.env.BRIDGE_PORT) || 8790}`;
 }
-var DAEMON_DIR = process.env.OLM_DAEMON_DIR || (0, import_node_path4.join)((0, import_node_os3.homedir)(), ".office-live-mcp");
+var DAEMON_DIR = process.env.OLM_DAEMON_DIR || (0, import_node_path4.join)((0, import_node_os4.homedir)(), ".office-live-mcp");
 var DAEMON_LOCK_FILE = (0, import_node_path4.join)(DAEMON_DIR, "daemon.lock");
 var DAEMON_LOG_FILE = process.env.OLM_DAEMON_LOG || (0, import_node_path4.join)(DAEMON_DIR, "daemon.log");
 async function fetchDaemonHealth(timeoutMs = HEALTH_TIMEOUT_MS) {
@@ -80383,7 +80387,7 @@ async function extractDeckText(zipBuffer, slideIndices, includeNotes) {
 
 // server/tools/shared.ts
 var import_node_fs5 = require("node:fs");
-var import_node_os4 = require("node:os");
+var import_node_os5 = require("node:os");
 var import_node_path5 = require("node:path");
 var import_node_url2 = require("node:url");
 var localCopyCache = /* @__PURE__ */ new Map();
@@ -80527,7 +80531,7 @@ async function getLocalCopyPath(connPool, target) {
   `;
   const base643 = await connPool.sendCommand("executeCode", { code: exportCode }, target.ws, 12e4);
   const filename = filePath ? decodeURIComponent(filePath.split("/").pop() || "presentation.pptx") : "presentation.pptx";
-  const dest = (0, import_node_path5.join)((0, import_node_os4.tmpdir)(), `pptbridge-${Date.now()}-${filename}`);
+  const dest = (0, import_node_path5.join)((0, import_node_os5.tmpdir)(), `pptbridge-${Date.now()}-${filename}`);
   (0, import_node_fs5.writeFileSync)(dest, Buffer.from(base643, "base64"));
   localCopyCache.set(target.presentationId, { localPath: dest, revision: currentRevision });
   return dest;
@@ -85420,6 +85424,11 @@ async function handleMcpDelete(req, res) {
   await mcpHttpTransports.get(sessionId).handleRequest(req, res);
 }
 function serveStatic(req, res) {
+  if (!hasLocalHostHeader(req)) {
+    res.writeHead(403, { "Content-Type": "text/plain" });
+    res.end("forbidden host");
+    return;
+  }
   const rawUrl = (req.url ?? "/").split("?")[0];
   if (handleOpenCodeProxy(req, res, req.url ?? "/")) {
     return;
@@ -85524,10 +85533,10 @@ function startBridgeServer(onListening) {
   const useTls = bridgeTls && (0, import_node_fs13.existsSync)(BRIDGE_CERT_PATH) && (0, import_node_fs13.existsSync)(BRIDGE_KEY_PATH);
   const bridgeServer = useTls ? (0, import_node_https.createServer)({ cert: (0, import_node_fs13.readFileSync)(BRIDGE_CERT_PATH), key: (0, import_node_fs13.readFileSync)(BRIDGE_KEY_PATH) }, serveStatic) : (0, import_node_http3.createServer)(serveStatic);
   const allowedOrigins = /* @__PURE__ */ new Set();
-  for (const host of ["localhost", "127.0.0.1", (0, import_node_os5.hostname)()]) {
+  for (const host of ["localhost", "127.0.0.1", (0, import_node_os6.hostname)()]) {
     allowedOrigins.add(`${useTls ? "https" : "http"}://${host.toLowerCase()}:${BRIDGE_PORT}`);
   }
-  for (const ifaces of Object.values((0, import_node_os5.networkInterfaces)())) {
+  for (const ifaces of Object.values((0, import_node_os6.networkInterfaces)())) {
     for (const iface of ifaces ?? []) {
       if (iface.family === "IPv4" && !iface.internal) {
         allowedOrigins.add(`${useTls ? "https" : "http"}://${iface.address}:${BRIDGE_PORT}`);
@@ -85669,6 +85678,11 @@ function startBridgeServer(onListening) {
 }
 function startMcpHttpServer() {
   function handleMcpHttpRequest(req, res) {
+    if (!hasLocalHostHeader(req)) {
+      res.writeHead(403, { "Content-Type": "text/plain" });
+      res.end("forbidden host");
+      return;
+    }
     const url2 = (req.url ?? "/").split("?")[0];
     if (url2 === "/health" && req.method === "GET") {
       res.writeHead(200, { "Content-Type": "application/json" });

@@ -49,15 +49,6 @@ export function resetServiceCache(): void {
   lastRead = 0
 }
 
-function corsHeaders(req: IncomingMessage): Record<string, string> {
-  const origin = req.headers.origin
-  if (!origin) return {}
-  return {
-    'access-control-allow-origin': origin,
-    'access-control-allow-credentials': 'true',
-  }
-}
-
 function pipe(req: IncomingMessage, res: ServerResponse, target: URL, password: string, forwardPath: string): void {
   const upstream = httpRequest(
     {
@@ -73,15 +64,14 @@ function pipe(req: IncomingMessage, res: ServerResponse, target: URL, password: 
       },
     },
     (upstreamRes) => {
-      const headers = { ...upstreamRes.headers, ...corsHeaders(req) }
-      res.writeHead(upstreamRes.statusCode || 502, headers)
+      res.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers)
       // Stream the body — SSE event streams must flow chunk by chunk.
       upstreamRes.pipe(res)
     },
   )
   upstream.on('error', (err) => {
     if (!res.headersSent) {
-      res.writeHead(502, { 'Content-Type': 'application/json', ...corsHeaders(req) })
+      res.writeHead(502, { 'Content-Type': 'application/json' })
     }
     res.end(JSON.stringify({ proxyError: String(err.message) }))
   })
@@ -98,16 +88,9 @@ export function handleOpenCodeProxy(req: IncomingMessage, res: ServerResponse, r
     return false
   }
 
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204, {
-      'access-control-allow-origin': req.headers.origin || '*',
-      'access-control-allow-methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-      'access-control-allow-headers': 'authorization, content-type',
-      'access-control-max-age': '86400',
-    })
-    res.end()
-    return true
-  }
+  // No CORS handling: the taskpane loads /opencode same-origin, so a browser
+  // never preflights here. Reflecting an arbitrary Origin with credentials
+  // would let any web page drive OpenCode with the injected password.
 
   // Forward the full path including query string
   const forwardPath = rawUrl.slice(MOUNT_PATH.length) || '/'
@@ -115,7 +98,7 @@ export function handleOpenCodeProxy(req: IncomingMessage, res: ServerResponse, r
     const { target, password } = service()
     pipe(req, res, target, password, forwardPath)
   } catch (err) {
-    res.writeHead(503, { 'Content-Type': 'application/json', ...corsHeaders(req) })
+    res.writeHead(503, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ proxyError: `OpenCode service file unreadable: ${String(err)}` }))
   }
   return true
