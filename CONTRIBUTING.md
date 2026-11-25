@@ -1,36 +1,45 @@
-# Contributing to PowerPoint MCP
+# Contributing to Office Live MCP
 
 ## Prerequisites
 
-- macOS with PowerPoint for Mac installed
+- **macOS** (primary) or **Windows** — PowerPoint for Mac, and Word/Excel on macOS or Windows
 - Node.js >= 24 — the repo pins the exact version contributors and CI use in `.nvmrc`. With [nvm](https://github.com/nvm-sh/nvm) installed, `nvm use` in the repo root selects it (`nvm install` first on a fresh machine).
 
 ## Development Setup
 
 ```bash
-git clone https://github.com/kzarzycki/powerpoint-mcp.git
-cd powerpoint-mcp
+git clone https://github.com/benjaminfrombe/office-live-mcp.git
+cd office-live-mcp
 nvm use             # Selects the pinned Node version from .nvmrc (nvm install if not yet installed)
-node --version       # Confirm it matches .nvmrc / CI
+node --version      # Confirm it matches .nvmrc / CI
 npm install
 npm run sideload    # Sideload the add-in manifest
 # Restart PowerPoint after sideloading
 ```
 
+On Windows, see the [Windows installation section in the README](README.md#windows-installation).
+
 ## Project Structure
 
 ```
 server/
-  index.ts      # Entrypoint: HTTP(S) + WS(S) + MCP servers, wiring
-  bridge.ts     # ConnectionPool class — manages add-in WebSocket connections
-  tools.ts      # registerTools — wires the grouped tool modules together
-  tools/        # MCP tool definitions, grouped: charts.ts, exec.ts, inspect.ts,
-                #   media.ts, notes.ts, slides.ts, text.ts, xml.ts (+ shared.ts)
-  bridge.test.ts
-  tools.test.ts
+  index.ts            # Entrypoint: HTTP(S) + WS(S) + MCP servers, wiring
+  bridge.ts           # ConnectionPool class — manages add-in WebSocket connections
+  tools.ts            # registerTools — wires the grouped tool modules together
+  tools/              # MCP tool definitions, grouped per app and capability:
+                      #   charts.ts, exec.ts, inspect.ts, media.ts, notes.ts,
+                      #   slides.ts, text.ts, xml.ts (+ shared.ts)
+  opencode-proxy.ts   # Same-origin /opencode reverse proxy for taskpane chat
+  host-check.ts       # DNS-rebinding guard: Host header validation
+  bridge-token.ts     # Per-session token gating /opencode and /file
+  file-serve.ts       # GET /file?path= — serves local images to the taskpane
+  sharepoint-catalog.ts # Self-hosted SharePoint app-catalog emulation
 addin/
   index.html    # Add-in taskpane UI
   app.js        # WebSocket client + Office.js command execution
+  opencode.js   # OpenCode chat client (reverse bridge mode)
+  chat.js       # Chat rendering + document application
+  forms.js      # Question-form UI for the chat
   manifest.xml  # Office Add-in manifest for sideloading
 certs/          # Optional TLS certs for HTTPS mode (gitignored)
 ```
@@ -47,6 +56,10 @@ certs/          # Optional TLS certs for HTTPS mode (gitignored)
 | `npm run lint:fix` | Auto-fix lint and format issues |
 | `npm run typecheck` | TypeScript type checking |
 | `npm run check` | Run lint + typecheck + tests (CI equivalent) |
+| `npm run build` | Bundle `dist/index.cjs` (committed; used by plugin/MCPB installs) |
+| `npm run build:mcpb` | Build the `.mcpb` extension bundle for releases |
+| `npm run setup-certs` | Generate localhost TLS certs via mkcert (needed for `BRIDGE_TLS=1`) |
+| `npm run sideload` | Sideload the add-in manifest into Office |
 
 ## Code Style
 
@@ -70,17 +83,19 @@ npm run test:coverage # With coverage
 1. Create a feature branch from `main`
 2. Make your changes
 3. Run `npm run check` to verify lint, types, and tests pass
-4. Open a PR against `main`
+4. If you changed `server/` files, also run `npm run build` and stage `dist/index.cjs` — it is committed and used by plugin/MCPB installs (a pre-commit hook enforces this)
+5. Open a PR against `main`
 
 ## What's In Scope
 
 - Office.js capabilities within Requirement Sets 1.1-1.8
+- Word, Excel and PowerPoint support (all three apps are driven by the same bridge)
 - MCP tool improvements
-- macOS support improvements
+- macOS and Windows support improvements
 - Documentation
 
 ## What's Out of Scope
 
 - Features requiring Office.js APIs unavailable on Mac at the shape level. (Note: images and charts ARE supported — images via the Common API `setSelectedDataAsync`, charts via OOXML injection.)
-- Windows/Linux platform support (PRs welcome, but we can't test)
-- Non-PowerPoint Office apps
+- Other platforms than macOS/Windows (PRs welcome, but we can't test)
+- Mobile Office apps
