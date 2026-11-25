@@ -297,6 +297,56 @@ afterAll(async () => {
   rmSync(TEST_DAEMON_DIR, { recursive: true, force: true })
 })
 
+async function rawRequest(
+  port: number,
+  path: string,
+  options: { method?: string; host?: string } = {},
+): Promise<{ status: number; body: string }> {
+  const { promise, resolve: resolveReq, reject: rejectReq } = Promise.withResolvers<{ status: number; body: string }>()
+  const req = httpRequest(
+    {
+      hostname: '127.0.0.1',
+      port,
+      path,
+      method: options.method ?? 'GET',
+      // Undici's fetch refuses to set Host; node:http lets us forge it, which
+      // is exactly what a DNS-rebinding browser does.
+      headers: options.host ? { host: options.host } : {},
+    },
+    (res) => {
+      const chunks: Buffer[] = []
+      res.on('data', (chunk: Buffer) => chunks.push(chunk))
+      res.on('end', () => resolveReq({ status: res.statusCode ?? 0, body: Buffer.concat(chunks).toString() }))
+    },
+  )
+  req.on('error', rejectReq)
+  req.end()
+  return promise
+}
+
+describe('DNS-rebinding Host header policy', () => {
+  it('rejects bridge requests with a foreign Host header', async () => {
+    const res = await rawRequest(bridgePort, '/file?path=/etc/hosts.png', { host: 'evil.example' })
+    expect(res.status).toBe(403)
+    expect(res.body).toBe('forbidden host')
+  })
+
+  it('rejects OpenCode proxy requests with a foreign Host header', async () => {
+    const res = await rawRequest(bridgePort, '/opencode/session', { method: 'POST', host: 'evil.example' })
+    expect(res.status).toBe(403)
+  })
+
+  it('rejects MCP-server shutdown with a foreign Host header', async () => {
+    const res = await rawRequest(mcpPort, '/shutdown', { method: 'POST', host: 'evil.example' })
+    expect(res.status).toBe(403)
+  })
+
+  it('still serves localhost clients', async () => {
+    const res = await rawRequest(mcpPort, '/health', { host: `localhost:${mcpPort}` })
+    expect(res.status).toBe(200)
+  })
+})
+
 describe('bridge WebSocket origin policy', () => {
   it('registers the manifest localhost origin and rejects a foreign origin before ready', async () => {
     const allowed = await openWebSocket(bridgePort, {

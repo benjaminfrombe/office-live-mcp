@@ -74,13 +74,28 @@ describe('opencode bridge proxy', () => {
     expect(receivedAuth).toBe(`Basic ${Buffer.from('opencode:test-pw').toString('base64')}`)
   })
 
-  it('answers CORS preflight locally', async () => {
+  it('does not answer CORS preflights: OPTIONS is proxied upstream with no CORS headers', async () => {
+    resetServiceCache()
+    process.env.OPENCODE_SERVICE_FILE = serviceFile
     const res = await fetch(`http://127.0.0.1:${proxyPort}${OPENCODE_MOUNT_PATH}/api/session`, {
       method: 'OPTIONS',
-      headers: { Origin: 'https://localhost:55671' },
+      headers: { Origin: 'https://evil.example' },
     })
-    expect(res.status).toBe(204)
-    expect(res.headers.get('access-control-allow-origin')).toBe('https://localhost:55671')
+    // The taskpane loads /opencode same-origin, so no preflight ever happens;
+    // the request is simply forwarded and no CORS headers may be reflected.
+    expect(res.headers.get('access-control-allow-origin')).toBeNull()
+    expect(res.headers.get('access-control-allow-credentials')).toBeNull()
+  })
+
+  it('reflects no CORS headers on normal responses either', async () => {
+    resetServiceCache()
+    process.env.OPENCODE_SERVICE_FILE = serviceFile
+    const res = await fetch(`http://127.0.0.1:${proxyPort}${OPENCODE_MOUNT_PATH}/api/session/abc`, {
+      headers: { Origin: 'https://evil.example' },
+    })
+    expect(res.status).toBe(200)
+    expect(res.headers.get('access-control-allow-origin')).toBeNull()
+    expect(res.headers.get('access-control-allow-credentials')).toBeNull()
   })
 
   it('streams SSE through without buffering headers away', async () => {
